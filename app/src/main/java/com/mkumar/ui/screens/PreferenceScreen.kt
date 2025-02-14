@@ -51,7 +51,6 @@ fun PreferenceScreen(navController: NavHostController) {
             }
         }
     )
-
 }
 
 @Composable
