@@ -1,19 +1,22 @@
 [versions]
 agp = "8.10.0-alpha05"
-kotlin = "2.0.21"
-coreKtx = "1.10.1"
+kotlin = "2.1.10"
+coreKtx = "1.15.0"
 junit = "4.13.2"
-junitVersion = "1.1.5"
-espressoCore = "3.5.1"
-lifecycleRuntimeKtx = "2.6.1"
-activityCompose = "1.8.0"
-composeBom = "2024.09.00"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+lifecycleRuntimeKtx = "2.8.7"
+activityCompose = "1.10.0"
+composeBom = "2025.02.00"
 datastoreCoreAndroid = "1.1.2"
 navigationRuntimeKtx = "2.8.7"
 navigationCompose = "2.8.7"
 preferenceKtx = "1.2.1"
 material3 = "1.3.1"
 compose = "1.7.8"
+okhttpv = "4.12.0"
+workmanager = "2.10.0"
+jsonv = "1.7.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,6 +39,9 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-preference-ktx = { group = "androidx.preference", name = "preference-ktx", version.ref = "preferenceKtx" }
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttpv" }
+work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workmanager" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "jsonv" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

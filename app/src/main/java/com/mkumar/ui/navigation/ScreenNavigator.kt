@@ -95,7 +95,7 @@ fun NavigationHost(
         modifier = modifier
     ) {
         composable(route = Screens.Home.name) {
-            HomeScreen()
+            HomeScreen(navController = navController)
         }
         composable(route = Screens.Settings.name) {
             PreferenceScreen(navController = navController)
