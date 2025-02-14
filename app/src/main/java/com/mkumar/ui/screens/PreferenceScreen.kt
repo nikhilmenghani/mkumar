@@ -1,46 +1,57 @@
 package com.mkumar.ui.screens
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.mkumar.App.Companion.globalClass
 
-class PreferenceScreen : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent { PreferenceScreenContent()
-        }
-    }
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PreferenceScreenContent(modifier: Modifier = Modifier) {
+fun PreferenceScreen(navController: NavHostController) {
     val preferences = globalClass.preferencesManager.displayPrefs
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(top = 48.dp, start = 16.dp, end = 16.dp)
-    ) {
-        Text("Preferences", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(16.dp))
+    Scaffold(
+        topBar = {
+            LargeTopAppBar(
+                title = { Text(text = "Settings") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        },
+        content = { paddingValues ->
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 16.dp, end = 16.dp, bottom = paddingValues.calculateTopPadding(), top = paddingValues.calculateTopPadding())
+            ) {
+                PreferenceItem("Dynamic Theme", preferences.useDynamicColor, { preferences.useDynamicColor = it })
+                Text("Use Dynamic Theme Value : ${preferences.useDynamicColor}")
+            }
+        }
+    )
 
-        PreferenceItem("Dynamic Theme", preferences.useDynamicColor, { preferences.useDynamicColor = it })
-        Text("Use Dynamic Theme Value : ${preferences.useDynamicColor}")
-    }
 }
 
 @Composable
