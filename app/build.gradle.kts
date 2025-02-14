@@ -8,6 +8,15 @@ android {
     namespace = "com.mkumar"
     compileSdk = 35
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../my-release-key.keystore")
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = "myKeyAlias"
+            keyPassword = System.getenv("KEYSTORE_PASSWORD")
+        }
+    }
+
     defaultConfig {
         applicationId = "com.mkumar"
         minSdk = 33
