@@ -198,7 +198,10 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
                         showBottomSheet = false
                         customerViewModel.resetState()
                     },
-                    showDismissFAB = true,
+                    showDismiss = true,
+                    showPrevious = true,
+                    showNext = true,
+                    showDone = true
                 )
             }
         }

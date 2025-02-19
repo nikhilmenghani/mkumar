@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -84,60 +85,66 @@ fun BaseBottomSheet(
             // Dynamic Content
             sheetContent()
 
-            // Buttons Row with Proper Spacing
+            // Buttons Row with Left & Right Alignment
             if (showNext || showPrevious || showDone || showDismiss) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 16.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Left Side (Previous Button)
                     if (showPrevious) {
                         FloatingActionButton(
                             onClick = { onPreviousClick() },
                             modifier = Modifier.size(56.dp)
                         ) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Previous")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
                         }
-                        Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
+                    } else {
+                        Spacer(modifier = Modifier.width(56.dp)) // Ensures alignment consistency
                     }
 
-                    if (showNext) {
-                        FloatingActionButton(
-                            onClick = { onNextClick() },
-                            modifier = Modifier.size(56.dp)
-                        ) {
-                            Icon(Icons.Default.ArrowForward, contentDescription = "Next")
+                    // Right Side (Next, Done, Dismiss)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        if (showNext) {
+                            FloatingActionButton(
+                                onClick = { onNextClick() },
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next")
+                            }
                         }
-                        Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
-                    }
 
-                    if (showDone) {
-                        FloatingActionButton(
-                            onClick = {
-                                scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                                    onDoneClick()
-                                    onDismiss()
-                                }
-                            },
-                            modifier = Modifier.size(56.dp)
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = "Done")
+                        if (showDone) {
+                            FloatingActionButton(
+                                onClick = {
+                                    scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
+                                        onDoneClick()
+                                        onDismiss()
+                                    }
+                                },
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = "Done")
+                            }
                         }
-                        Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
-                    }
 
-                    if (showDismiss) {
-                        FloatingActionButton(
-                            onClick = {
-                                scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                                    onDismissClick()
-                                    onDismiss()
-                                }
-                            },
-                            modifier = Modifier.size(56.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Dismiss")
+                        if (showDismiss) {
+                            FloatingActionButton(
+                                onClick = {
+                                    scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
+                                        onDismissClick()
+                                        onDismiss()
+                                    }
+                                },
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss")
+                            }
                         }
                     }
                 }
