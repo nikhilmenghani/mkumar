@@ -1,11 +1,18 @@
 package com.mkumar.ui.components.bottomsheets
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -18,9 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -30,10 +35,16 @@ fun BaseBottomSheet(
     title: String,
     sheetContent: @Composable () -> Unit,
     onDismiss: () -> Unit = {},
-    showDismissFAB : Boolean = false
+    showNext: Boolean = false,
+    showPrevious: Boolean = false,
+    showDone: Boolean = false,
+    showDismiss: Boolean = false,
+    onNextClick: () -> Unit = {},
+    onPreviousClick: () -> Unit = {},
+    onDoneClick: () -> Unit = {},
+    onDismissClick: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
-
     val bottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
         confirmValueChange = { it != SheetValue.Hidden }
@@ -47,51 +58,88 @@ fun BaseBottomSheet(
         },
         sheetState = bottomSheetState
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
                 .padding(16.dp)
         ) {
-            Column(
+            // Title
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 80.dp)
-            ) {
-                // Title Text with larger font and centered alignment
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center,
+                    .padding(bottom = 16.dp)
+            )
+
+            // Divider
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                thickness = 1.dp,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Dynamic Content
+            sheetContent()
+
+            // Buttons Row with Proper Spacing
+            if (showNext || showPrevious || showDone || showDismiss) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp)
-                )
-                // Horizontal Divider
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                // Dynamic Content
-                sheetContent()
-            }
-            // Floating Action Button to Dismiss the Sheet
-            if (showDismissFAB) {
-                FloatingActionButton(
-                    onClick = {
-                        scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                            onDismiss()
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 16.dp)
+                        .padding(top = 16.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close Bottom Sheet"
-                    )
+                    if (showPrevious) {
+                        FloatingActionButton(
+                            onClick = { onPreviousClick() },
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Previous")
+                        }
+                        Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
+                    }
+
+                    if (showNext) {
+                        FloatingActionButton(
+                            onClick = { onNextClick() },
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(Icons.Default.ArrowForward, contentDescription = "Next")
+                        }
+                        Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
+                    }
+
+                    if (showDone) {
+                        FloatingActionButton(
+                            onClick = {
+                                scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
+                                    onDoneClick()
+                                    onDismiss()
+                                }
+                            },
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = "Done")
+                        }
+                        Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
+                    }
+
+                    if (showDismiss) {
+                        FloatingActionButton(
+                            onClick = {
+                                scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
+                                    onDismissClick()
+                                    onDismiss()
+                                }
+                            },
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Dismiss")
+                        }
+                    }
                 }
             }
         }
