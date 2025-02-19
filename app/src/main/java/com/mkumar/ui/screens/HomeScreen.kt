@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +43,8 @@ import com.mkumar.common.PackageManager.getCurrentVersion
 import com.mkumar.common.PackageManager.installApk
 import com.mkumar.common.navigateWithState
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
+import com.mkumar.ui.components.bottomsheets.AddCustomer
+import com.mkumar.ui.components.bottomsheets.RemoveCustomer
 import com.mkumar.ui.navigation.Screens
 import com.mkumar.worker.DownloadWorker
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +61,8 @@ fun HomeScreen(navController: NavHostController) {
     var isLatestVersion by remember { mutableStateOf(true) }
     var isDownloading by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
+
+    var sheetToDisplay by remember { mutableStateOf("Add") }
 
     LaunchedEffect(Unit) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -170,11 +174,59 @@ fun HomeScreen(navController: NavHostController) {
                 Row(
                     modifier = Modifier
                         .padding(paddingValues)
-                        .padding(16.dp)
                 ) {
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Button(onClick = {
+                        showBottomSheet = true
+                    }) {
+                        Text(text = "Add Customer")
+                    }
                 }
-                HorizontalDivider()
+            }
+            if (showBottomSheet) {
+                when (sheetToDisplay) {
+                    "Add" -> {
+                        AddCustomer(
+                            title = "Add Customer",
+                            sheetContent = {
+                                Column {
+                                    Text(text = "Add Customer")
+                                    Spacer(modifier = Modifier.padding(8.dp))
+                                    Button(onClick = {
+//                                        showBottomSheet = false
+                                        sheetToDisplay = "Remove"
+                                    }) {
+                                        Text(text = "Next Page")
+                                    }
+                                }
+                            },
+                            showFloatingBar = true,
+                            onDismiss = {
+                                showBottomSheet = false
+                            }
+                        )
+                    }
+                    "Remove" -> {
+                        RemoveCustomer(
+                            title = "Remove Customer",
+                            sheetContent = {
+                                Column {
+                                    Text(text = "Remove Customer")
+                                    Spacer(modifier = Modifier.padding(8.dp))
+                                    Button(onClick = {
+//                                        showBottomSheet = false
+                                        sheetToDisplay = "Add"
+                                    }) {
+                                        Text(text = "Next Page")
+                                    }
+                                }
+                            },
+                            showFloatingBar = true,
+                            onDismiss = {
+                                showBottomSheet = false
+                            }
+                        )
+                    }
+                }
             }
         }
     )
