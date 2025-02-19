@@ -4,7 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
-import com.mkumar.common.dataStoreMutableState
+import com.mkumar.common.util.dataStoreMutableState
 
 const val emptyString = ""
 

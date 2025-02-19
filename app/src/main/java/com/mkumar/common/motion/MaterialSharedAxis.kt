@@ -37,7 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import com.mkumar.common.MotionConstants
+import com.mkumar.common.constant.MotionConstants
 
 /**
  * Returns the provided [Dp] as an [Int] value by the [LocalDensity].

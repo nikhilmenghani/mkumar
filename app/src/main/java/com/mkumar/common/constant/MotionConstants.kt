@@ -1,4 +1,4 @@
-package com.mkumar.common
+package com.mkumar.common.constant
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp

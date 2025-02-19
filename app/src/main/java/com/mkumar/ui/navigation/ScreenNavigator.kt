@@ -20,7 +20,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.mkumar.common.navigateWithState
+import com.mkumar.common.extension.navigateWithState
 import com.mkumar.ui.screens.HomeScreen
 import com.mkumar.ui.screens.PreferenceScreen
 import com.mkumar.viewmodel.CustomerViewModel

@@ -1,4 +1,4 @@
-package com.mkumar.common
+package com.mkumar.common.extension
 
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination

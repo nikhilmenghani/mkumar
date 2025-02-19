@@ -1,4 +1,4 @@
-package com.mkumar.common
+package com.mkumar.common.util
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf

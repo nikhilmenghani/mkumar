@@ -11,8 +11,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.mkumar.common.PermissionConstants
-import com.mkumar.common.PermissionConstants.permissionMap
+import com.mkumar.common.constant.PermissionConstants
+import com.mkumar.common.constant.PermissionConstants.permissionMap
 
 object Permissions {
 

@@ -40,12 +40,12 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.mkumar.MainActivity
-import com.mkumar.common.AppConstants.getAppDownloadUrl
-import com.mkumar.common.AppConstants.getExternalStorageDir
-import com.mkumar.common.PackageManager.getCurrentVersion
-import com.mkumar.common.PackageManager.installApk
+import com.mkumar.common.constant.AppConstants.getAppDownloadUrl
+import com.mkumar.common.constant.AppConstants.getExternalStorageDir
+import com.mkumar.common.extension.navigateWithState
+import com.mkumar.common.manager.PackageManager.getCurrentVersion
+import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.common.motion.materialSharedAxisX
-import com.mkumar.common.navigateWithState
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.AddCustomer
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet

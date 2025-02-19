@@ -27,9 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.mkumar.common.PackageManager
-import com.mkumar.common.PermissionConstants
-import com.mkumar.common.PermissionConstants.permissionMap
+import com.mkumar.common.constant.PermissionConstants
+import com.mkumar.common.constant.PermissionConstants.permissionMap
+import com.mkumar.common.manager.PackageManager
 import com.mkumar.permission.Permissions
 import com.mkumar.ui.components.cards.PermissionsCard
 import com.mkumar.ui.theme.NikThemePreview

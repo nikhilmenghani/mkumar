@@ -1,4 +1,6 @@
-package com.mkumar.common
+package com.mkumar.common.constant
+
+import android.os.Environment
 
 object AppConstants {
 
@@ -9,6 +11,6 @@ object AppConstants {
     }
 
     fun getExternalStorageDir(): String {
-        return android.os.Environment.getExternalStorageDirectory().absolutePath
+        return Environment.getExternalStorageDirectory().absolutePath
     }
 }

@@ -1,4 +1,4 @@
-package com.mkumar.common
+package com.mkumar.common.constant
 
 import android.Manifest
 import android.provider.Settings

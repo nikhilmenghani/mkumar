@@ -1,6 +1,6 @@
 package com.mkumar.network
 
-import com.mkumar.common.AppConstants.latestVersionUrl
+import com.mkumar.common.constant.AppConstants.latestVersionUrl
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject

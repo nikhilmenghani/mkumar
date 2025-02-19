@@ -1,8 +1,8 @@
-package com.mkumar.common
+package com.mkumar.common.manager
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager.NameNotFoundException
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
 import android.util.Log
@@ -15,7 +15,7 @@ object PackageManager {
         return try {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             packageInfo.versionName
-        } catch (e: NameNotFoundException) {
+        } catch (e: PackageManager.NameNotFoundException) {
             e.printStackTrace()
             "Unknown"
         }.toString()
@@ -54,7 +54,7 @@ object PackageManager {
                     putExtra("android.provider.extra.APP_PACKAGE", context.packageName)
                 }
                 else -> {
-                    data = Uri.fromParts("package", context.packageName, null)
+                    Intent.setData = Uri.fromParts("package", context.packageName, null)
                 }
             }
         }
