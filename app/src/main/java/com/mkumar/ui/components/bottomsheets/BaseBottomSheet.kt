@@ -30,7 +30,7 @@ fun BaseBottomSheet(
     title: String,
     sheetContent: @Composable () -> Unit,
     onDismiss: () -> Unit = {},
-    showFloatingBar : Boolean = false
+    showDismissFAB : Boolean = false
 ) {
     val scope = rememberCoroutineScope()
 
@@ -77,7 +77,7 @@ fun BaseBottomSheet(
                 sheetContent()
             }
             // Floating Action Button to Dismiss the Sheet
-            if (showFloatingBar) {
+            if (showDismissFAB) {
                 FloatingActionButton(
                     onClick = {
                         scope.launch { bottomSheetState.hide() }.invokeOnCompletion {

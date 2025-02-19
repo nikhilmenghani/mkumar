@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -14,16 +15,18 @@ import com.mkumar.permission.Permissions
 import com.mkumar.ui.navigation.ScreenNavigator
 import com.mkumar.ui.theme.MKumarTheme
 import com.mkumar.ui.theme.NikTheme
+import com.mkumar.viewmodel.CustomerViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val customerViewModel: CustomerViewModel by viewModels()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         if (Build.VERSION.RELEASE.toInt()  <= 13 || Permissions.hasAllRequiredPermissions(this)) {
             setContent {
                 NikTheme {
                     // Your composable content
-                    ScreenNavigator()
+                    ScreenNavigator(customerViewModel)
                 }
             }
         } else {

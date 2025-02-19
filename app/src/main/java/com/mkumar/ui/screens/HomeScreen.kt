@@ -2,6 +2,8 @@ package com.mkumar.ui.screens
 
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.work.Constraints
 import androidx.work.NetworkType
@@ -41,19 +44,25 @@ import com.mkumar.common.AppConstants.getAppDownloadUrl
 import com.mkumar.common.AppConstants.getExternalStorageDir
 import com.mkumar.common.PackageManager.getCurrentVersion
 import com.mkumar.common.PackageManager.installApk
+import com.mkumar.common.motion.materialSharedAxisX
 import com.mkumar.common.navigateWithState
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.AddCustomer
+import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.ui.components.bottomsheets.RemoveCustomer
 import com.mkumar.ui.navigation.Screens
+import com.mkumar.viewmodel.CustomerViewModel
+import com.mkumar.viewmodel.CustomerViewModel.SheetState.AddCustomer
+import com.mkumar.viewmodel.CustomerViewModel.SheetState.RemoveCustomer
 import com.mkumar.worker.DownloadWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
-fun HomeScreen(navController: NavHostController) {
+fun HomeScreen(navController: NavHostController, customerViewModel: CustomerViewModel) {
+
     val context = LocalActivity.current as MainActivity
     val workManager = WorkManager.getInstance(context)
     val currentVersion by remember { mutableStateOf(getCurrentVersion(context)) }
@@ -61,8 +70,6 @@ fun HomeScreen(navController: NavHostController) {
     var isLatestVersion by remember { mutableStateOf(true) }
     var isDownloading by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
-
-    var sheetToDisplay by remember { mutableStateOf("Add") }
 
     LaunchedEffect(Unit) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -77,7 +84,6 @@ fun HomeScreen(navController: NavHostController) {
                 title = { Text(text = "MKumar") },
                 actions = {
                     IconButton(onClick = {
-                        // Restart the activity to apply the new theme
                         context.restartActivity()
                     }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
@@ -99,8 +105,7 @@ fun HomeScreen(navController: NavHostController) {
                         isDownloading = true
 
                         val downloadUrl = getAppDownloadUrl(latestVersion)
-                        val destFilePath =
-                            "${getExternalStorageDir()}/Download/MKumar.apk"
+                        val destFilePath = "${getExternalStorageDir()}/Download/MKumar.apk"
 
                         val inputData = workDataOf(
                             DownloadWorker.DOWNLOAD_URL_KEY to downloadUrl,
@@ -117,10 +122,8 @@ fun HomeScreen(navController: NavHostController) {
                             )
                             .build()
 
-                        // Enqueue the download request using WorkManager
                         workManager.enqueue(downloadRequest)
 
-                        // Observe the WorkManager status
                         workManager.getWorkInfoByIdLiveData(downloadRequest.id)
                             .observeForever { info ->
                                 if (info?.state == WorkInfo.State.SUCCEEDED) {
@@ -183,51 +186,43 @@ fun HomeScreen(navController: NavHostController) {
                 }
             }
             if (showBottomSheet) {
-                when (sheetToDisplay) {
-                    "Add" -> {
-                        AddCustomer(
-                            title = "Add Customer",
-                            sheetContent = {
-                                Column {
-                                    Text(text = "Add Customer")
-                                    Spacer(modifier = Modifier.padding(8.dp))
-                                    Button(onClick = {
-//                                        showBottomSheet = false
-                                        sheetToDisplay = "Remove"
-                                    }) {
-                                        Text(text = "Next Page")
-                                    }
-                                }
-                            },
-                            showFloatingBar = true,
-                            onDismiss = {
-                                showBottomSheet = false
-                            }
-                        )
-                    }
-                    "Remove" -> {
-                        RemoveCustomer(
-                            title = "Remove Customer",
-                            sheetContent = {
-                                Column {
-                                    Text(text = "Remove Customer")
-                                    Spacer(modifier = Modifier.padding(8.dp))
-                                    Button(onClick = {
-//                                        showBottomSheet = false
-                                        sheetToDisplay = "Add"
-                                    }) {
-                                        Text(text = "Next Page")
-                                    }
-                                }
-                            },
-                            showFloatingBar = true,
-                            onDismiss = {
-                                showBottomSheet = false
-                            }
-                        )
-                    }
+                val state by customerViewModel.sheetStateFlow.collectAsStateWithLifecycle()
+                val title = when (state) {
+                    is AddCustomer -> "Add Customer"
+                    is RemoveCustomer -> "Remove Customer"
                 }
+                BaseBottomSheet(
+                    title = title,
+                    sheetContent = { DisplayContent(state, customerViewModel) },
+                    onDismiss = {
+                        showBottomSheet = false
+                        customerViewModel.resetState()
+                    },
+                    showDismissFAB = true,
+                )
             }
         }
     )
+}
+
+@Composable
+fun DisplayContent(state: CustomerViewModel.SheetState, customerViewModel: CustomerViewModel) {
+    AnimatedContent(
+        modifier = Modifier,
+        targetState = state,
+        label = "",
+        transitionSpec = {
+            materialSharedAxisX(initialOffsetX = { it / 4 }, targetOffsetX = { -it / 4 })
+        },
+    ) { state ->
+        when (state) {
+            is AddCustomer -> {
+                AddCustomer(onNextClick = { customerViewModel.updateState(RemoveCustomer) })
+            }
+
+            is RemoveCustomer -> {
+                RemoveCustomer(onNextClick = { customerViewModel.updateState(AddCustomer) })
+            }
+        }
+    }
 }

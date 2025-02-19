@@ -23,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import com.mkumar.common.navigateWithState
 import com.mkumar.ui.screens.HomeScreen
 import com.mkumar.ui.screens.PreferenceScreen
+import com.mkumar.viewmodel.CustomerViewModel
 
 data class NavItem(
     val label: String,
@@ -42,7 +43,7 @@ enum class Screens {
 val excludedScreens = listOf(Screens.Profile.name, Screens.Apps.name)
 
 @Composable
-fun ScreenNavigator() {
+fun ScreenNavigator(customerViewModel: CustomerViewModel) {
     val navController: NavHostController = rememberNavController()
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) },
@@ -50,7 +51,8 @@ fun ScreenNavigator() {
     ) { innerPadding ->
         NavigationHost(
             navController = navController,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            customerViewModel = customerViewModel
         )
     }
 }
@@ -87,7 +89,8 @@ fun BottomNavigationBar(navController: NavHostController) {
 @Composable
 fun NavigationHost(
     navController: NavHostController,
-    modifier: Modifier
+    modifier: Modifier,
+    customerViewModel: CustomerViewModel
 ) {
     NavHost(
         navController = navController,
@@ -95,7 +98,7 @@ fun NavigationHost(
         modifier = modifier
     ) {
         composable(route = Screens.Home.name) {
-            HomeScreen(navController = navController)
+            HomeScreen(navController = navController, customerViewModel = customerViewModel)
         }
         composable(route = Screens.Settings.name) {
             PreferenceScreen(navController = navController)
