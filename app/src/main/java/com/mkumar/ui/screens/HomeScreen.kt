@@ -187,38 +187,37 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
             }
             if (showBottomSheet) {
                 val state by customerViewModel.sheetStateFlow.collectAsStateWithLifecycle()
-                val title = when (state) {
-                    is AddCustomer -> "Add Customer"
-                    is RemoveCustomer -> "Remove Customer"
-                }
-                val showNext = when (state) {
-                    is AddCustomer -> true
-                    else -> false
-                }
-                val showDone = when (state) {
-                    is RemoveCustomer -> true
-                    else -> false
-                }
-                val showPrevious = when (state) {
-                    is RemoveCustomer -> true
-                    else -> false
-                }
                 BaseBottomSheet(
-                    title = title,
-                    sheetContent = { DisplayContent(state, customerViewModel) },
+                    title = when (state) {
+                        is AddCustomer -> "Add Customer"
+                        is RemoveCustomer -> "Remove Customer"
+                    },
+                    sheetContent = {
+                        AnimatedContent(
+                            targetState = state,
+                            transitionSpec = {
+                                materialSharedAxisX(initialOffsetX = { it / 4 }, targetOffsetX = { -it / 4 })
+                            },
+                        ) { targetState ->
+                            when (targetState) {
+                                is AddCustomer -> AddCustomer()
+                                is RemoveCustomer -> RemoveCustomer()
+                            }
+                        }
+                    },
                     onDismiss = {
                         showBottomSheet = false
                         customerViewModel.resetState()
                     },
-                    showPrevious = showPrevious,
+                    showPrevious = state is RemoveCustomer,
                     onPreviousClick = {
                         customerViewModel.updateState(AddCustomer)
                     },
-                    showNext = showNext,
+                    showNext = state is AddCustomer,
                     onNextClick = {
                         customerViewModel.updateState(RemoveCustomer)
                     },
-                    showDone = showDone,
+                    showDone = state is RemoveCustomer,
                     onDoneClick = {
                         showBottomSheet = false
                         customerViewModel.resetState()
@@ -227,26 +226,4 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
             }
         }
     )
-}
-
-@Composable
-fun DisplayContent(state: CustomerViewModel.SheetState, customerViewModel: CustomerViewModel) {
-    AnimatedContent(
-        modifier = Modifier,
-        targetState = state,
-        label = "",
-        transitionSpec = {
-            materialSharedAxisX(initialOffsetX = { it / 4 }, targetOffsetX = { -it / 4 })
-        },
-    ) { state ->
-        when (state) {
-            is AddCustomer -> {
-                AddCustomer()
-            }
-
-            is RemoveCustomer -> {
-                RemoveCustomer()
-            }
-        }
-    }
 }
