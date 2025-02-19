@@ -191,6 +191,18 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
                     is AddCustomer -> "Add Customer"
                     is RemoveCustomer -> "Remove Customer"
                 }
+                val showNext = when (state) {
+                    is AddCustomer -> true
+                    else -> false
+                }
+                val showDone = when (state) {
+                    is RemoveCustomer -> true
+                    else -> false
+                }
+                val showPrevious = when (state) {
+                    is RemoveCustomer -> true
+                    else -> false
+                }
                 BaseBottomSheet(
                     title = title,
                     sheetContent = { DisplayContent(state, customerViewModel) },
@@ -198,10 +210,19 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
                         showBottomSheet = false
                         customerViewModel.resetState()
                     },
-                    showDismiss = true,
-                    showPrevious = true,
-                    showNext = true,
-                    showDone = true
+                    showPrevious = showPrevious,
+                    onPreviousClick = {
+                        customerViewModel.updateState(AddCustomer)
+                    },
+                    showNext = showNext,
+                    onNextClick = {
+                        customerViewModel.updateState(RemoveCustomer)
+                    },
+                    showDone = showDone,
+                    onDoneClick = {
+                        showBottomSheet = false
+                        customerViewModel.resetState()
+                    },
                 )
             }
         }
@@ -220,11 +241,11 @@ fun DisplayContent(state: CustomerViewModel.SheetState, customerViewModel: Custo
     ) { state ->
         when (state) {
             is AddCustomer -> {
-                AddCustomer(onNextClick = { customerViewModel.updateState(RemoveCustomer) })
+                AddCustomer()
             }
 
             is RemoveCustomer -> {
-                RemoveCustomer(onNextClick = { customerViewModel.updateState(AddCustomer) })
+                RemoveCustomer()
             }
         }
     }
