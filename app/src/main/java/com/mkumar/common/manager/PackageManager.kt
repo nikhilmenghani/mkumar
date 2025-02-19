@@ -54,7 +54,7 @@ object PackageManager {
                     putExtra("android.provider.extra.APP_PACKAGE", context.packageName)
                 }
                 else -> {
-                    Intent.setData = Uri.fromParts("package", context.packageName, null)
+                    data = Uri.fromParts("package", context.packageName, null)
                 }
             }
         }
