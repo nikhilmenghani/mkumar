@@ -4,13 +4,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.mkumar.common.util.dataStoreMutableState
 
 const val emptyString = ""
 
 class PreferencesManager {
     val displayPrefs = DisplayPrefs
-//    val githubPrefs = GithubPrefs
+    val githubPrefs = GithubPrefs
 }
 
 enum class ThemePreference {
@@ -30,5 +31,13 @@ object DisplayPrefs {
         keyName = "useDynamicColor",
         defaultValue = false,
         getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+}
+
+object GithubPrefs {
+    var token by dataStoreMutableState(
+        keyName = "token",
+        defaultValue = emptyString,
+        getPreferencesKey = { stringPreferencesKey(it) }
     )
 }

@@ -6,6 +6,8 @@ object AppConstants {
 
     const val latestVersionUrl = "https://api.github.com/repos/nikhilmenghani/mkumar/releases/latest"
 
+    const val emptyString = ""
+
     fun getAppDownloadUrl(latestVersion: String): String {
         return "https://github.com/nikhilmenghani/mkumar/releases/download/v$latestVersion/MKumar-v$latestVersion.apk"
     }
