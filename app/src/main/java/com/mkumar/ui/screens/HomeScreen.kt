@@ -3,7 +3,6 @@ package com.mkumar.ui.screens
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,10 +45,10 @@ import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.common.motion.materialSharedAxisX
+import com.mkumar.data.CustomerInfo
+import com.mkumar.data.CustomerOrder
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
-import com.mkumar.ui.components.bottomsheets.AddCustomer
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
-import com.mkumar.ui.components.bottomsheets.RemoveCustomer
 import com.mkumar.ui.navigation.Screens
 import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.viewmodel.CustomerViewModel.SheetState.AddCustomer
@@ -59,7 +58,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController, customerViewModel: CustomerViewModel) {
 
@@ -187,6 +186,9 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
             }
             if (showBottomSheet) {
                 val state by customerViewModel.sheetStateFlow.collectAsStateWithLifecycle()
+                val customerInfo = CustomerInfo(name = "John Doe", phoneNumber = "1234567890", email = "a@b.com")
+                val customerOrder = CustomerOrder(customerInfo = customerInfo)
+                val options = listOf("Frame", "Contact Lens", "Watch", "Wall Clock", "Manual Entry")
                 BaseBottomSheet(
                     title = when (state) {
                         is AddCustomer -> "Add Customer"
@@ -200,7 +202,7 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
                             },
                         ) { targetState ->
                             when (targetState) {
-                                is AddCustomer -> AddCustomer()
+                                is AddCustomer -> AddCustomer(customerOrder = customerOrder, options = options)
                                 is RemoveCustomer -> RemoveCustomer()
                             }
                         }
