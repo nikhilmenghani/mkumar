@@ -80,7 +80,7 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "MKumar") },
+                title = { Text(text = "M Kumar") },
                 actions = {
                     IconButton(onClick = {
                         context.restartActivity()
