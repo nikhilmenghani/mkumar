@@ -188,7 +188,7 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
                 val state by customerViewModel.sheetStateFlow.collectAsStateWithLifecycle()
                 val customerInfo = CustomerInfo(name = "John Doe", phoneNumber = "1234567890", email = "a@b.com")
                 val customerOrder = CustomerOrder(customerInfo = customerInfo)
-                val options = listOf("Frame", "Contact Lens", "Watch", "Wall Clock", "Manual Entry")
+                val options = listOf("Contact Lens", "Frame", "Watch", "Wall Clock", "Manual Entry")
                 BaseBottomSheet(
                     title = when (state) {
                         is AddCustomer -> "Add Customer"

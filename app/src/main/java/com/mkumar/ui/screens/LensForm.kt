@@ -20,6 +20,8 @@ import com.mkumar.ui.components.buttons.ClearButton
 fun LensForm(customerOrder: CustomerOrder) {
     val customerInfo = customerOrder.customerInfo
     var name by remember { mutableStateOf(customerInfo.name) }
+    var phone by remember { mutableStateOf(customerInfo.phoneNumber) }
+    var email by remember { mutableStateOf(customerInfo.email) }
     Column {
         Text(text = "Lens Form")
         Spacer(modifier = Modifier.height(8.dp))
@@ -33,6 +35,32 @@ fun LensForm(customerOrder: CustomerOrder) {
             trailingIcon = {
                 if (name.isNotEmpty()) {
                     ClearButton { name = "" }
+                }
+            },
+        )
+
+        OutlinedTextField(
+            value = phone,
+            onValueChange = { phone = it },
+            label = { Text("Phone") },
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 3,
+            trailingIcon = {
+                if (phone.isNotEmpty()) {
+                    ClearButton { phone = "" }
+                }
+            },
+        )
+
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 3,
+            trailingIcon = {
+                if (email.isNotEmpty()) {
+                    ClearButton { email = "" }
                 }
             },
         )
