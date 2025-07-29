@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PeopleAlt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -21,6 +22,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mkumar.common.extension.navigateWithState
+import com.mkumar.ui.screens.AddCustomer
 import com.mkumar.ui.screens.HomeScreen
 import com.mkumar.ui.screens.PreferenceScreen
 import com.mkumar.viewmodel.CustomerViewModel
@@ -33,11 +35,12 @@ data class NavItem(
 
 val listOfNavItems = listOf(
     NavItem("Home", Icons.Default.Home, Screens.Home.name),
+    NavItem("Customer", Icons.Default.PeopleAlt, Screens.AddCustomer.name),
     NavItem("Settings", Icons.Default.Settings, Screens.Settings.name)
 )
 
 enum class Screens {
-    Home, Profile, Download, Settings, Apps
+    Home, Profile, Download, Settings, Apps, AddCustomer
 }
 
 val excludedScreens = listOf(Screens.Profile.name, Screens.Apps.name)
@@ -94,11 +97,14 @@ fun NavigationHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screens.Home.name,
+        startDestination = Screens.AddCustomer.name,
         modifier = modifier
     ) {
         composable(route = Screens.Home.name) {
             HomeScreen(navController = navController, customerViewModel = customerViewModel)
+        }
+        composable(route = Screens.AddCustomer.name) {
+            AddCustomer(navController = navController, customerViewModel = customerViewModel)
         }
         composable(route = Screens.Settings.name) {
             PreferenceScreen(navController = navController)
