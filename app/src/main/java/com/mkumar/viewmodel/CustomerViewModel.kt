@@ -8,11 +8,14 @@ import com.mkumar.data.ProductType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import java.util.UUID
 
 class CustomerViewModel : ViewModel() {
 
     private val _formState = MutableStateFlow(CustomerFormState())
     val formState: StateFlow<CustomerFormState> = _formState
+
+    val editingBuffer = mutableMapOf<String, ProductFormData?>()
 
     fun updateCustomerName(name: String) {
         _formState.update { it.copy(name = name) }
@@ -39,12 +42,28 @@ class CustomerViewModel : ViewModel() {
         }
     }
 
+    fun addNewProduct() {
+        val dummyType = ProductType.allTypes.firstOrNull() ?: return
+        val newEntry = ProductEntry(
+            id = UUID.randomUUID().toString(),
+            type = dummyType,
+            productOwnerName = _formState.value.name
+        )
+        _formState.update {
+            it.copy(
+                products = it.products + newEntry,
+                selectedProductId = newEntry.id
+            )
+        }
+    }
+
     fun removeProduct(productId: String) {
         _formState.update {
             val updatedList = it.products.filterNot { product -> product.id == productId }
             val newSelected = if (it.selectedProductId == productId) null else it.selectedProductId
             it.copy(products = updatedList, selectedProductId = newSelected)
         }
+        editingBuffer.remove(productId)
     }
 
     fun updateProductOwnerName(productId: String, newName: String) {
@@ -64,6 +83,11 @@ class CustomerViewModel : ViewModel() {
             }
             it.copy(products = updated)
         }
+        editingBuffer.remove(productId)
+    }
+
+    fun hasUnsavedChanges(product: ProductEntry, editingBuffer: ProductFormData?): Boolean {
+        return product.isSaved && product.formData != editingBuffer
     }
 
     fun clearForm() {
