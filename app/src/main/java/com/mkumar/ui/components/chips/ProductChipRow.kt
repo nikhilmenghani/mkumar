@@ -14,12 +14,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -37,9 +42,12 @@ fun ProductChipRow(
     getCurrentBuffer: (ProductEntry) -> ProductFormData?,
     hasUnsavedChanges: (ProductEntry, ProductFormData?) -> Boolean
 ) {
-    Box(modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
     ) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -70,7 +78,7 @@ fun ProductChipRow(
                     trailingIcon = {
                         IconButton(
                             onClick = {
-                                onChipDelete(product.id)
+                                pendingDeleteId = product.id
                             },
                             modifier = Modifier.size(24.dp)
                         ) {
@@ -82,8 +90,7 @@ fun ProductChipRow(
                             )
                         }
                     },
-                    modifier = Modifier
-                        .defaultMinSize(minHeight = 36.dp)
+                    modifier = Modifier.defaultMinSize(minHeight = 36.dp)
                 )
             }
         }
@@ -102,6 +109,28 @@ fun ProductChipRow(
                         )
                     )
                 )
+        )
+    }
+
+    // Confirmation Dialog
+    if (pendingDeleteId != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pendingDeleteId = null },
+            title = { Text("Delete Product?") },
+            text = { Text("Are you sure you want to delete this product? This action cannot be undone.") },
+            confirmButton = {
+                Button(onClick = {
+                    onChipDelete(pendingDeleteId!!)
+                    pendingDeleteId = null
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { pendingDeleteId = null }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }
