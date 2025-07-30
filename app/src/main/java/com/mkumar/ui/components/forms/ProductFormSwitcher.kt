@@ -1,114 +1,137 @@
 package com.mkumar.ui.components.forms
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.with
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.ProductType
 import com.mkumar.data.validation.ProductFormValidators
 import com.mkumar.data.validation.ValidationResult
+import kotlinx.coroutines.flow.StateFlow
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ProductFormSwitcher(
     selectedProduct: ProductEntry?,
-    getEditingBuffer: (ProductEntry) -> ProductFormData?, // from VM
+    openForms: StateFlow<Set<String>>,
+    getEditingBuffer: (ProductEntry) -> ProductFormData?,
     updateEditingBuffer: (String, ProductFormData) -> Unit,
     onOwnerChange: (String, String) -> Unit,
+    hasUnsavedChanges: (ProductEntry, ProductFormData?) -> Boolean,
     onFormSave: (String, ProductFormData) -> Unit
 ) {
-    if (selectedProduct == null) {
-        Text("Select a product to fill in details.")
-        return
-    }
-
-    var ownerName by remember { mutableStateOf("") }
-    var validationError by remember(selectedProduct.id) { mutableStateOf<String?>(null) }
-
-    // Prefill ownerName on product switch
-    LaunchedEffect(selectedProduct.id) {
-        ownerName = selectedProduct.productOwnerName
-    }
-
-    Column {
-        OutlinedTextField(
-            value = ownerName,
-            onValueChange = {
-                ownerName = it
-                onOwnerChange(selectedProduct.id, it)
-            },
-            label = { Text("Product Owner") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        // Validation error
-        validationError?.let {
-            Text(text = it, color = Color.Red)
+    if (selectedProduct == null) return
+    val openFormsState by openForms.collectAsState()
+    val showForm = selectedProduct.id in openFormsState
+    val editingFormData by rememberUpdatedState(getEditingBuffer(selectedProduct))
+    val isDirty by remember(selectedProduct.id, editingFormData) {
+        derivedStateOf {
+            !selectedProduct.isSaved || hasUnsavedChanges(selectedProduct, editingFormData)
         }
+    }
 
-        AnimatedContent(
-            targetState = selectedProduct,
-            label = "ProductFormTransition"
-        ) { product ->
+    AnimatedContent(
+        targetState = if (showForm) selectedProduct else null,
+        transitionSpec = { fadeIn() with fadeOut() },
+        label = "ProductFormContent"
+    ) { product ->
+        if (product != null) {
             key(product.id) {
-                RenderProductForm(
-                    product = selectedProduct,
-                    editingFormData = getEditingBuffer(selectedProduct),
-                    onFormChanged = { formData ->
-                        updateEditingBuffer(selectedProduct.id, formData)
-                    },
-                    onValidatedSave = { formData ->
-                        validateAndSave(
-                            formData = formData,
-                            validate = ProductFormValidators::validate,
-                            onSuccess = {
-                                validationError = null
-                                onFormSave(product.id, formData)
-                            },
-                            onError = { validationError = it }
-                        )
+                var ownerName by rememberSaveable(product.id) {
+                    mutableStateOf(product.productOwnerName)
+                }
+                var validationError by remember(product.id) {
+                    mutableStateOf<String?>(null)
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = ownerName,
+                        onValueChange = { ownerName = it },
+                        label = { Text("Product Owner") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+
+                    validationError?.let {
+                        Text(it, color = Color.Red)
                     }
-                )
+
+                    RenderProductForm(
+                        product = product,
+                        editingFormData = editingFormData,
+                        onFormChanged = {
+                            updateEditingBuffer(product.id, it)
+                        },
+                        showSaveButton = isDirty,
+                        onSave = { formData ->
+                            validateAndSave(
+                                formData = formData,
+                                validate = ProductFormValidators::validate,
+                                onSuccess = {
+                                    validationError = null
+                                    onOwnerChange(product.id, ownerName)
+                                    onFormSave(product.id, formData)
+                                },
+                                onError = { errorMsg -> validationError = errorMsg }
+                            )
+                        }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun RenderProductForm(
+private fun RenderProductForm(
     product: ProductEntry,
     editingFormData: ProductFormData?,
     onFormChanged: (ProductFormData) -> Unit,
-    onValidatedSave: (ProductFormData) -> Unit
+    showSaveButton: Boolean,
+    onSave: (ProductFormData) -> Unit
 ) {
     when (product.type) {
         is ProductType.Frame -> FrameForm(
             initialData = editingFormData as? ProductFormData.FrameData,
-            onChange = { onFormChanged(it) },
-            onSave = onValidatedSave
+            onChange = onFormChanged,
+            showSave = showSaveButton,
+            onSave = onSave
         )
 
         is ProductType.Lens -> LensForm(
             initialData = editingFormData as? ProductFormData.LensData,
-            onChange = { onFormChanged(it) },
-            onSave = onValidatedSave
+            onChange = onFormChanged,
+            showSave = showSaveButton,
+            onSave = onSave
         )
 
         is ProductType.ContactLens -> ContactLensForm(
             initialData = editingFormData as? ProductFormData.ContactLensData,
-            onChange = { onFormChanged(it) },
-            onSave = onValidatedSave
+            onChange = onFormChanged,
+            showSave = showSaveButton,
+            onSave = onSave
         )
     }
 }

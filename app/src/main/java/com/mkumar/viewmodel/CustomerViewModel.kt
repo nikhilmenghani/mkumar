@@ -16,6 +16,8 @@ class CustomerViewModel : ViewModel() {
     val formState: StateFlow<CustomerFormState> = _formState
 
     val editingBuffer = mutableMapOf<String, ProductFormData?>()
+    private val _openForms = MutableStateFlow<Set<String>>(emptySet())
+    val openForms: StateFlow<Set<String>> = _openForms
 
     fun updateCustomerName(name: String) {
         _formState.update { it.copy(name = name) }
@@ -29,17 +31,30 @@ class CustomerViewModel : ViewModel() {
         _formState.update { it.copy(selectedProductId = productId) }
     }
 
+    fun toggleFormVisibility(productId: String) {
+        _openForms.update { current ->
+            if (current.contains(productId)) emptySet()
+            else setOf(productId) // only one form open at a time
+        }
+    }
+
+    fun openForm(productId: String) {
+        _openForms.value = setOf(productId)
+        _formState.update { it.copy(selectedProductId = UUID.randomUUID().toString()) }
+        _formState.update { it.copy(selectedProductId = productId) }
+    }
+
+    fun isFormOpen(productId: String): Boolean = _openForms.value.contains(productId)
+
     fun addProduct(type: ProductType) {
         val newEntry = ProductEntry(
             type = type,
-            productOwnerName = _formState.value.name // default owner to customer name
+            productOwnerName = _formState.value.name
         )
         _formState.update {
-            it.copy(
-                products = it.products + newEntry,
-                selectedProductId = newEntry.id
-            )
+            it.copy(products = it.products + newEntry, selectedProductId = newEntry.id)
         }
+        _openForms.value = setOf(newEntry.id)
     }
 
     fun addNewProduct() {
@@ -50,11 +65,9 @@ class CustomerViewModel : ViewModel() {
             productOwnerName = _formState.value.name
         )
         _formState.update {
-            it.copy(
-                products = it.products + newEntry,
-                selectedProductId = newEntry.id
-            )
+            it.copy(products = it.products + newEntry, selectedProductId = newEntry.id)
         }
+        _openForms.value = setOf(newEntry.id)
     }
 
     fun removeProduct(productId: String) {
@@ -64,12 +77,13 @@ class CustomerViewModel : ViewModel() {
             it.copy(products = updatedList, selectedProductId = newSelected)
         }
         editingBuffer.remove(productId)
+        _openForms.update { it - productId }
     }
 
     fun updateProductOwnerName(productId: String, newName: String) {
         _formState.update {
-            val updated = it.products.map { product ->
-                if (product.id == productId) product.copy(productOwnerName = newName) else product
+            val updated = it.products.map {
+                if (it.id == productId) it.copy(productOwnerName = newName) else it
             }
             it.copy(products = updated)
         }
@@ -77,17 +91,17 @@ class CustomerViewModel : ViewModel() {
 
     fun saveProductFormData(productId: String, formData: ProductFormData) {
         _formState.update {
-            val updated = it.products.map { product ->
-                if (product.id == productId) product.copy(formData = formData, isSaved = true)
-                else product
+            val updated = it.products.map {
+                if (it.id == productId) it.copy(formData = formData, isSaved = true) else it
             }
             it.copy(products = updated)
         }
         editingBuffer.remove(productId)
+        _openForms.update { it - productId }
     }
 
-    fun hasUnsavedChanges(product: ProductEntry, editingBuffer: ProductFormData?): Boolean {
-        return product.isSaved && product.formData != editingBuffer
+    fun hasUnsavedChanges(product: ProductEntry, buffer: ProductFormData?): Boolean {
+        return product.isSaved && product.formData != buffer
     }
 
     fun getEditingProductData(product: ProductEntry): ProductFormData? {
@@ -100,10 +114,11 @@ class CustomerViewModel : ViewModel() {
 
     fun clearForm() {
         _formState.value = CustomerFormState()
+        editingBuffer.clear()
+        _openForms.value = emptySet()
     }
 
     fun serializeToJson(): String {
-        // Placeholder - we'll later plug in kotlinx.serialization or Gson
         return "TODO: JSON representation"
     }
 }
