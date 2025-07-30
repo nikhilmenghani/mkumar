@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductEntry
+import com.mkumar.data.ProductFormData
 
 @Composable
 fun ProductChipRow(
@@ -37,8 +38,8 @@ fun ProductChipRow(
     selectedId: String?,
     onChipClick: (String) -> Unit,
     onChipDelete: (String) -> Unit,
-    getCurrentBuffer: (ProductEntry) -> com.mkumar.data.ProductFormData?,
-    hasUnsavedChanges: (ProductEntry) -> Boolean
+    getCurrentBuffer: (ProductEntry) -> ProductFormData?,
+    hasUnsavedChanges: (ProductEntry, ProductFormData?) -> Boolean
 ) {
     Box(modifier = Modifier
         .fillMaxWidth()
@@ -60,14 +61,16 @@ fun ProductChipRow(
                     },
                     leadingIcon = {
                         when {
-                            product.isSaved && !hasUnsavedChanges(product) ->
+                            product.isSaved && !hasUnsavedChanges(product, getCurrentBuffer(product)) ->
                                 Icon(Icons.Default.Check, contentDescription = "Saved")
-                            product.isSaved && hasUnsavedChanges(product) ->
+
+                            product.isSaved && hasUnsavedChanges(product, getCurrentBuffer(product)) ->
                                 Icon(
                                     imageVector = Icons.Default.Warning,
                                     contentDescription = "Unsaved changes",
                                     tint = MaterialTheme.colorScheme.error
                                 )
+
                             else -> null
                         }
                     },

@@ -70,6 +70,7 @@ dependencies {
     // Tooling (preview & debugging)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.foundation)
+    implementation(libs.androidx.compose.runtime)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     // DataStore

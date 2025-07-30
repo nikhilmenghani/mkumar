@@ -103,17 +103,15 @@ fun AddCustomer(
                     selectedId = formState.selectedProductId,
                     onChipClick = customerViewModel::selectProduct,
                     onChipDelete = customerViewModel::removeProduct,
-                    getCurrentBuffer = { product ->
-                        customerViewModel.editingBuffer[product.id]
-                    },
-                    hasUnsavedChanges = { product ->
-                        customerViewModel.hasUnsavedChanges(product, customerViewModel.editingBuffer[product.id])
-                    }
+                    getCurrentBuffer = customerViewModel::getEditingProductData,
+                    hasUnsavedChanges = customerViewModel::hasUnsavedChanges
                 )
 
                 ProductFormSwitcher(
                     selectedProduct = formState.products.find { it.id == formState.selectedProductId },
-                    onOwnerChange = { id, name -> customerViewModel.updateProductOwnerName(id, name) },
+                    getEditingBuffer = customerViewModel::getEditingProductData,
+                    updateEditingBuffer = customerViewModel::updateEditingBuffer,
+                    onOwnerChange = customerViewModel::updateProductOwnerName,
                     onFormSave = { id, data ->
                         customerViewModel.saveProductFormData(id, data)
                         showSnackbar = true

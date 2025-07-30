@@ -7,6 +7,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,32 +19,49 @@ import com.mkumar.data.ProductFormData
 @Composable
 fun FrameForm(
     initialData: ProductFormData.FrameData? = null,
+    onChange: (ProductFormData.FrameData) -> Unit,
     onSave: (ProductFormData.FrameData) -> Unit
 ) {
     var brand by remember { mutableStateOf(initialData?.brand.orEmpty()) }
     var color by remember { mutableStateOf(initialData?.color.orEmpty()) }
     var size by remember { mutableStateOf(initialData?.size.orEmpty()) }
 
+    // Trigger onChange every time any field updates
+    LaunchedEffect(brand, color, size) {
+        onChange(ProductFormData.FrameData(brand, color, size))
+    }
+
     Column {
         OutlinedTextField(
             value = brand,
             onValueChange = { brand = it },
             label = { Text("Brand") },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
         )
         OutlinedTextField(
             value = color,
             onValueChange = { color = it },
             label = { Text("Color") },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
         )
         OutlinedTextField(
             value = size,
             onValueChange = { size = it },
             label = { Text("Size") },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
         )
-        Button(onClick = { onSave(ProductFormData.FrameData(brand, color, size)) }) {
+
+        Button(
+            onClick = {
+                onSave(ProductFormData.FrameData(brand, color, size))
+            }
+        ) {
             Text("Save Frame")
         }
     }
@@ -52,12 +70,25 @@ fun FrameForm(
 @Composable
 fun LensForm(
     initialData: ProductFormData.LensData? = null,
+    onChange: (ProductFormData.LensData) -> Unit,
     onSave: (ProductFormData.LensData) -> Unit
 ) {
     var leftSphere by remember { mutableStateOf(initialData?.leftSphere.orEmpty()) }
     var leftAxis by remember { mutableStateOf(initialData?.leftAxis.orEmpty()) }
     var rightSphere by remember { mutableStateOf(initialData?.rightSphere.orEmpty()) }
     var rightAxis by remember { mutableStateOf(initialData?.rightAxis.orEmpty()) }
+
+    // Emit form updates as user types
+    LaunchedEffect(leftSphere, leftAxis, rightSphere, rightAxis) {
+        onChange(
+            ProductFormData.LensData(
+                leftSphere = leftSphere,
+                leftAxis = leftAxis,
+                rightSphere = rightSphere,
+                rightAxis = rightAxis
+            )
+        )
+    }
 
     Column {
         OutlinedTextField(
@@ -99,10 +130,16 @@ fun LensForm(
 @Composable
 fun ContactLensForm(
     initialData: ProductFormData.ContactLensData? = null,
+    onChange: (ProductFormData.ContactLensData) -> Unit,
     onSave: (ProductFormData.ContactLensData) -> Unit
 ) {
     var power by remember { mutableStateOf(initialData?.power.orEmpty()) }
     var duration by remember { mutableStateOf(initialData?.duration.orEmpty()) }
+
+    // Emit form updates as user types
+    LaunchedEffect(power, duration) {
+        onChange(ProductFormData.ContactLensData(power, duration))
+    }
 
     Column {
         OutlinedTextField(
@@ -122,3 +159,4 @@ fun ContactLensForm(
         }
     }
 }
+

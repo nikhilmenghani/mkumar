@@ -90,6 +90,14 @@ class CustomerViewModel : ViewModel() {
         return product.isSaved && product.formData != editingBuffer
     }
 
+    fun getEditingProductData(product: ProductEntry): ProductFormData? {
+        return editingBuffer[product.id] ?: product.formData
+    }
+
+    fun updateEditingBuffer(productId: String, formData: ProductFormData) {
+        editingBuffer[productId] = formData
+    }
+
     fun clearForm() {
         _formState.value = CustomerFormState()
     }
