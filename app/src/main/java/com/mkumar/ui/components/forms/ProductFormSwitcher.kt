@@ -4,7 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.with
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,7 +53,7 @@ fun ProductFormSwitcher(
 
     AnimatedContent(
         targetState = if (showForm) selectedProduct else null,
-        transitionSpec = { fadeIn() with fadeOut() },
+        transitionSpec = { fadeIn().togetherWith(fadeOut()) },
         label = "ProductFormContent"
     ) { product ->
         if (product != null) {

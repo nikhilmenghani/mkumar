@@ -53,6 +53,7 @@ fun AddCustomer(
     val formState by customerViewModel.formState.collectAsStateWithLifecycle()
     var showSnackbar by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val selectedProductType = remember { mutableStateOf<ProductType?>(null) }
 
     LaunchedEffect(showSnackbar) {
         if (showSnackbar) {
@@ -69,7 +70,9 @@ fun AddCustomer(
             SnackbarHost(hostState = snackbarHostState)
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { customerViewModel.addNewProduct() }) {
+            FloatingActionButton(onClick = { selectedProductType.value?.let { type ->
+                customerViewModel.addProduct(type)
+            } }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Product")
             }
         }
@@ -94,7 +97,8 @@ fun AddCustomer(
 
                 ProductSelector(
                     availableTypes = ProductType.allTypes,
-                    onAddClick = customerViewModel::addProduct
+                    selectedType = selectedProductType.value,
+                    onTypeSelected = { selectedProductType.value = it }
                 )
 
                 ProductChipRow(
