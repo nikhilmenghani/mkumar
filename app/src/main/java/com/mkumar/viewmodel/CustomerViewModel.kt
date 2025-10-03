@@ -140,9 +140,21 @@ class CustomerViewModel : ViewModel() {
             encodeDefaults = true
             ignoreUnknownKeys = true
             classDiscriminator = "type" // helpful for sealed ProductFormData
-            prettyPrint = false
+            prettyPrint = true
         }
 
         return json.encodeToString(snapshot)
+    }
+
+    fun loadFromJson(text: String) {
+        val json = Json {
+            encodeDefaults = true
+            ignoreUnknownKeys = true
+            classDiscriminator = "type" // helpful for sealed ProductFormData
+            prettyPrint = true
+        }
+        val decoded = json.decodeFromString(CustomerFormState.serializer(), text)
+        _formState.value = decoded
+        editingBuffer.clear() // optional: drop stale edits after loading
     }
 }

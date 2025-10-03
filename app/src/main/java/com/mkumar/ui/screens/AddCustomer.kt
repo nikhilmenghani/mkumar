@@ -196,7 +196,10 @@ fun AddCustomer(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showJsonDialog = false }) { Text("Close") }
+                TextButton(onClick = {
+                    showJsonDialog = false
+                    customerViewModel.loadFromJson(jsonPreview)
+                }) { Text("Close") }
             },
             dismissButton = {
                 TextButton(onClick = {
