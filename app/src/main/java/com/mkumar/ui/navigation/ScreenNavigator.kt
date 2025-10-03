@@ -97,7 +97,7 @@ fun NavigationHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screens.AddCustomer.name,
+        startDestination = Screens.Home.name,
         modifier = modifier
     ) {
         composable(route = Screens.Home.name) {
