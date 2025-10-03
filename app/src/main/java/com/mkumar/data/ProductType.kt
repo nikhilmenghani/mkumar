@@ -1,9 +1,33 @@
 package com.mkumar.data
 
-sealed class ProductType(val label: String) {
-    object Frame : ProductType("Frame")
-    object Lens : ProductType("Lens")
-    object ContactLens : ProductType("Contact Lens")
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonClassDiscriminator
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+@JsonClassDiscriminator("type")
+sealed class ProductType {
+    abstract val label: String
+
+    @Serializable
+    @SerialName("Frame")
+    object Frame : ProductType() {
+        override val label: String = "Frame"
+    }
+
+    @Serializable
+    @SerialName("Lens")
+    object Lens : ProductType() {
+        override val label: String = "Lens"
+    }
+
+    @Serializable
+    @SerialName("ContactLens")
+    object ContactLens : ProductType() {
+        override val label: String = "Contact Lens"
+    }
 
     companion object {
         val allTypes = listOf(Frame, Lens, ContactLens)

@@ -8,6 +8,7 @@ import com.mkumar.data.ProductType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.json.Json
 import java.util.UUID
 
 class CustomerViewModel : ViewModel() {
@@ -48,7 +49,7 @@ class CustomerViewModel : ViewModel() {
 
     fun addProduct(type: ProductType) {
         val newEntry = ProductEntry(
-            type = type,
+            productType = type,
             productOwnerName = _formState.value.name
         )
         _formState.update {
@@ -61,7 +62,7 @@ class CustomerViewModel : ViewModel() {
         val dummyType = ProductType.allTypes.firstOrNull() ?: return
         val newEntry = ProductEntry(
             id = UUID.randomUUID().toString(),
-            type = dummyType,
+            productType = dummyType,
             productOwnerName = _formState.value.name
         )
         _formState.update {
@@ -118,7 +119,30 @@ class CustomerViewModel : ViewModel() {
         _openForms.value = emptySet()
     }
 
-    fun serializeToJson(): String {
-        return "TODO: JSON representation"
+    fun serializeToJson(includeUnsavedEdits: Boolean = true): String {
+        // Snapshot current state
+        val state = _formState.value
+
+        // Merge in-progress edits if requested
+        val mergedProducts = state.products.map { product ->
+            val effectiveFormData =
+                if (includeUnsavedEdits) editingBuffer[product.id] ?: product.formData
+                else product.formData
+
+            // Return a non-mutating copy with the effective formData
+            product.copy(formData = effectiveFormData)
+        }
+
+        val snapshot = state.copy(products = mergedProducts)
+
+        // Configure JSON (tweak as needed)
+        val json = Json {
+            encodeDefaults = true
+            ignoreUnknownKeys = true
+            classDiscriminator = "type" // helpful for sealed ProductFormData
+            prettyPrint = false
+        }
+
+        return json.encodeToString(snapshot)
     }
 }

@@ -58,7 +58,7 @@ fun ProductChipRow(
                     selected = product.id == selectedId,
                     onClick = { onChipClick(product.id) },
                     label = {
-                        Text("${product.type.label} #${products.indexOf(product) + 1}")
+                        Text("${product.productType.label} #${products.indexOf(product) + 1}")
                     },
                     leadingIcon = {
                         when {

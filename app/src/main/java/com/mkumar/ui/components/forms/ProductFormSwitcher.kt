@@ -112,7 +112,7 @@ private fun RenderProductForm(
     showSaveButton: Boolean,
     onSave: (ProductFormData) -> Unit
 ) {
-    when (product.type) {
+    when (product.productType) {
         is ProductType.Frame -> FrameForm(
             initialData = editingFormData as? ProductFormData.FrameData,
             onChange = onFormChanged,
