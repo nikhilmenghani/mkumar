@@ -104,7 +104,7 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
                 )
                 if (!isLatestVersion) {
                     StandardFab(
-                        text = "Update Available\nMKumar v$latestVersion",
+                        text = "MKumar v$latestVersion Available",
                         icon = {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
