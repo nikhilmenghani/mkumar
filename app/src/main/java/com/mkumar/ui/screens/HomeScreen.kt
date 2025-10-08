@@ -46,6 +46,7 @@ import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.data.CustomerFormState
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
+import com.mkumar.ui.components.dialogs.CustomDialog
 import com.mkumar.ui.components.fabs.StandardFab
 import com.mkumar.ui.components.inputs.CustomerInfoSection
 import com.mkumar.ui.navigation.Screens
@@ -65,6 +66,7 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
     var isLatestVersion by remember { mutableStateOf(true) }
     var isDownloading by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
+    var showCustomerDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -166,7 +168,11 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
         content = { paddingValues ->
             Column(modifier = Modifier.padding(paddingValues)) {
                 CustomerList(
-                    customers = customerViewModel.listCustomers()
+                    customers = customerViewModel.listCustomers(),
+                    onClick = {
+                        showCustomerDialog = true
+                        customerViewModel.selectCustomer(it.selectedProductId)
+                    }
                 )
                 if (showBottomSheet) {
                     val formState by customerViewModel.formState.collectAsStateWithLifecycle()
@@ -192,10 +198,22 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
             }
         }
     )
+
+    if (showCustomerDialog) {
+        val formState by customerViewModel.formState.collectAsStateWithLifecycle()
+        CustomDialog(onDismiss = { showCustomerDialog = false }) {
+            Column {
+                formState.selectedProductId?.let { Text(it) }
+            }
+        }
+    }
 }
 
 @Composable
-fun CustomerList(customers: List<CustomerFormState>) {
+fun CustomerList(
+    customers: List<CustomerFormState>,
+    onClick: (CustomerFormState) -> Unit = {}
+) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(8.dp),
@@ -205,7 +223,8 @@ fun CustomerList(customers: List<CustomerFormState>) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
+                    .padding(horizontal = 8.dp),
+                onClick = { onClick(customer) }
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(text = "Customer ID: ${customer.selectedProductId}")

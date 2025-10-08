@@ -38,8 +38,10 @@ class CustomerViewModel : ViewModel() {
         _currentCustomerId.value = id
     }
 
-    fun selectCustomer(customerID: String) {
+    fun selectCustomer(customerID: String?) {
         _currentCustomerId.value = customerID
+        _formState.value = _customers.value.find { it.selectedProductId == customerID }
+            ?: CustomerFormState()
     }
 
     fun listCustomers() : List<CustomerFormState> {
