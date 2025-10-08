@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
@@ -19,6 +21,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -44,11 +47,14 @@ import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.data.CustomerFormState
+import com.mkumar.data.ProductType
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
-import com.mkumar.ui.components.dialogs.CustomDialog
+import com.mkumar.ui.components.chips.ProductChipRow
 import com.mkumar.ui.components.fabs.StandardFab
+import com.mkumar.ui.components.forms.ProductFormSwitcher
 import com.mkumar.ui.components.inputs.CustomerInfoSection
+import com.mkumar.ui.components.selectors.ProductSelector
 import com.mkumar.ui.navigation.Screens
 import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.worker.DownloadWorker
@@ -200,12 +206,61 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
     )
 
     if (showCustomerDialog) {
-        val formState by customerViewModel.formState.collectAsStateWithLifecycle()
-        CustomDialog(onDismiss = { showCustomerDialog = false }) {
-            Column {
-                formState.selectedProductId?.let { Text(it) }
+        var showSnackbar by remember { mutableStateOf(false) }
+        val snackbarHostState = remember { SnackbarHostState() }
+        LaunchedEffect(showSnackbar) {
+            if (showSnackbar) {
+                snackbarHostState.showSnackbar("Product saved!")
+                showSnackbar = false
             }
         }
+
+        val selectedProductType = remember { mutableStateOf<ProductType?>(null) }
+        val formState by customerViewModel.formState.collectAsStateWithLifecycle()
+
+        BaseBottomSheet(
+            title = formState.selectedProductId?:"Add Customer",
+            sheetContent = {
+                val scrollState = rememberScrollState()
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .verticalScroll(scrollState)
+                        .padding(bottom = 72.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    ProductSelector(
+                        availableTypes = ProductType.allTypes,
+                        selectedType = selectedProductType.value,
+                        onTypeSelected = { selectedProductType.value = it },
+                        onAddClick = customerViewModel::addProduct
+                    )
+                    ProductChipRow(
+                        products = formState.products,
+                        selectedId = formState.selectedProductId,
+                        onChipClick = customerViewModel::openForm,
+                        onChipDelete = customerViewModel::removeProduct,
+                        getCurrentBuffer = customerViewModel::getEditingProductData,
+                        hasUnsavedChanges = customerViewModel::hasUnsavedChanges
+                    )
+
+                    ProductFormSwitcher(
+                        selectedProduct = formState.products.find { it.id == formState.selectedProductId },
+                        openForms = customerViewModel.openForms,
+                        getEditingBuffer = customerViewModel::getEditingProductData,
+                        updateEditingBuffer = customerViewModel::updateEditingBuffer,
+                        onOwnerChange = customerViewModel::updateProductOwnerName,
+                        hasUnsavedChanges = customerViewModel::hasUnsavedChanges,
+                        onFormSave = { id, data ->
+                            customerViewModel.saveProductFormData(id, data)
+                            showSnackbar = true
+                        }
+                    )
+                }
+            },
+            onDismiss = { showCustomerDialog = false },
+            showDismiss = true,
+        )
     }
 }
 

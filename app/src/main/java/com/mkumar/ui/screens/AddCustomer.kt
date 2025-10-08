@@ -130,7 +130,8 @@ fun AddCustomer(
                 ProductSelector(
                     availableTypes = ProductType.allTypes,
                     selectedType = selectedProductType.value,
-                    onTypeSelected = { selectedProductType.value = it }
+                    onTypeSelected = { selectedProductType.value = it },
+                    onAddClick = customerViewModel::addProduct
                 )
 
                 ProductChipRow(
