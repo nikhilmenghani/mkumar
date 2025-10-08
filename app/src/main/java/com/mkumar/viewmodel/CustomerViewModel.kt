@@ -13,12 +13,39 @@ import java.util.UUID
 
 class CustomerViewModel : ViewModel() {
 
+    private val _customers = MutableStateFlow<List<CustomerFormState>>(emptyList())
+    val customers: StateFlow<List<CustomerFormState>> = _customers
+
+    private val _currentCustomerId = MutableStateFlow<String?>(null)
+    val currentCustomerId: StateFlow<String?> = _currentCustomerId
+
     private val _formState = MutableStateFlow(CustomerFormState())
     val formState: StateFlow<CustomerFormState> = _formState
 
     val editingBuffer = mutableMapOf<String, ProductFormData?>()
     private val _openForms = MutableStateFlow<Set<String>>(emptySet())
     val openForms: StateFlow<Set<String>> = _openForms
+
+    fun addCustomer(name: String, phone: String) {
+        val id = UUID.randomUUID().toString()
+        val newCustomer = CustomerFormState(
+            name = name,
+            phone = phone,
+            products = emptyList(),
+            selectedProductId = id
+        )
+        _customers.update { it + newCustomer }
+        _currentCustomerId.value = id
+    }
+
+    fun selectCustomer(customerID: String) {
+        _currentCustomerId.value = customerID
+    }
+
+    fun listCustomers() : List<CustomerFormState> {
+        // return the list of all the customers added so UI can display them in a list
+        return _customers.value
+    }
 
     fun updateCustomerName(name: String) {
         _formState.update { it.copy(name = name) }

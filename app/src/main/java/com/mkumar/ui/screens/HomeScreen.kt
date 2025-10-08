@@ -4,13 +4,17 @@ import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,8 +43,11 @@ import com.mkumar.common.constant.AppConstants.getExternalStorageDir
 import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
+import com.mkumar.data.CustomerFormState
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
+import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.ui.components.fabs.StandardFab
+import com.mkumar.ui.components.inputs.CustomerInfoSection
 import com.mkumar.ui.navigation.Screens
 import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.worker.DownloadWorker
@@ -51,7 +58,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController, customerViewModel: CustomerViewModel) {
-    val formState by customerViewModel.formState.collectAsStateWithLifecycle()
     val context = LocalActivity.current as MainActivity
     val workManager = WorkManager.getInstance(context)
     val currentVersion by remember { mutableStateOf(getCurrentVersion(context)) }
@@ -158,13 +164,55 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
             }
         },
         content = { paddingValues ->
-            Column {
-                Row(
-                    modifier = Modifier
-                        .padding(paddingValues)
-                ) {
+            Column(modifier = Modifier.padding(paddingValues)) {
+                CustomerList(
+                    customers = customerViewModel.listCustomers()
+                )
+                if (showBottomSheet) {
+                    val formState by customerViewModel.formState.collectAsStateWithLifecycle()
+                    BaseBottomSheet(
+                        title = "Add Customer",
+                        sheetContent = {
+                            CustomerInfoSection(
+                                name = formState.name,
+                                phone = formState.phone,
+                                onNameChange = customerViewModel::updateCustomerName,
+                                onPhoneChange = customerViewModel::updateCustomerPhone
+                            )
+                        },
+                        onDismiss = { showBottomSheet = false },
+                        showDismiss = true,
+                        showDone = true,
+                        onDoneClick = {
+                            customerViewModel.addCustomer(formState.name, formState.phone)
+                            showBottomSheet = false
+                        }
+                    )
                 }
             }
         }
     )
+}
+
+@Composable
+fun CustomerList(customers: List<CustomerFormState>) {
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(customers) { customer ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "Customer ID: ${customer.selectedProductId}")
+                    Text(text = "Name: ${customer.name}")
+                    Text(text = "Phone: ${customer.phone}")
+                }
+            }
+        }
+    }
 }
