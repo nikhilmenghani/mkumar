@@ -8,6 +8,7 @@ import com.mkumar.data.ProductType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -22,25 +23,24 @@ class CustomerViewModel : ViewModel() {
     private val _formState = MutableStateFlow(CustomerFormState())
     val formState: StateFlow<CustomerFormState> = _formState
 
-    val editingBuffer = mutableMapOf<String, ProductFormData?>()
-    private val _openForms = MutableStateFlow<Set<String>>(emptySet())
-    val openForms: StateFlow<Set<String>> = _openForms
+    val editingBuffer: MutableMap<String, MutableMap<String, ProductFormData?>> = mutableMapOf()
+    private val _openForms = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
+    val openForms: StateFlow<Map<String, Set<String>>> = _openForms
 
     fun addCustomer(name: String, phone: String) {
-        val id = UUID.randomUUID().toString()
         val newCustomer = CustomerFormState(
             name = name,
             phone = phone,
             products = emptyList(),
-            selectedProductId = id
+            selectedProductId = null
         )
         _customers.update { it + newCustomer }
-        _currentCustomerId.value = id
+        _currentCustomerId.value = newCustomer.id
     }
 
     fun selectCustomer(customerID: String?) {
         _currentCustomerId.value = customerID
-        _formState.value = _customers.value.find { it.selectedProductId == customerID }
+        _formState.value = _customers.value.find { it.id == customerID }
             ?: CustomerFormState()
     }
 
@@ -49,131 +49,195 @@ class CustomerViewModel : ViewModel() {
         return _customers.value
     }
 
-    fun updateCustomerName(name: String) {
-        _formState.update { it.copy(name = name) }
-    }
-
-    fun updateCustomerPhone(phone: String) {
-        _formState.update { it.copy(phone = phone) }
-    }
-
-    fun selectProduct(productId: String) {
-        _formState.update { it.copy(selectedProductId = productId) }
-    }
-
-    fun toggleFormVisibility(productId: String) {
-        _openForms.update { current ->
-            if (current.contains(productId)) emptySet()
-            else setOf(productId) // only one form open at a time
+    fun updateCustomerName(customerId: String, name: String) {
+        _customers.update { list ->
+            list.map { if (it.id == customerId) it.copy(name = name) else it }
         }
     }
 
-    fun openForm(productId: String) {
-        _openForms.value = setOf(productId)
-        _formState.update { it.copy(selectedProductId = UUID.randomUUID().toString()) }
-        _formState.update { it.copy(selectedProductId = productId) }
+    fun updateCustomerPhone(customerId: String, phone: String) {
+        _customers.update { list ->
+            list.map { if (it.id == customerId) it.copy(phone = phone) else it }
+        }
     }
 
-    fun isFormOpen(productId: String): Boolean = _openForms.value.contains(productId)
+    fun removeCustomer(customerId: String) {
+        _customers.update { it.filterNot { c -> c.id == customerId } }
+        editingBuffer.remove(customerId)
+        _openForms.update { it - customerId }
+        if (_currentCustomerId.value == customerId) {
+            _currentCustomerId.value = _customers.value.lastOrNull()?.id
+        }
+    }
 
-    fun addProduct(type: ProductType) {
+    fun selectProduct(customerId: String, productId: String) {
+        _customers.update { list ->
+            list.map { c ->
+                if (c.id == customerId) c.copy(selectedProductId = productId) else c
+            }
+        }
+    }
+
+    fun toggleFormVisibility(customerId: String, productId: String) {
+        _openForms.update { map ->
+            val current = map[customerId].orEmpty()
+            val next = if (current.contains(productId)) emptySet() else setOf(productId) // one open at a time per customer
+            map + (customerId to next)
+        }
+    }
+
+    fun openForm(customerId: String, productId: String) {
+        _openForms.update { it + (customerId to setOf(productId)) }
+        // keep selectedProductId stable (no random UUID overwrites)
+        selectProduct(customerId, productId)
+    }
+
+    fun isFormOpen(customerId: String, productId: String): Boolean =
+        _openForms.value[customerId]?.contains(productId) == true
+
+    fun addProduct(customerId: String, type: ProductType) {
         val newEntry = ProductEntry(
             productType = type,
-            productOwnerName = _formState.value.name
+            productOwnerName = getCustomer(customerId)?.name.orEmpty()
         )
-        _formState.update {
-            it.copy(products = it.products + newEntry, selectedProductId = newEntry.id)
+        _customers.update { list ->
+            list.map { c ->
+                if (c.id != customerId) c
+                else c.copy(
+                    products = c.products + newEntry,
+                    selectedProductId = newEntry.id
+                )
+            }
         }
-        _openForms.value = setOf(newEntry.id)
+        // open the newly added product form
+        _openForms.update { it + (customerId to setOf(newEntry.id)) }
     }
 
-    fun addNewProduct() {
+    fun addNewProduct(customerId: String) {
         val dummyType = ProductType.allTypes.firstOrNull() ?: return
         val newEntry = ProductEntry(
             id = UUID.randomUUID().toString(),
             productType = dummyType,
-            productOwnerName = _formState.value.name
+            productOwnerName = getCustomer(customerId)?.name.orEmpty()
         )
-        _formState.update {
-            it.copy(products = it.products + newEntry, selectedProductId = newEntry.id)
-        }
-        _openForms.value = setOf(newEntry.id)
-    }
-
-    fun removeProduct(productId: String) {
-        _formState.update {
-            val updatedList = it.products.filterNot { product -> product.id == productId }
-            val newSelected = if (it.selectedProductId == productId) null else it.selectedProductId
-            it.copy(products = updatedList, selectedProductId = newSelected)
-        }
-        editingBuffer.remove(productId)
-        _openForms.update { it - productId }
-    }
-
-    fun updateProductOwnerName(productId: String, newName: String) {
-        _formState.update {
-            val updated = it.products.map {
-                if (it.id == productId) it.copy(productOwnerName = newName) else it
+        _customers.update { list ->
+            list.map { c ->
+                if (c.id != customerId) c
+                else c.copy(
+                    products = c.products + newEntry,
+                    selectedProductId = newEntry.id
+                )
             }
-            it.copy(products = updated)
         }
+        _openForms.update { it + (customerId to setOf(newEntry.id)) }
     }
 
-    fun saveProductFormData(productId: String, formData: ProductFormData) {
-        _formState.update {
-            val updated = it.products.map {
-                if (it.id == productId) it.copy(formData = formData, isSaved = true) else it
+    fun removeProduct(customerId: String, productId: String) {
+        _customers.update { list ->
+            list.map { c ->
+                if (c.id != customerId) c
+                else {
+                    val updated = c.products.filterNot { it.id == productId }
+                    val newSelected = if (c.selectedProductId == productId) null else c.selectedProductId
+                    c.copy(products = updated, selectedProductId = newSelected)
+                }
             }
-            it.copy(products = updated)
         }
-        editingBuffer.remove(productId)
-        _openForms.update { it - productId }
+        editingBuffer[customerId]?.remove(productId)
+        _openForms.update { it + (customerId to (_openForms.value[customerId].orEmpty() - productId)) }
     }
 
-    fun hasUnsavedChanges(product: ProductEntry, buffer: ProductFormData?): Boolean {
+    fun updateProductOwnerName(customerId: String, productId: String, newName: String) {
+        _customers.update { list ->
+            list.map { c ->
+                if (c.id != customerId) c
+                else c.copy(
+                    products = c.products.map { p ->
+                        if (p.id == productId) p.copy(productOwnerName = newName) else p
+                    }
+                )
+            }
+        }
+    }
+
+    fun saveProductFormData(customerId: String, productId: String, formData: ProductFormData) {
+        _customers.update { list ->
+            list.map { c ->
+                if (c.id != customerId) c
+                else c.copy(
+                    products = c.products.map { p ->
+                        if (p.id == productId) p.copy(formData = formData, isSaved = true) else p
+                    }
+                )
+            }
+        }
+        editingBuffer[customerId]?.remove(productId)
+        _openForms.update { it + (customerId to (_openForms.value[customerId].orEmpty() - productId)) }
+    }
+
+    fun hasUnsavedChanges(customerId: String, product: ProductEntry, buffer: ProductFormData?): Boolean {
         return product.isSaved && product.formData != buffer
     }
 
-    fun getEditingProductData(product: ProductEntry): ProductFormData? {
-        return editingBuffer[product.id] ?: product.formData
+    fun getEditingProductData(customerId: String, product: ProductEntry): ProductFormData? {
+        return editingBuffer[customerId]?.get(product.id) ?: product.formData
     }
 
-    fun updateEditingBuffer(productId: String, formData: ProductFormData) {
-        editingBuffer[productId] = formData
+    fun updateEditingBuffer(customerId: String, productId: String, formData: ProductFormData) {
+        val map = editingBuffer.getOrPut(customerId) { mutableMapOf() }
+        map[productId] = formData
     }
 
-    fun clearForm() {
-        _formState.value = CustomerFormState()
+    private fun getCustomer(customerId: String): CustomerFormState? =
+        _customers.value.firstOrNull { it.id == customerId }
+
+    fun clearAll() {
+        _customers.value = emptyList()
+        _currentCustomerId.value = null
         editingBuffer.clear()
-        _openForms.value = emptySet()
+        _openForms.value = emptyMap()
     }
 
     fun serializeToJson(includeUnsavedEdits: Boolean = true): String {
-        // Snapshot current state
-        val state = _formState.value
-
-        // Merge in-progress edits if requested
-        val mergedProducts = state.products.map { product ->
-            val effectiveFormData =
-                if (includeUnsavedEdits) editingBuffer[product.id] ?: product.formData
-                else product.formData
-
-            // Return a non-mutating copy with the effective formData
-            product.copy(formData = effectiveFormData)
+        val merged = _customers.value.map { c ->
+            val mergedProducts = c.products.map { p ->
+                val eff = if (includeUnsavedEdits)
+                    editingBuffer[c.id]?.get(p.id) ?: p.formData
+                else p.formData
+                p.copy(formData = eff)
+            }
+            c.copy(products = mergedProducts)
         }
-
-        val snapshot = state.copy(products = mergedProducts)
-
-        // Configure JSON (tweak as needed)
-        val json = Json {
-            encodeDefaults = true
-            ignoreUnknownKeys = true
-            classDiscriminator = "type" // helpful for sealed ProductFormData
-            prettyPrint = true
-        }
-
-        return json.encodeToString(snapshot)
+        val json = Json { encodeDefaults = true; ignoreUnknownKeys = true; classDiscriminator = "type"; prettyPrint = true }
+        return json.encodeToString(ListSerializer(CustomerFormState.serializer()), merged)
     }
+
+//    fun serializeToJson(includeUnsavedEdits: Boolean = true): String {
+//        // Snapshot current state
+//        val state = _formState.value
+//
+//        // Merge in-progress edits if requested
+//        val mergedProducts = state.products.map { product ->
+//            val effectiveFormData =
+//                if (includeUnsavedEdits) editingBuffer[product.id] ?: product.formData
+//                else product.formData
+//
+//            // Return a non-mutating copy with the effective formData
+//            product.copy(formData = effectiveFormData)
+//        }
+//
+//        val snapshot = state.copy(products = mergedProducts)
+//
+//        // Configure JSON (tweak as needed)
+//        val json = Json {
+//            encodeDefaults = true
+//            ignoreUnknownKeys = true
+//            classDiscriminator = "type" // helpful for sealed ProductFormData
+//            prettyPrint = true
+//        }
+//
+//        return json.encodeToString(snapshot)
+//    }
 
     fun loadFromJson(text: String) {
         val json = Json {

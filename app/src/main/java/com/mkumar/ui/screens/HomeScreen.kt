@@ -60,19 +60,36 @@ import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.worker.DownloadWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavHostController, customerViewModel: CustomerViewModel) {
+fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     val context = LocalActivity.current as MainActivity
     val workManager = WorkManager.getInstance(context)
     val currentVersion by remember { mutableStateOf(getCurrentVersion(context)) }
     var latestVersion by remember { mutableStateOf(currentVersion) }
     var isLatestVersion by remember { mutableStateOf(true) }
     var isDownloading by remember { mutableStateOf(false) }
-    var showBottomSheet by remember { mutableStateOf(false) }
+
+    // UI flags
+    var showAddCustomerSheet by remember { mutableStateOf(false) }
     var showCustomerDialog by remember { mutableStateOf(false) }
+
+    // ViewModel state
+    val customers by vm.customers.collectAsStateWithLifecycle()
+    val currentCustomerId by vm.currentCustomerId.collectAsStateWithLifecycle()
+    val currentCustomer = remember(customers, currentCustomerId) {
+        customers.firstOrNull { it.id == currentCustomerId }
+    }
+    val openFormsForCurrentFlow = remember(currentCustomerId) { MutableStateFlow(emptySet<String>()) }
+    LaunchedEffect(currentCustomerId) {
+        // Whenever the VM's openForms map changes, push only the current customer's set
+        vm.openForms.collect { map ->
+            openFormsForCurrentFlow.value = map[currentCustomerId].orEmpty()
+        }
+    }
 
     LaunchedEffect(Unit) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -86,15 +103,11 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
             TopAppBar(
                 title = { Text(text = "M Kumar") },
                 actions = {
-                    IconButton(onClick = {
-                        context.restartActivity()
-                    }) {
+                    IconButton(onClick = { context.restartActivity() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                     IconButton(onClick = {
-                        navController.navigateWithState(
-                            route = Screens.Settings.name
-                        )
+                        navController.navigateWithState(route = Screens.Settings.name)
                     }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
@@ -104,108 +117,86 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
         floatingActionButton = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StandardFab(
-                    text = "Add a new Customer",
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                            modifier = Modifier.size(24.dp)
-                        )
-                    },
-                    onClick = {
-                        showBottomSheet = true
-                    }
+                    text = if (customers.size >= 3) "Max 3 customers" else "Add a new Customer",
+                    icon = { Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(24.dp)) },
+                    onClick = { if (customers.size < 3) showAddCustomerSheet = true },
                 )
                 if (!isLatestVersion) {
                     StandardFab(
                         text = "MKumar v$latestVersion Available",
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Update",
-                                modifier = Modifier.size(24.dp)
-                            )
-                        },
+                        icon = { Icon(Icons.Default.Refresh, contentDescription = "Update", modifier = Modifier.size(24.dp)) },
                         loading = isDownloading,
                         onClick = {
                             isDownloading = true
-
                             val downloadUrl = getAppDownloadUrl(latestVersion)
                             val destFilePath = "${getExternalStorageDir()}/Download/MKumar.apk"
-
                             val inputData = workDataOf(
                                 DownloadWorker.DOWNLOAD_URL_KEY to downloadUrl,
                                 DownloadWorker.DEST_FILE_PATH_KEY to destFilePath,
                                 DownloadWorker.DOWNLOAD_TYPE_KEY to DownloadWorker.DOWNLOAD_TYPE_APK
                             )
-
                             val downloadRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
                                 .setInputData(inputData)
-                                .setConstraints(
-                                    Constraints.Builder()
-                                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                                        .build()
-                                )
+                                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                                 .build()
-
                             workManager.enqueue(downloadRequest)
-
-                            workManager.getWorkInfoByIdLiveData(downloadRequest.id)
-                                .observeForever { info ->
-                                    if (info?.state == WorkInfo.State.SUCCEEDED) {
-                                        isDownloading = false
-                                        if (context.packageManager.canRequestPackageInstalls()) {
-                                            installApk(context, destFilePath)
-                                        }
-                                    } else if (info?.state == WorkInfo.State.FAILED) {
-                                        isDownloading = false
-                                        Toast.makeText(
-                                            context,
-                                            "Failed to download update",
-                                            Toast.LENGTH_LONG
-                                        ).show()
+                            workManager.getWorkInfoByIdLiveData(downloadRequest.id).observeForever { info ->
+                                if (info?.state == WorkInfo.State.SUCCEEDED) {
+                                    isDownloading = false
+                                    if (context.packageManager.canRequestPackageInstalls()) {
+                                        installApk(context, destFilePath)
                                     }
+                                } else if (info?.state == WorkInfo.State.FAILED) {
+                                    isDownloading = false
+                                    Toast.makeText(context, "Failed to download update", Toast.LENGTH_LONG).show()
                                 }
-                        }
-                    )
-                }
-            }
-        },
-        content = { paddingValues ->
-            Column(modifier = Modifier.padding(paddingValues)) {
-                CustomerList(
-                    customers = customerViewModel.listCustomers(),
-                    onClick = {
-                        showCustomerDialog = true
-                        customerViewModel.selectCustomer(it.selectedProductId)
-                    }
-                )
-                if (showBottomSheet) {
-                    val formState by customerViewModel.formState.collectAsStateWithLifecycle()
-                    BaseBottomSheet(
-                        title = "Add Customer",
-                        sheetContent = {
-                            CustomerInfoSection(
-                                name = formState.name,
-                                phone = formState.phone,
-                                onNameChange = customerViewModel::updateCustomerName,
-                                onPhoneChange = customerViewModel::updateCustomerPhone
-                            )
-                        },
-                        onDismiss = { showBottomSheet = false },
-                        showDismiss = true,
-                        showDone = true,
-                        onDoneClick = {
-                            customerViewModel.addCustomer(formState.name, formState.phone)
-                            showBottomSheet = false
+                            }
                         }
                     )
                 }
             }
         }
-    )
+    ) { paddingValues ->
+        Column(modifier = Modifier.padding(paddingValues)) {
+            CustomerList(
+                customers = customers,
+                onClick = { customer ->
+                    vm.selectCustomer(customer.id)
+                    showCustomerDialog = true
+                }
+            )
+        }
+    }
 
-    if (showCustomerDialog) {
+    // --- Add Customer Sheet (local inputs; VM is multi-customer now) ---
+    if (showAddCustomerSheet) {
+        var name by remember { mutableStateOf("") }
+        var phone by remember { mutableStateOf("") }
+
+        BaseBottomSheet(
+            title = "Add Customer",
+            sheetContent = {
+                CustomerInfoSection(
+                    name = name,
+                    phone = phone,
+                    onNameChange = { name = it },
+                    onPhoneChange = { phone = it }
+                )
+            },
+            onDismiss = { showAddCustomerSheet = false },
+            showDismiss = true,
+            showDone = true,
+            onDoneClick = {
+                if (name.isNotBlank()) {
+                    vm.addCustomer(name.trim(), phone.trim())
+                    showAddCustomerSheet = false
+                }
+            }
+        )
+    }
+
+    // --- Customer Popup: add products for the selected customer ---
+    if (showCustomerDialog && currentCustomer != null) {
         var showSnackbar by remember { mutableStateOf(false) }
         val snackbarHostState = remember { SnackbarHostState() }
         LaunchedEffect(showSnackbar) {
@@ -216,10 +207,10 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
         }
 
         val selectedProductType = remember { mutableStateOf<ProductType?>(null) }
-        val formState by customerViewModel.formState.collectAsStateWithLifecycle()
+        val cId = currentCustomer.id
 
         BaseBottomSheet(
-            title = formState.selectedProductId?:"Add Customer",
+            title = currentCustomer.name.ifBlank { "Customer" },
             sheetContent = {
                 val scrollState = rememberScrollState()
                 Column(
@@ -229,30 +220,34 @@ fun HomeScreen(navController: NavHostController, customerViewModel: CustomerView
                         .padding(bottom = 72.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Product Type selection + Add
                     ProductSelector(
                         availableTypes = ProductType.allTypes,
                         selectedType = selectedProductType.value,
                         onTypeSelected = { selectedProductType.value = it },
-                        onAddClick = customerViewModel::addProduct
-                    )
-                    ProductChipRow(
-                        products = formState.products,
-                        selectedId = formState.selectedProductId,
-                        onChipClick = customerViewModel::openForm,
-                        onChipDelete = customerViewModel::removeProduct,
-                        getCurrentBuffer = customerViewModel::getEditingProductData,
-                        hasUnsavedChanges = customerViewModel::hasUnsavedChanges
+                        onAddClick = { type -> vm.addProduct(cId, type) }   // <-- scoped by customerId
                     )
 
+                    // Chips for this customer's products
+                    ProductChipRow(
+                        products = currentCustomer.products,
+                        selectedId = currentCustomer.selectedProductId,
+                        onChipClick = { productId -> vm.openForm(cId, productId) },
+                        onChipDelete = { productId -> vm.removeProduct(cId, productId) },
+                        getCurrentBuffer = { product -> vm.getEditingProductData(cId, product) },
+                        hasUnsavedChanges = { product, buf -> vm.hasUnsavedChanges(cId, product, buf) }
+                    )
+
+                    // Form switcher (only for this customer's open forms)
                     ProductFormSwitcher(
-                        selectedProduct = formState.products.find { it.id == formState.selectedProductId },
-                        openForms = customerViewModel.openForms,
-                        getEditingBuffer = customerViewModel::getEditingProductData,
-                        updateEditingBuffer = customerViewModel::updateEditingBuffer,
-                        onOwnerChange = customerViewModel::updateProductOwnerName,
-                        hasUnsavedChanges = customerViewModel::hasUnsavedChanges,
-                        onFormSave = { id, data ->
-                            customerViewModel.saveProductFormData(id, data)
+                        selectedProduct = currentCustomer.products.find { it.id == currentCustomer.selectedProductId },
+                        openForms = openFormsForCurrentFlow, // Set<String>
+                        getEditingBuffer = { product -> vm.getEditingProductData(cId, product) },
+                        updateEditingBuffer = { productId, data -> vm.updateEditingBuffer(cId, productId, data) },
+                        onOwnerChange = { productId, newName -> vm.updateProductOwnerName(cId, productId, newName) },
+                        hasUnsavedChanges = { product, buf -> vm.hasUnsavedChanges(cId, product, buf) },
+                        onFormSave = { productId, data ->
+                            vm.saveProductFormData(cId, productId, data)
                             showSnackbar = true
                         }
                     )
@@ -274,7 +269,7 @@ fun CustomerList(
         contentPadding = PaddingValues(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(customers) { customer ->
+        items(customers, key = { it.id }) { customer ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -282,7 +277,7 @@ fun CustomerList(
                 onClick = { onClick(customer) }
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = "Customer ID: ${customer.selectedProductId}")
+                    Text(text = "Customer ID: ${customer.id}")
                     Text(text = "Name: ${customer.name}")
                     Text(text = "Phone: ${customer.phone}")
                 }
