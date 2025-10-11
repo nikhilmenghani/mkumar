@@ -16,7 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +49,7 @@ import com.mkumar.data.CustomerFormState
 import com.mkumar.data.ProductType
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
+import com.mkumar.ui.components.cards.CustomerListCard
 import com.mkumar.ui.components.chips.ProductChipRow
 import com.mkumar.ui.components.fabs.StandardFab
 import com.mkumar.ui.components.forms.ProductFormSwitcher
@@ -270,18 +270,7 @@ fun CustomerList(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(customers, key = { it.id }) { customer ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                onClick = { onClick(customer) }
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = "Customer ID: ${customer.id}")
-                    Text(text = "Name: ${customer.name}")
-                    Text(text = "Phone: ${customer.phone}")
-                }
-            }
+            CustomerListCard(customer = customer, onClick = onClick)
         }
     }
 }
