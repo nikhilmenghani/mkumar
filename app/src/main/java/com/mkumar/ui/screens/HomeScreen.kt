@@ -50,6 +50,7 @@ import com.mkumar.data.ProductType
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.ui.components.cards.CustomerListCard
+import com.mkumar.ui.components.cards.CustomerListCard2
 import com.mkumar.ui.components.chips.ProductChipRow
 import com.mkumar.ui.components.fabs.StandardFab
 import com.mkumar.ui.components.forms.ProductFormSwitcher
@@ -270,7 +271,18 @@ fun CustomerList(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(customers, key = { it.id }) { customer ->
-            CustomerListCard(customer = customer, onClick = onClick)
+            CustomerListCard2(
+                customer = customer,
+                productChips = customer.products,
+                onClick = onClick,
+                onSync = {},
+                onGenerateBill = {},
+                onCall = {},
+                onEdit = {},
+                onArchive = {},
+                onDelete = {},
+                maxVisibleChips = 5
+            )
         }
     }
 }
