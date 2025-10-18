@@ -10,6 +10,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.Base64
 import java.util.UUID
 
 class CustomerViewModel : ViewModel() {
@@ -210,6 +215,65 @@ class CustomerViewModel : ViewModel() {
         }
         val json = Json { encodeDefaults = true; ignoreUnknownKeys = true; classDiscriminator = "type"; prettyPrint = true }
         return json.encodeToString(ListSerializer(CustomerFormState.serializer()), merged)
+    }
+
+    fun serializeCustomer(customerId: String, includeUnsavedEdits: Boolean = true): String {
+        val customer = _customers.value.find { it.id == customerId } ?: return ""
+        val mergedProducts = customer.products.map { p ->
+            val eff = if (includeUnsavedEdits)
+                editingBuffer[customer.id]?.get(p.id) ?: p.formData
+            else p.formData
+            p.copy(formData = eff)
+        }
+        val snapshot = customer.copy(products = mergedProducts)
+        val json = Json { encodeDefaults = true; ignoreUnknownKeys = true; classDiscriminator = "type"; prettyPrint = true }
+        return json.encodeToString(CustomerFormState.serializer(), snapshot)
+    }
+
+    fun syncCustomerToGitHub(customerId: String, githubToken: String, repo: String, owner: String) {
+        val customer = _customers.value.find { it.id == customerId } ?: return
+        val json = serializeCustomer(customerId) ?: return
+        val phone = customer.phone
+        val fileName = "$phone.json"
+        val apiUrl = "https://api.github.com/repos/$owner/$repo/contents/$fileName"
+        val client = OkHttpClient()
+
+        // Check if file exists
+        val requestGet = Request.Builder()
+            .url(apiUrl)
+            .header("Authorization", "token $githubToken")
+            .build()
+        val responseGet = client.newCall(requestGet).execute()
+        val sha = if (responseGet.code == 200) {
+            val body = responseGet.body.string()
+            Regex("\"sha\":\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+        } else null
+
+        // Prepare request body
+        val encodedContent = Base64.getEncoder().encodeToString(json.toByteArray())
+        val jsonBody = if (sha != null) {
+            """
+        {
+          "message": "Update customer $phone",
+          "content": "$encodedContent",
+          "sha": "$sha"
+        }
+        """
+        } else {
+            """
+        {
+          "message": "Add customer $phone",
+          "content": "$encodedContent"
+        }
+        """
+        }
+
+        val requestPut = Request.Builder()
+            .url(apiUrl)
+            .header("Authorization", "token $githubToken")
+            .put(jsonBody.toRequestBody("application/json".toMediaTypeOrNull()))
+            .build()
+        client.newCall(requestPut).execute().close()
     }
 
 //    fun serializeToJson(includeUnsavedEdits: Boolean = true): String {
