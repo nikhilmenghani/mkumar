@@ -2,6 +2,7 @@ package com.mkumar.data.repository
 
 import androidx.room.withTransaction
 import com.mkumar.data.CustomerFormState
+import com.mkumar.data.CustomerHeaderDomain
 import com.mkumar.data.local.MKumarDatabase
 import com.mkumar.data.local.dao.CustomerDao
 import com.mkumar.data.local.dao.OrderDao
@@ -93,6 +94,18 @@ class CustomerRepository @Inject constructor(
         }
         orderItemDao.insertAll(items)
         order.id
+    }
+
+    suspend fun customerHeader(id: String): CustomerHeaderDomain {
+        val row = customerDao.getWithOrders(id)  // returns a DB projection
+        return CustomerHeaderDomain(
+            id = "",
+            displayName = "",
+            phoneFormatted = "", // or format here
+            totalOrders = 0,       // nullable in Phase 1 if expensive
+            lifetimeValueFormatted = "", // nullable ok
+            lastVisitFormatted = ""
+        )
     }
 
     private fun generateOrderId() = UUID.randomUUID().toString()

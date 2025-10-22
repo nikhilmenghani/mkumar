@@ -16,13 +16,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.mkumar.common.extension.navigateWithState
+import com.mkumar.ui.screens.CustomerDetailsScreen
 import com.mkumar.ui.screens.HomeScreen
 import com.mkumar.ui.screens.PreferenceScreen
+import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.CustomerViewModel
 
 data class NavItem(
@@ -37,13 +41,20 @@ val listOfNavItems = listOf(
 )
 
 enum class Screens {
-    Home, Profile, Download, Settings, Apps, AddCustomer
+    Home, Profile, Download, Settings, Apps, AddCustomer, CustomerDetail
+}
+
+// --- Added: simple route helpers for CustomerDetail with an argument
+object Routes {
+    const val CustomerDetail = "CustomerDetail"
+    const val CustomerDetailWithArg = "CustomerDetail/{customerId}"
+    fun customerDetail(id: String) = "CustomerDetail/$id"
 }
 
 val excludedScreens = listOf(Screens.Profile.name, Screens.Apps.name)
 
 @Composable
-fun ScreenNavigator(customerViewModel: CustomerViewModel) {
+fun ScreenNavigator(customerViewModel: CustomerViewModel, customerDetailsViewModel: CustomerDetailsViewModel) {
     val navController: NavHostController = rememberNavController()
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) },
@@ -52,7 +63,8 @@ fun ScreenNavigator(customerViewModel: CustomerViewModel) {
         NavigationHost(
             navController = navController,
             modifier = Modifier.padding(innerPadding),
-            customerViewModel = customerViewModel
+            customerViewModel = customerViewModel,
+            customerDetailsViewModel = customerDetailsViewModel
         )
     }
 }
@@ -61,23 +73,19 @@ fun ScreenNavigator(customerViewModel: CustomerViewModel) {
 fun BottomNavigationBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    if (currentDestination?.route !in excludedScreens) {
+    // If you want to hide bottom bar on any CustomerDetail route, use startsWith:
+    if (currentDestination?.route !in excludedScreens &&
+        currentDestination?.route?.startsWith(Routes.CustomerDetail) != true
+    ) {
         NavigationBar {
             listOfNavItems.forEach { navItem: NavItem ->
                 NavigationBarItem(
-                    icon = {
-                        Icon(
-                            imageVector = navItem.icon,
-                            contentDescription = null
-                        )
-                    },
+                    icon = { Icon(imageVector = navItem.icon, contentDescription = null) },
                     label = { Text(text = navItem.label) },
                     selected = currentDestination?.hierarchy?.any { it.route == navItem.route } == true,
                     onClick = {
                         if (currentDestination?.route != navItem.route) {
-                            navController.navigateWithState(
-                                route = navItem.route
-                            )
+                            navController.navigateWithState(route = navItem.route)
                         }
                     }
                 )
@@ -90,7 +98,8 @@ fun BottomNavigationBar(navController: NavHostController) {
 fun NavigationHost(
     navController: NavHostController,
     modifier: Modifier,
-    customerViewModel: CustomerViewModel
+    customerViewModel: CustomerViewModel,
+    customerDetailsViewModel: CustomerDetailsViewModel
 ) {
     NavHost(
         navController = navController,
@@ -98,10 +107,28 @@ fun NavigationHost(
         modifier = modifier
     ) {
         composable(route = Screens.Home.name) {
+            // From your HomeScreen, navigate like:
+            // navController.navigateWithState(Routes.customerDetail(customerId))
             HomeScreen(navController = navController, vm = customerViewModel)
         }
         composable(route = Screens.Settings.name) {
             PreferenceScreen(navController = navController)
+        }
+        // --- Changed: CustomerDetail destination now declares a {customerId} argument
+        composable(
+            route = Routes.CustomerDetailWithArg,
+            arguments = listOf(navArgument("customerId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val customerId = requireNotNull(backStackEntry.arguments?.getString("customerId")) {
+                "customerId missing"
+            }
+            // If your VM exposes setCustomerId, wire it here (keeps your current pattern)
+            customerDetailsViewModel.setCustomerId(customerId)
+
+            CustomerDetailsScreen(
+                navController = navController,
+                customerDetailsViewModel = customerDetailsViewModel
+            )
         }
     }
 }

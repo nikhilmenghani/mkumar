@@ -57,15 +57,12 @@ import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.data.CustomerFormState
-import com.mkumar.data.ProductType
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.ui.components.cards.CustomerListCard2
-import com.mkumar.ui.components.chips.ProductChipRow
 import com.mkumar.ui.components.fabs.StandardFab
-import com.mkumar.ui.components.forms.ProductFormSwitcher
 import com.mkumar.ui.components.inputs.CustomerInfoSection
-import com.mkumar.ui.components.selectors.ProductSelector
+import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.navigation.Screens
 import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.worker.DownloadWorker
@@ -178,6 +175,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 onClick = { customer ->
                     vm.selectCustomer(customer.id)
                     showCustomerDialog = true
+                    navController.navigate(Routes.customerDetail(customer.id))
                 },
                 onSync = { customer ->
                     jsonPreview = vm.serializeCustomer(customer.id)
@@ -211,69 +209,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     showAddCustomerSheet = false
                 }
             }
-        )
-    }
-
-    // --- Customer Popup: add products for the selected customer ---
-    if (showCustomerDialog && currentCustomer != null) {
-        var showSnackbar by remember { mutableStateOf(false) }
-        val snackbarHostState = remember { SnackbarHostState() }
-        LaunchedEffect(showSnackbar) {
-            if (showSnackbar) {
-                snackbarHostState.showSnackbar("Product saved!")
-                showSnackbar = false
-            }
-        }
-
-        val selectedProductType = remember { mutableStateOf<ProductType?>(null) }
-        val cId = currentCustomer.id
-
-        BaseBottomSheet(
-            title = currentCustomer.name.ifBlank { "Customer" },
-            sheetContent = {
-                val scrollState = rememberScrollState()
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .verticalScroll(scrollState)
-                        .padding(bottom = 72.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Product Type selection + Add
-                    ProductSelector(
-                        availableTypes = ProductType.allTypes,
-                        selectedType = selectedProductType.value,
-                        onTypeSelected = { selectedProductType.value = it },
-                        onAddClick = { type -> vm.addProduct(cId, type) }   // <-- scoped by customerId
-                    )
-
-                    // Chips for this customer's products
-                    ProductChipRow(
-                        products = currentCustomer.products,
-                        selectedId = currentCustomer.selectedProductId,
-                        onChipClick = { productId -> vm.openForm(cId, productId) },
-                        onChipDelete = { productId -> vm.removeProduct(cId, productId) },
-                        getCurrentBuffer = { product -> vm.getEditingProductData(cId, product) },
-                        hasUnsavedChanges = { product, buf -> vm.hasUnsavedChanges(cId, product, buf) }
-                    )
-
-                    // Form switcher (only for this customer's open forms)
-                    ProductFormSwitcher(
-                        selectedProduct = currentCustomer.products.find { it.id == currentCustomer.selectedProductId },
-                        openForms = openFormsForCurrentFlow, // Set<String>
-                        getEditingBuffer = { product -> vm.getEditingProductData(cId, product) },
-                        updateEditingBuffer = { productId, data -> vm.updateEditingBuffer(cId, productId, data) },
-                        onOwnerChange = { productId, newName -> vm.updateProductOwnerName(cId, productId, newName) },
-                        hasUnsavedChanges = { product, buf -> vm.hasUnsavedChanges(cId, product, buf) },
-                        onFormSave = { productId, data ->
-                            vm.saveProductFormData(cId, productId, data)
-                            showSnackbar = true
-                        }
-                    )
-                }
-            },
-            onDismiss = { showCustomerDialog = false },
-            showDismiss = true,
         )
     }
 

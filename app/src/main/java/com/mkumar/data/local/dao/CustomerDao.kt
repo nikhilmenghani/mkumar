@@ -38,4 +38,9 @@ interface CustomerDao {
     @Transaction
     @Query("SELECT * FROM customers WHERE id = :customerId LIMIT 1")
     fun observeWithOrders(customerId: String): Flow<CustomerWithOrders?>
+
+    @Transaction
+    @Query("SELECT * FROM customers WHERE id = :customerId LIMIT 1")
+    suspend fun getWithOrders(customerId: String): CustomerWithOrders?
+
 }
