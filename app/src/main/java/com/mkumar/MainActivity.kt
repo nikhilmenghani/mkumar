@@ -16,7 +16,9 @@ import com.mkumar.ui.navigation.ScreenNavigator
 import com.mkumar.ui.theme.MKumarTheme
 import com.mkumar.ui.theme.NikTheme
 import com.mkumar.viewmodel.CustomerViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val customerViewModel: CustomerViewModel by viewModels()

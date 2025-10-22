@@ -5,7 +5,9 @@ import android.content.Context
 import com.mkumar.data.PreferencesManager
 import com.mkumar.data.SingleChoice
 import com.mkumar.data.SingleText
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class App: Application() {
 
     companion object {

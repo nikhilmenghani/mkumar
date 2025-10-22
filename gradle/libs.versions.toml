@@ -1,5 +1,6 @@
 [versions]
 agp = "8.13.0"
+javapoet = "1.13.0"
 kotlin = "2.2.20"
 coreKtx = "1.17.0"
 junit = "4.13.2"
@@ -19,6 +20,11 @@ workmanager = "2.10.5"
 jsonv = "1.9.0"
 foundation = "1.9.3"
 runtime = "1.9.3"
+androidx-room = "2.8.2"
+coroutines = "1.10.2"
+hilt = "2.57.2"
+kotlinSerialization = "2.2.20"
+kspVersion = "2.2.20-2.0.4"
 
 [libraries]
 # Compose BOM
@@ -57,6 +63,7 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workmanager" }
 
 # JSON Serialization
+javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "jsonv" }
 
 # OkHttp
@@ -74,7 +81,25 @@ kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 
+# --- Room ---
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "androidx-room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }
+room-paging = { module = "androidx.room:room-paging", version.ref = "androidx-room" }
+
+# --- Coroutines ---
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+
+# --- Hilt (optional, only if you're using DI) ---
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
+android-library = { id = "com.android.library", version = "8.13.0" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
