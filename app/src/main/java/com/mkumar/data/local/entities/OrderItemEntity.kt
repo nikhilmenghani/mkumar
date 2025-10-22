@@ -1,4 +1,4 @@
-package com.mkumar.data.local.entity
+package com.mkumar.data.local.entities
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -37,7 +37,7 @@ data class OrderItemEntity(
     val orderId: String,
 
     /** Frame | Lens | Contact Lens (from ProductType.label) */
-    val productTypeLabel: String,
+    val productTypeLabel: String = "",
 
     /** Owner name captured in your UI (can be empty) */
     val productOwnerName: String = "",

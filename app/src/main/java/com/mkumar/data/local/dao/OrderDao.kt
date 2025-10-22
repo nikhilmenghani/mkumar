@@ -1,28 +1,62 @@
-// app/src/main/java/com/mkumar/data/local/dao/OrderDao.kt
 package com.mkumar.data.local.dao
 
-import androidx.room.*
-import com.mkumar.data.local.entity.OrderEntity
-import com.mkumar.data.local.entity.OrderItemEntity
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Upsert
+import com.mkumar.data.local.entities.OrderEntity
+import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 @Dao
 interface OrderDao {
+
+    // --- Writes ---
+    @Upsert
+    suspend fun upsert(order: OrderEntity)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(order: OrderEntity)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertItems(items: List<OrderItemEntity>)
+    suspend fun insertAll(orders: List<OrderEntity>)
 
-    @Query("SELECT * FROM orders WHERE customerId = :customerId ORDER BY occurredAt DESC")
-    suspend fun getOrdersForCustomer(customerId: String): List<OrderEntity>
+    @Query("DELETE FROM orders WHERE id = :orderId")
+    suspend fun deleteById(orderId: String)
 
-    @Query("SELECT * FROM order_items WHERE orderId = :orderId")
-    suspend fun getItemsForOrder(orderId: String): List<OrderItemEntity>
+    // --- Reads ---
+    @Query("SELECT * FROM orders WHERE id = :orderId LIMIT 1")
+    suspend fun getById(orderId: String): OrderEntity?
 
-    @Transaction
-    suspend fun insertOrderWithItems(order: OrderEntity, items: List<OrderItemEntity>) {
-        insert(order)
-        insertItems(items)
-    }
+    @Query("""
+        SELECT * FROM orders 
+        WHERE customerId = :customerId 
+        ORDER BY occurredAt DESC
+    """)
+    fun observeForCustomer(customerId: String): Flow<List<OrderEntity>>
+
+    @Query("""
+        SELECT * FROM orders 
+        WHERE customerId = :customerId 
+        ORDER BY occurredAt DESC
+    """)
+    suspend fun getForCustomer(customerId: String): List<OrderEntity>
+
+    @Query("""
+        SELECT * FROM orders 
+        WHERE customerId = :customerId 
+        ORDER BY occurredAt DESC 
+        LIMIT 1
+    """)
+    suspend fun getLatestForCustomer(customerId: String): OrderEntity?
+
+    // Optional: date range queries (handy for reports)
+    @Query("""
+        SELECT * FROM orders 
+        WHERE occurredAt BETWEEN :from AND :to
+        ORDER BY occurredAt DESC
+    """)
+    suspend fun getBetween(from: Instant, to: Instant): List<OrderEntity>
 }

@@ -3,28 +3,37 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.data.CustomerFormState
-import com.mkumar.data.CustomerRepository
 import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.ProductType
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.serialization.json.Json
+import com.mkumar.data.local.entities.CustomerEntity
+import com.mkumar.data.repository.CustomerRepository
+import com.mkumar.data.repository.OrderDraft
+import com.mkumar.data.repository.OrderItemInput
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import java.time.Clock
+import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.ExperimentalTime
 
 @HiltViewModel
-class CustomerViewModel @Inject constructor(
-    private val repo: CustomerRepository,
-    private val json: Json
+class CustomerViewModel @OptIn(ExperimentalTime::class)
+@Inject constructor(
+    private val repository: CustomerRepository,
+    private val clock: Clock
 ) : ViewModel() {
 
     private val _customers = MutableStateFlow<List<CustomerFormState>>(emptyList())
-    val customers: StateFlow<List<CustomerFormState>> = _customers
+    private val uiStateByCustomer = MutableStateFlow<Map<String, CustomerFormState>>(emptyMap())
+    val customersTemp: StateFlow<List<CustomerFormState>> = _customers
 
     private val _currentCustomerId = MutableStateFlow<String?>(null)
     val currentCustomerId: StateFlow<String?> = _currentCustomerId
@@ -35,8 +44,24 @@ class CustomerViewModel @Inject constructor(
     private val _openForms = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
     val openForms: StateFlow<Map<String, Set<String>>> = _openForms
 
-    val dbCustomers = repo.observeCustomers()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val customersUi: StateFlow<List<CustomerFormState>> =
+        combine(repository.getAllCustomersFlow(), uiStateByCustomer) { entities, cache ->
+            entities
+                .map { e ->
+                    // Reuse any in-memory products/buffers if present
+                    cache[e.id]?.copy(
+                        // keep products/selectedProductId from cache
+                        name = e.name,
+                        phone = e.phone,
+                    ) ?: CustomerFormState(
+                        id = e.id,
+                        name = e.name,
+                        phone = e.phone,
+                        products = emptyList(),          // no products from DB here
+                        selectedProductId = null,
+                    )
+                }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun addCustomer(name: String, phone: String) {
         val newCustomer = CustomerFormState(
@@ -47,6 +72,19 @@ class CustomerViewModel @Inject constructor(
         )
         _customers.update { it + newCustomer }
         _currentCustomerId.value = newCustomer.id
+    }
+
+    fun createOrUpdateCustomerCard(name: String, phone: String, email: String? = null) {
+        val customer = CustomerEntity(
+            id = UUID.randomUUID().toString(), // or ULID
+            name = name.trim(),
+            phone = phone.trim(),
+        )
+        viewModelScope.launch {
+            // If you want "update if same phone exists", do a DAO lookup and reuse ID.
+            repository.upsertCustomerOnly(customer)
+            // optional: update search index here if you wired SearchDao
+        }
     }
 
     fun selectCustomer(customerID: String?) {
@@ -139,12 +177,45 @@ class CustomerViewModel @Inject constructor(
         _openForms.update { it + (customerId to (_openForms.value[customerId].orEmpty() - productId)) }
     }
 
-    fun saveCurrentCustomerToDb(discountMinor: Long = 0L, includeUnsavedEdits: Boolean = true) {
-        val id = currentCustomerId.value ?: return
-        val snapshot = serializeCustomer(id, includeUnsavedEdits)
-        val form = json.decodeFromString(CustomerFormState.serializer(), snapshot)
+    @OptIn(ExperimentalTime::class)
+    fun saveOrderForCustomer(
+        customerId: String,
+        uiItems: List<UiProductLine>,
+        note: String? = null,
+        orderId: String? = null,
+        discount: Double = 0.0,
+        tax: Double = 0.0
+    ) {
+        val computed = computeTotals(uiItems, discount, tax)
+        val draft = OrderDraft(
+            orderId = orderId,
+            note = note,
+            items = uiItems.map {
+                OrderItemInput(
+                    sku = it.sku,
+                    name = it.name.trim(),
+                    quantity = it.quantity,
+                    unitPrice = it.unitPrice,
+                    lineTotal = it.quantity * it.unitPrice
+                )
+            }
+        )
+
         viewModelScope.launch {
-            repo.upsertCustomerWithOrderSnapshot(form)
+            if (orderId == null) {
+                repository.createOrder(customerId, draft)     // new order
+            } else {
+                // If you support editing an order, reuse repository.saveCustomer(form, draft)
+                // or add an update method. For now, simply replace by ID using repo.saveCustomer with a form stub:
+                repository.saveCustomer(
+                    form = CustomerFormState(
+                        id = customerId,
+                        name = "",                 // not changing here
+                        products = emptyList(),    // pricing deferred; we pass draft
+                    ),
+                    orderDraft = draft
+                )
+            }
         }
     }
 
@@ -176,4 +247,20 @@ class CustomerViewModel @Inject constructor(
         val json = Json { encodeDefaults = true; ignoreUnknownKeys = true; classDiscriminator = "type"; prettyPrint = true }
         return json.encodeToString(CustomerFormState.serializer(), snapshot)
     }
+
+    // --- Helpers ---
+    private data class Totals(val subTotal: Double, val discount: Double, val tax: Double, val grandTotal: Double)
+
+    private fun computeTotals(lines: List<UiProductLine>, discount: Double, tax: Double): Totals {
+        val sub = lines.sumOf { it.quantity * it.unitPrice }
+        val grand = (sub - discount) + tax
+        return Totals(sub, discount, tax, grand)
+    }
 }
+
+data class UiProductLine(
+    val sku: String? = null,
+    val name: String,
+    val quantity: Int,
+    val unitPrice: Double
+)

@@ -1,4 +1,4 @@
-package com.mkumar.data.local.entity
+package com.mkumar.data.local.entities
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -38,14 +38,14 @@ data class OrderEntity(
     val customerId: String,
 
     /** When the order occurred (epoch millis) */
-    val occurredAt: Long,
+    val occurredAt: Long = System.currentTimeMillis(),
 
     /** Sum of item subtotals (minor units) */
-    val subtotal: Long,
+    val subtotal: Long = 0L,
 
     /** Absolute discount in minor units (0 if none) */
     val discountAmount: Long = 0L,
 
     /** Computed: subtotal - discountAmount (redundant but handy for queries/UI) */
-    val grandTotal: Long
+    val grandTotal: Long = 0L
 )

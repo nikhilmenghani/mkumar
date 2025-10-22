@@ -1,4 +1,4 @@
-package com.mkumar.data.local.entity
+package com.mkumar.data.local.entities
 
 import androidx.room.Entity
 import androidx.room.Index

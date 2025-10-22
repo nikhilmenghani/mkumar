@@ -1,12 +1,14 @@
 package com.mkumar.data.local
 
-import androidx.room.ProvidedTypeConverter
-import kotlinx.serialization.json.Json
-import javax.inject.Inject
+import androidx.room.TypeConverter
+import java.time.Instant
 
-@ProvidedTypeConverter
-class Converters @Inject constructor(
-    private val json: Json
-) {
+object Converters {
+    @TypeConverter
+    @JvmStatic
+    fun instantToEpochMillis(value: Instant?): Long? = value?.toEpochMilli()
 
+    @TypeConverter
+    @JvmStatic
+    fun epochMillisToInstant(value: Long?): Instant? = value?.let { Instant.ofEpochMilli(it) }
 }

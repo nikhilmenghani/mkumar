@@ -93,7 +93,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     val scope = rememberCoroutineScope()
 
     // ViewModel state
-    val customers by vm.customers.collectAsStateWithLifecycle()
+    val customers by vm.customersUi.collectAsStateWithLifecycle()
     val currentCustomerId by vm.currentCustomerId.collectAsStateWithLifecycle()
     val currentCustomer = remember(customers, currentCustomerId) {
         customers.firstOrNull { it.id == currentCustomerId }
@@ -207,7 +207,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
             showDone = true,
             onDoneClick = {
                 if (name.isNotBlank()) {
-                    vm.addCustomer(name.trim(), phone.trim())
+                    vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
                     showAddCustomerSheet = false
                 }
             }
