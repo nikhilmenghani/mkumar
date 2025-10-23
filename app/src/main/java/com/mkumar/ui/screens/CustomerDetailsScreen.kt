@@ -55,6 +55,7 @@ fun CustomerDetailsScreen(
     onDismissError: () -> Unit = {}
 ) {
     var showCustomerDialog by remember { mutableStateOf(false) }
+    var selectedOrderId by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -78,7 +79,7 @@ fun CustomerDetailsScreen(
         }
     ) { padding ->
 
-        val state by customerDetailsViewModel.ui.collectAsStateWithLifecycle()
+        val state by customerDetailsViewModel.customerOrdersUi.collectAsStateWithLifecycle()
 
         Column(
             modifier = Modifier
@@ -98,8 +99,9 @@ fun CustomerDetailsScreen(
             if (state.ordersByDay.isEmpty() && !state.isLoading) {
                 EmptyOrders()
             } else {
-                OrdersList(state.ordersByDay, onOrderClick = {
+                OrdersList(state.ordersByDay, onOrderClick = { id ->
                     showCustomerDialog = true
+                    selectedOrderId = id
                 })
             }
         }
@@ -117,7 +119,7 @@ fun CustomerDetailsScreen(
                         .padding(bottom = 72.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ){
-                    Text("Customer details go here", modifier = Modifier.padding(16.dp))
+                    Text("Customer details go here\n $selectedOrderId", modifier = Modifier.padding(16.dp))
                 }
             },
             onDismiss = { showCustomerDialog = false },

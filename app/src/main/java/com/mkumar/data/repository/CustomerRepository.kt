@@ -98,11 +98,12 @@ class CustomerRepository @Inject constructor(
 
     suspend fun customerHeader(id: String): CustomerHeaderDomain {
         val row = customerDao.getWithOrders(id)  // returns a DB projection
+        val orders = row?.orders
         return CustomerHeaderDomain(
-            id = "",
-            displayName = "",
-            phoneFormatted = "", // or format here
-            totalOrders = 0,       // nullable in Phase 1 if expensive
+            id = row!!.customer.id,
+            displayName = row.customer.name,
+            phoneFormatted = row.customer.phone, // or format here
+            totalOrders = orders?.size,       // nullable in Phase 1 if expensive
             lifetimeValueFormatted = "", // nullable ok
             lastVisitFormatted = ""
         )
