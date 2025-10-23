@@ -9,14 +9,18 @@ import com.mkumar.data.repository.CustomerRepository
 import com.mkumar.data.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import javax.inject.Inject
 
 @HiltViewModel
 class CustomerDetailsViewModel @Inject constructor(
@@ -35,6 +39,46 @@ class CustomerDetailsViewModel @Inject constructor(
         currentCustomerId = id
         refresh()
     }
+
+    val customerOrdersUi: StateFlow<CustomerDetailsUiState> =
+        flow {
+            val id = currentCustomerId
+            if (id != null) {
+                val orderSummaries = orders.ordersForCustomer(id)
+                emit(orderSummaries)
+            } else {
+                emit(emptyList())
+            }
+        }
+            .map { orderSummaries ->
+                val locale = Locale.getDefault()
+                val zone = ZoneId.systemDefault()
+                val dayFmt = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", locale)
+                val timeFmt = DateTimeFormatter.ofPattern("h:mm a", locale)
+
+                val uiOrders = orderSummaries.map { o ->
+                    val invoiceShort = "INV-" + o.id.takeLast(6).uppercase(locale)
+                    OrderSummaryUi(
+                        id = o.id,
+                        invoiceShort = invoiceShort,
+                        subtitle = o.subtitle,
+                        timeFormatted = o.occurredAt.atZone(zone).format(timeFmt),
+                        totalFormatted = if (o.isDraft) null else o.totalFormatted,
+                        isDraft = o.isDraft
+                    )
+                }
+
+                val grouped = uiOrders.groupBy { o ->
+                    val domain = orderSummaries.first { it.id == o.id }
+                    domain.occurredAt.atZone(zone).toLocalDate().format(dayFmt)
+                }.toSortedMap(compareByDescending { dayStr -> dayStr })
+
+                CustomerDetailsUiState(
+                    header = _ui.value.header,
+                    ordersByDay = grouped
+                )
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CustomerDetailsUiState())
 
     fun refresh() {
         val id = currentCustomerId ?: return

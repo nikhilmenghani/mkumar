@@ -1,21 +1,50 @@
 package com.mkumar.ui.screens
 
-import androidx.compose.foundation.layout.*
+import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
-import androidx.compose.material3.*
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.mkumar.data.CustomerDetailsUiState
 import com.mkumar.data.CustomerHeaderUi
 import com.mkumar.data.OrderSummaryUi
+import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,15 +52,14 @@ import com.mkumar.viewmodel.CustomerDetailsViewModel
 fun CustomerDetailsScreen(
     navController: NavHostController,
     customerDetailsViewModel: CustomerDetailsViewModel,
-    state: CustomerDetailsUiState = CustomerDetailsUiState(),
-    onNewSale: () -> Unit = {},
-    onOrderClick: (String) -> Unit = {},
     onDismissError: () -> Unit = {}
 ) {
+    var showCustomerDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.header?.displayName ?: "Customer") },
+                title = { Text("Customer") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -41,12 +69,17 @@ fun CustomerDetailsScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onNewSale,
+                onClick = {
+                    customerDetailsViewModel.onNewSale()
+                },
                 icon = { Icon(Icons.Outlined.AddShoppingCart, contentDescription = null) },
                 text = { Text("New Sale") }
             )
         }
     ) { padding ->
+
+        val state by customerDetailsViewModel.ui.collectAsStateWithLifecycle()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -57,7 +90,7 @@ fun CustomerDetailsScreen(
             }
 
             if (state.error != null) {
-                ErrorBanner(message = state.error, onDismiss = onDismissError)
+                ErrorBanner(message = state.error!!, onDismiss = onDismissError)
             }
 
             state.header?.let { HeaderCard(it) }
@@ -65,9 +98,31 @@ fun CustomerDetailsScreen(
             if (state.ordersByDay.isEmpty() && !state.isLoading) {
                 EmptyOrders()
             } else {
-                OrdersList(state.ordersByDay, onOrderClick)
+                OrdersList(state.ordersByDay, onOrderClick = {
+                    showCustomerDialog = true
+                })
             }
         }
+    }
+    if (showCustomerDialog) {
+        BaseBottomSheet(
+            title = "Customer Details",
+            sheetContent = {
+                val scrollState = rememberScrollState()
+                // Content for customer details
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .verticalScroll(scrollState)
+                        .padding(bottom = 72.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ){
+                    Text("Customer details go here", modifier = Modifier.padding(16.dp))
+                }
+            },
+            onDismiss = { showCustomerDialog = false },
+            showDismiss = true,
+        )
     }
 }
 
@@ -114,6 +169,16 @@ private fun OrdersList(
     ordersByDay: Map<String, List<OrderSummaryUi>>,
     onOrderClick: (String) -> Unit
 ) {
+    // Debug: Log all order IDs
+    val allIds = ordersByDay.values.flatten().map { it.id }
+    Log.d("OrdersList", "Order IDs: $allIds")
+
+    // Check for duplicates
+    val duplicateIds = allIds.groupBy { it }.filter { it.value.size > 1 }.keys
+    if (duplicateIds.isNotEmpty()) {
+        Log.e("OrdersList", "Duplicate order IDs found: $duplicateIds")
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -189,3 +254,46 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
         }
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewHeaderCard() {
+    HeaderCard(
+        header = CustomerHeaderUi(
+            displayName = "Jane Doe",
+            phoneFormatted = "+1 555-1234",
+            totalOrders = 12,
+            lifetimeValueFormatted = "$1,200.00",
+            lastVisitFormatted = "Apr 10, 2024",
+            id = "test"
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewOrdersList() {
+    val sampleOrders = listOf(
+        OrderSummaryUi(
+            id = "1",
+            invoiceShort = "INV-001",
+            subtitle = "First order",
+            timeFormatted = "10:00 AM",
+            isDraft = false,
+            totalFormatted = "$100.00"
+        ),
+        OrderSummaryUi(
+            id = "2",
+            invoiceShort = "INV-002",
+            subtitle = "Second order",
+            timeFormatted = "11:30 AM",
+            isDraft = true,
+            totalFormatted = null
+        )
+    )
+    OrdersList(
+        ordersByDay = mapOf("Today" to sampleOrders),
+        onOrderClick = {}
+    )
+}
+
