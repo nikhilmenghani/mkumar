@@ -24,9 +24,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductFormData
+import com.mkumar.data.ProductType
 
 @Composable
 fun ProductChipRow(
@@ -127,3 +129,23 @@ fun ProductChipRow(
         )
     }
 }
+
+@Composable
+@Preview(showBackground = true)
+fun ProductChipRowPreview() {
+    val sampleProducts = listOf(
+        ProductEntry(id = "1", productType = ProductType.fromLabel("Lens"), isSaved = true),
+        ProductEntry(id = "2", productType = ProductType.fromLabel("ContactLens"), isSaved = false),
+        ProductEntry(id = "3", productType = ProductType.fromLabel("Frame"), isSaved = true)
+    )
+    ProductChipRow(
+        products = sampleProducts,
+        selectedId = "2",
+        onChipClick = {},
+        onChipDelete = {},
+        getCurrentBuffer = { null },
+        hasUnsavedChanges = { _, _ -> false }
+    )
+}
+
+

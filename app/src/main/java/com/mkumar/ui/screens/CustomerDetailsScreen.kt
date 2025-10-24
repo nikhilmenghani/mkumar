@@ -1,6 +1,5 @@
 package com.mkumar.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,12 +46,10 @@ import com.mkumar.data.OrderSummaryUi
 import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductType
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
-import com.mkumar.ui.components.chips.ProductChipRow
-import com.mkumar.ui.components.forms.ProductFormSwitcher
-import com.mkumar.ui.components.selectors.ProductSelector
+import com.mkumar.ui.components.cards.ProductChipRowCard
+import com.mkumar.ui.components.cards.ProductFormCard
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import java.util.UUID
-import kotlin.collections.orEmpty
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,7 +111,6 @@ fun CustomerDetailsScreen(
                             selectedOrderId,
                             customerDetailsViewModel.getOrderById(selectedOrderId)?.products.orEmpty()
                         )
-                        showCustomerDialog = true
                     },
                     onOrderClick = { order ->
                     showCustomerDialog = true
@@ -130,10 +126,7 @@ fun CustomerDetailsScreen(
             customerName = customerName,
             selectedOrder = latestSelectedOrder,
             customerDetailsViewModel = customerDetailsViewModel,
-            onDismiss = { showCustomerDialog = false },
-            onDoneClick = {
-                showCustomerDialog = false
-            }
+            onDismiss = { showCustomerDialog = false }
         )
     }
 }
@@ -143,8 +136,7 @@ private fun CustomerDetailsBottomSheet(
     customerName: String,
     selectedOrder: OrderSummaryUi?,
     customerDetailsViewModel: CustomerDetailsViewModel,
-    onDismiss: () -> Unit,
-    onDoneClick: () -> Unit
+    onDismiss: () -> Unit
 ) {
     val selectedProductType = remember { mutableStateOf<ProductType?>(null) }
     val selectedOrderId = selectedOrder?.id ?: ""
@@ -152,6 +144,7 @@ private fun CustomerDetailsBottomSheet(
 
     BaseBottomSheet(
         title = "Customer Details ${selectedOrder?.id}",
+        showTitle = false,
         sheetContent = {
             val scrollState = rememberScrollState()
             // Content for customer details
@@ -162,7 +155,17 @@ private fun CustomerDetailsBottomSheet(
                     .padding(bottom = 72.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ProductSelector(
+                // Chips for this customer's products
+                ProductChipRowCard(
+                    products = selectedOrder?.products,
+                    selectedId = selectedOrder?.selectedProductId,
+                    onChipClick = { productId -> customerDetailsViewModel.openForm(selectedOrderId, productId) },
+                    onChipDelete = { productId -> customerDetailsViewModel.removeProductFromOrder(selectedOrderId, productId )},
+                    getCurrentBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
+                    hasUnsavedChanges = { product, buf -> customerDetailsViewModel.hasUnsavedChanges(selectedOrderId, product, buf) }
+                )
+
+                ProductFormCard(
                     availableTypes = ProductType.allTypes,
                     selectedType = selectedProductType.value,
                     onTypeSelected = { selectedProductType.value = it },
@@ -177,21 +180,7 @@ private fun CustomerDetailsBottomSheet(
                                 newProductEntry
                             )
                         }
-                    }
-                )
-
-                // Chips for this customer's products
-                ProductChipRow(
-                    products = selectedOrder?.products,
-                    selectedId = selectedOrder?.selectedProductId,
-                    onChipClick = { productId -> customerDetailsViewModel.openForm(selectedOrderId, productId) },
-                    onChipDelete = { productId -> customerDetailsViewModel.removeProductFromOrder(selectedOrderId, productId )},
-                    getCurrentBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
-                    hasUnsavedChanges = { product, buf -> customerDetailsViewModel.hasUnsavedChanges(selectedOrderId, product, buf) }
-                )
-
-                // Form switcher (only for this customer's open forms)
-                ProductFormSwitcher(
+                    },
                     selectedProduct = selectedOrder?.products?.find { it.id == selectedOrder.selectedProductId },
                     openForms = openFormFlow,
                     getEditingBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
@@ -223,9 +212,7 @@ private fun CustomerDetailsBottomSheet(
             }
         },
         onDismiss = onDismiss,
-        showDismiss = true,
-        onDoneClick = onDoneClick,
-        showDone = true
+        showDismiss = true
     )
 }
 
@@ -273,16 +260,6 @@ private fun OrdersList(
     onSaveClick: (String) -> Unit = {},
     onOrderClick: (OrderSummaryUi) -> Unit
 ) {
-    // Debug: Log all order IDs
-    val allIds = ordersByDay.values.flatten().map { it.id }
-    Log.d("OrdersList", "Order IDs: $allIds")
-
-    // Check for duplicates
-    val duplicateIds = allIds.groupBy { it }.filter { it.value.size > 1 }.keys
-    if (duplicateIds.isNotEmpty()) {
-        Log.e("OrdersList", "Duplicate order IDs found: $duplicateIds")
-    }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -323,7 +300,7 @@ private fun OrderRow(
             },
             trailingContent = {
                 if (o.isDraft) {
-                    AssistChip(onClick = { onSaveClick(o.id) }, label = { Text("Draft") }, enabled = true)
+                    AssistChip(onClick = { onSaveClick(o.id) }, label = { Text("Save") }, enabled = true)
                 } else {
                     Text(o.totalFormatted ?: "")
                 }

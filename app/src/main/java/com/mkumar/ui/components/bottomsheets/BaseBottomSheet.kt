@@ -36,6 +36,7 @@ fun BaseBottomSheet(
     title: String,
     sheetContent: @Composable () -> Unit,
     onDismiss: () -> Unit = {},
+    showTitle: Boolean = true,
     showNext: Boolean = false,
     showPrevious: Boolean = false,
     showDone: Boolean = false,
@@ -63,24 +64,25 @@ fun BaseBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
-                .padding(16.dp)
         ) {
-            // Title
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            )
+            if (showTitle) {
+                // Title
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                )
 
-            // Divider
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
-                thickness = 1.dp,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+                // Divider
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
 
             // Dynamic Content
             sheetContent()
@@ -90,7 +92,7 @@ fun BaseBottomSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 16.dp),
+                        .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {

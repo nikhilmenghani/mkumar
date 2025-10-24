@@ -59,9 +59,9 @@ import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.data.CustomerFormState
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
+import com.mkumar.ui.components.cards.CustomerInfoCard
 import com.mkumar.ui.components.cards.CustomerListCard2
 import com.mkumar.ui.components.fabs.StandardFab
-import com.mkumar.ui.components.inputs.CustomerInfoSection
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.navigation.Screens
 import com.mkumar.viewmodel.CustomerViewModel
@@ -192,8 +192,9 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
 
         BaseBottomSheet(
             title = "Add Customer",
+            showTitle = false,
             sheetContent = {
-                CustomerInfoSection(
+                CustomerInfoCard(
                     name = name,
                     phone = phone,
                     onNameChange = { name = it },
