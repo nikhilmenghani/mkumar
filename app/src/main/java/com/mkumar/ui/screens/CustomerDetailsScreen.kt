@@ -106,7 +106,17 @@ fun CustomerDetailsScreen(
             if (state.ordersByDay.isEmpty() && !state.isLoading) {
                 EmptyOrders()
             } else {
-                OrdersList(state.ordersByDay, onOrderClick = { order ->
+                OrdersList(
+                    state.ordersByDay,
+                    onSaveClick = { id ->
+                        val selectedOrderId = id
+                        customerDetailsViewModel.saveProductsToOrder(
+                            selectedOrderId,
+                            customerDetailsViewModel.getOrderById(selectedOrderId)?.products.orEmpty()
+                        )
+                        showCustomerDialog = true
+                    },
+                    onOrderClick = { order ->
                     showCustomerDialog = true
                     selectedOrder = order
                 })
@@ -122,10 +132,6 @@ fun CustomerDetailsScreen(
             customerDetailsViewModel = customerDetailsViewModel,
             onDismiss = { showCustomerDialog = false },
             onDoneClick = {
-                customerDetailsViewModel.saveProductsToOrder(
-                    selectedOrderId,
-                    latestSelectedOrder?.products.orEmpty()
-                )
                 showCustomerDialog = false
             }
         )
@@ -264,6 +270,7 @@ private fun HeaderCard(header: CustomerHeaderUi) {
 @Composable
 private fun OrdersList(
     ordersByDay: Map<String, List<OrderSummaryUi>>,
+    onSaveClick: (String) -> Unit = {},
     onOrderClick: (OrderSummaryUi) -> Unit
 ) {
     // Debug: Log all order IDs
@@ -290,14 +297,18 @@ private fun OrdersList(
                 )
             }
             items(orders, key = { it.id }) { o ->
-                OrderRow(o) { onOrderClick(o) }
+                OrderRow(o, onSaveClick = onSaveClick) { onOrderClick(o) }
             }
         }
     }
 }
 
 @Composable
-private fun OrderRow(o: OrderSummaryUi, onClick: () -> Unit) {
+private fun OrderRow(
+    o: OrderSummaryUi,
+    onSaveClick: (String) -> Unit = {},
+    onClick: () -> Unit
+) {
     ElevatedCard(onClick = onClick) {
         ListItem(
             headlineContent = {
@@ -312,7 +323,7 @@ private fun OrderRow(o: OrderSummaryUi, onClick: () -> Unit) {
             },
             trailingContent = {
                 if (o.isDraft) {
-                    AssistChip(onClick = {}, label = { Text("Draft") }, enabled = false)
+                    AssistChip(onClick = { onSaveClick(o.id) }, label = { Text("Draft") }, enabled = true)
                 } else {
                     Text(o.totalFormatted ?: "")
                 }
