@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun ProductFormSwitcher(
     selectedProduct: ProductEntry?,
-    openForms: StateFlow<Set<String>>,
+    openForms: StateFlow<String>,
     getEditingBuffer: (ProductEntry) -> ProductFormData?,
     updateEditingBuffer: (String, ProductFormData) -> Unit,
     onOwnerChange: (String, String) -> Unit,
@@ -42,8 +42,8 @@ fun ProductFormSwitcher(
     onFormSave: (String, ProductFormData) -> Unit
 ) {
     if (selectedProduct == null) return
-    val openFormsState by openForms.collectAsState()
-    val showForm = selectedProduct.id in openFormsState
+    val openFormId by openForms.collectAsState()
+    val showForm = selectedProduct.id == openFormId
     val editingFormData by rememberUpdatedState(getEditingBuffer(selectedProduct))
     val isDirty by remember(selectedProduct.id, editingFormData) {
         derivedStateOf {

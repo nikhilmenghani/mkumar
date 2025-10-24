@@ -1,5 +1,6 @@
 package com.mkumar.data
 
+import kotlinx.serialization.json.Json
 import java.util.UUID
 
 @kotlinx.serialization.Serializable
@@ -9,4 +10,8 @@ data class ProductEntry(
     val productOwnerName: String = "",
     val formData: ProductFormData? = null,
     val isSaved: Boolean = false
-)
+) {
+    fun serializeFormData(): String? {
+        return formData?.let { Json.encodeToString(it) }
+    }
+}

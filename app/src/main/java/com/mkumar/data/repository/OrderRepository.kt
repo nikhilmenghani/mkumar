@@ -1,11 +1,13 @@
 package com.mkumar.data.repository
 
 import com.mkumar.data.OrderSummaryDomain
+import com.mkumar.data.ProductEntry
 import com.mkumar.data.local.MKumarDatabase
 import com.mkumar.data.local.dao.CustomerDao
 import com.mkumar.data.local.dao.OrderDao
 import com.mkumar.data.local.dao.OrderItemDao
 import com.mkumar.data.local.entities.OrderEntity
+import com.mkumar.data.local.entities.OrderItemEntity
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Instant
@@ -33,7 +35,6 @@ class OrderRepository @Inject constructor(
         }
     }
 
-
     suspend fun createDraftOrder(customerId: String): String {
         // Create new draft order entity
         val newOrder = OrderEntity(
@@ -42,6 +43,22 @@ class OrderRepository @Inject constructor(
         )
         orderDao.insert(newOrder)
         return newOrder.id
+    }
+
+    suspend fun addProductToOrder(orderId: String, productEntry: ProductEntry): String {
+        val newOrderItem = OrderItemEntity(
+            id = productEntry.id,
+            orderId = orderId,
+            productTypeLabel = productEntry.productType.label,
+            productOwnerName = productEntry.productOwnerName,
+            formDataJson = productEntry.serializeFormData(),
+            unitPrice = 0L,
+            quantity = 1,
+            subtotal = 0L
+        )
+
+        orderItemDao.insert(newOrderItem)
+        return newOrderItem.id
     }
 
 }

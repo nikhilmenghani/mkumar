@@ -30,15 +30,29 @@ import com.mkumar.data.ProductFormData
 
 @Composable
 fun ProductChipRow(
-    products: List<ProductEntry>,
+    products: List<ProductEntry>?,
     selectedId: String?,
     onChipClick: (String) -> Unit,
     onChipDelete: (String) -> Unit,
-    getCurrentBuffer: (ProductEntry) -> ProductFormData?,
-    hasUnsavedChanges: (ProductEntry, ProductFormData?) -> Boolean
+    getCurrentBuffer: (ProductEntry) -> ProductFormData? = { _ -> null },
+    hasUnsavedChanges: (ProductEntry, ProductFormData?) -> Boolean = { _, _ -> false }
 ) {
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
-
+    val safeProducts = products.orEmpty()
+    if (safeProducts.isEmpty()){
+        Box(
+            modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+        ) {
+            Text(
+                text = "No products added yet.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+            )
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -48,12 +62,12 @@ fun ProductChipRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            products.forEach { product ->
+            safeProducts.forEach { product ->
                 FilterChip(
                     selected = product.id == selectedId,
                     onClick = { onChipClick(product.id) },
                     label = {
-                        Text("${product.productType.label} #${products.indexOf(product) + 1}")
+                        Text("${product.productType.label} #${safeProducts.indexOf(product) + 1}")
                     },
                     leadingIcon = {
                         when {

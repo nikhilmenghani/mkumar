@@ -44,7 +44,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.mkumar.data.CustomerHeaderUi
 import com.mkumar.data.OrderSummaryUi
+import com.mkumar.data.ProductEntry
+import com.mkumar.data.ProductType
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
+import com.mkumar.ui.components.chips.ProductChipRow
+import com.mkumar.ui.components.forms.ProductFormSwitcher
+import com.mkumar.ui.components.selectors.ProductSelector
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +60,9 @@ fun CustomerDetailsScreen(
     onDismissError: () -> Unit = {}
 ) {
     var showCustomerDialog by remember { mutableStateOf(false) }
-    var selectedOrderId by remember { mutableStateOf("") }
+    var selectedOrder by remember { mutableStateOf<OrderSummaryUi?>(null) }
+    val state by customerDetailsViewModel.ui.collectAsStateWithLifecycle()
+    val customerName = state.header?.displayName ?: "Customer"
 
     Scaffold(
         topBar = {
@@ -78,9 +85,6 @@ fun CustomerDetailsScreen(
             )
         }
     ) { padding ->
-
-        val state by customerDetailsViewModel.customerOrdersUi.collectAsStateWithLifecycle()
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -99,16 +103,21 @@ fun CustomerDetailsScreen(
             if (state.ordersByDay.isEmpty() && !state.isLoading) {
                 EmptyOrders()
             } else {
-                OrdersList(state.ordersByDay, onOrderClick = { id ->
+                OrdersList(state.ordersByDay, onOrderClick = { order ->
                     showCustomerDialog = true
-                    selectedOrderId = id
+                    selectedOrder = order
                 })
             }
         }
     }
     if (showCustomerDialog) {
+        val selectedProductType = remember { mutableStateOf<ProductType?>(null) }
+        val selectedOrderId = selectedOrder?.id ?: ""
+        val latestSelectedOrder = customerDetailsViewModel.getOrderById(selectedOrderId)
+        val openFormFlow = customerDetailsViewModel.getOpenFormFlowForOrder(selectedOrderId)
+
         BaseBottomSheet(
-            title = "Customer Details",
+            title = "Customer Details ${selectedOrder?.id}",
             sheetContent = {
                 val scrollState = rememberScrollState()
                 // Content for customer details
@@ -118,8 +127,65 @@ fun CustomerDetailsScreen(
                         .verticalScroll(scrollState)
                         .padding(bottom = 72.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
-                ){
-                    Text("Customer details go here\n $selectedOrderId", modifier = Modifier.padding(16.dp))
+                ) {
+                    ProductSelector(
+                        availableTypes = ProductType.allTypes,
+                        selectedType = selectedProductType.value,
+                        onTypeSelected = { selectedProductType.value = it },
+                        onAddClick = {
+                            val newProductEntry = ProductEntry(
+                                productType = selectedProductType.value!!,
+                                productOwnerName = customerName
+                            )
+                            selectedOrder?.let { order ->
+                                customerDetailsViewModel.addProductToOrder(
+                                    order.id,
+                                    newProductEntry
+                                )
+                            }
+                        }
+                    )
+
+                    // Chips for this customer's products
+                    ProductChipRow(
+                        products = latestSelectedOrder?.products,
+                        selectedId = latestSelectedOrder?.selectedProductId,
+                        onChipClick = { productId -> customerDetailsViewModel.openForm(selectedOrderId, productId) },
+                        onChipDelete = { productId -> customerDetailsViewModel.removeProductFromOrder(selectedOrderId, productId )},
+                        getCurrentBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
+                        hasUnsavedChanges = { product, buf -> customerDetailsViewModel.hasUnsavedChanges(selectedOrderId, product, buf) }
+                    )
+
+                    // Form switcher (only for this customer's open forms)
+                    ProductFormSwitcher(
+                        selectedProduct = latestSelectedOrder?.products?.find { it.id == latestSelectedOrder.selectedProductId },
+                        openForms = openFormFlow,
+                        getEditingBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
+                        updateEditingBuffer = { productId, data ->
+                            customerDetailsViewModel.updateEditingBuffer(
+                                selectedOrderId,
+                                productId,
+                                data
+                            )
+                        },
+                        onOwnerChange = { productId, newName ->
+                            customerDetailsViewModel.updateProductOwnerName(
+                                selectedOrderId,
+                                productId,
+                                newName
+                            )
+                        },
+                        hasUnsavedChanges = { product, buf ->
+                            customerDetailsViewModel.hasUnsavedChanges(
+                                selectedOrderId,
+                                product,
+                                buf
+                            )
+                        },
+                        onFormSave = { productId, data ->
+                            customerDetailsViewModel.saveProductFormData(selectedOrderId, productId, data)
+                        }
+                    )
                 }
             },
             onDismiss = { showCustomerDialog = false },
@@ -169,7 +235,7 @@ private fun HeaderCard(header: CustomerHeaderUi) {
 @Composable
 private fun OrdersList(
     ordersByDay: Map<String, List<OrderSummaryUi>>,
-    onOrderClick: (String) -> Unit
+    onOrderClick: (OrderSummaryUi) -> Unit
 ) {
     // Debug: Log all order IDs
     val allIds = ordersByDay.values.flatten().map { it.id }
@@ -195,7 +261,7 @@ private fun OrdersList(
                 )
             }
             items(orders, key = { it.id }) { o ->
-                OrderRow(o) { onOrderClick(o.id) }
+                OrderRow(o) { onOrderClick(o) }
             }
         }
     }
@@ -228,9 +294,11 @@ private fun OrderRow(o: OrderSummaryUi, onClick: () -> Unit) {
 
 @Composable
 private fun EmptyOrders() {
-    Box(Modifier
-        .fillMaxWidth()
-        .padding(24.dp), contentAlignment = Alignment.Center) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(24.dp), contentAlignment = Alignment.Center
+    ) {
         Text(
             "No orders yet for this customer. Tap “New Sale”.",
             style = MaterialTheme.typography.bodyLarge

@@ -6,5 +6,7 @@ data class OrderSummaryUi(
     val subtitle: String,           // e.g., "Glasses + Case" or "3 items"
     val timeFormatted: String,      // e.g., "06:12 PM"
     val totalFormatted: String?,    // null if draft / not computed
-    val isDraft: Boolean
+    val isDraft: Boolean,
+    val products: List<ProductEntry> = emptyList(),
+    val selectedProductId: String? = null
 )
