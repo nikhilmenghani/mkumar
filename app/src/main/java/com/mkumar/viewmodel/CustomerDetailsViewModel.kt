@@ -223,16 +223,18 @@ class CustomerDetailsViewModel @Inject constructor(
         _openForms.update { it - orderId }
     }
 
-    fun saveProductToOrder(orderId: String, productEntry: ProductEntry) {
+    fun saveProductsToOrder(orderId: String, productEntries: List<ProductEntry>) {
         viewModelScope.launch {
             runCatching {
                 // Update the order in your repository
-                orders.addProductToOrder(orderId, productEntry)
+                for (productEntry in productEntries) {
+                    orders.addProductToOrder(orderId, productEntry)
+                }
             }.onSuccess {
                 // Refresh UI state after successful update
                 refresh()
             }.onFailure { e ->
-                _ui.update { it.copy(error = e.message ?: "Failed to add product") }
+                _ui.update { it.copy(error = e.message ?: "Failed to add products") }
             }
         }
     }

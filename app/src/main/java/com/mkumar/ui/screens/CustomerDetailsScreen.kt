@@ -190,6 +190,14 @@ fun CustomerDetailsScreen(
             },
             onDismiss = { showCustomerDialog = false },
             showDismiss = true,
+            onDoneClick = {
+                customerDetailsViewModel.saveProductsToOrder(
+                    selectedOrderId,
+                    latestSelectedOrder?.products.orEmpty()
+                )
+                showCustomerDialog = false
+            },
+            showDone = true
         )
     }
 }
