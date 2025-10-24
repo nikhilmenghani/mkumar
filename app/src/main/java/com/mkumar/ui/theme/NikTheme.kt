@@ -65,7 +65,7 @@ fun NikTheme(
             tertiary = if (darkTheme) Color(0xFF03DAC6) else Color(0xFF018786),
             background = if (darkTheme) Color(0xFF121212) else Color(0xFFFFFFFF),
             surface = if (darkTheme) Color(0xFF121212) else Color(0xFFFFFFFF),
-            surfaceVariant = if (darkTheme) Color(0xFF2C2C2C) else Color(0xFFE0E0E0),
+            surfaceVariant = if (darkTheme) Color(0xFF2C2C2C) else Color(0xFF919191),
             onPrimary = if (darkTheme) Color.Black else Color.White,
             onSecondary = if (darkTheme) Color.Black else Color.White,
             onTertiary = if (darkTheme) Color.Black else Color.White,

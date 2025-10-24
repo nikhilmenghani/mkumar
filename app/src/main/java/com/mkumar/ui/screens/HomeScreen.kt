@@ -266,15 +266,10 @@ fun CustomerList(
         items(customers, key = { it.id }) { customer ->
             CustomerListCard2(
                 customer = customer,
-                productChips = customer.products,
                 onClick = onClick,
                 onSync = onSync,
-                onGenerateBill = {},
-                onCall = {},
                 onEdit = {},
-                onArchive = {},
                 onDelete = {},
-                maxVisibleChips = 5
             )
         }
     }
