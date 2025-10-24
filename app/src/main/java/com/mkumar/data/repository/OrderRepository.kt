@@ -72,4 +72,13 @@ class OrderRepository @Inject constructor(
         return newOrderItem.id
     }
 
+    suspend fun deleteOrder(orderId: String) {
+        orderDao.deleteById(orderId)
+        orderItemDao.deleteByOrderId(orderId)
+    }
+
+    suspend fun deleteOrderItem(orderItemId: String) {
+        orderItemDao.deleteProductById(orderItemId)
+    }
+
 }

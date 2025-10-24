@@ -117,6 +117,9 @@ fun CustomerDetailsScreen(
                             customerDetailsViewModel.getOrderById(selectedOrderId)?.products.orEmpty()
                         )
                     },
+                    onDeleteClick = { id ->
+                        customerDetailsViewModel.deleteOrder(id)
+                    },
                     onOrderClick = { order ->
                     showCustomerDialog = true
                     selectedOrder = order
@@ -267,6 +270,7 @@ private fun HeaderCard(header: CustomerHeaderUi) {
 private fun OrdersList(
     ordersByDay: Map<String, List<OrderSummaryUi>>,
     onSaveClick: (String) -> Unit = {},
+    onDeleteClick: (String) -> Unit = {},
     onOrderClick: (OrderSummaryUi) -> Unit
 ) {
     LazyColumn(
@@ -283,7 +287,7 @@ private fun OrdersList(
                 )
             }
             items(orders, key = { it.id }) { o ->
-                OrderRow(o, onSaveClick = onSaveClick) { onOrderClick(o) }
+                OrderRow(o, onSaveClick = onSaveClick, onDeleteClick = onDeleteClick) { onOrderClick(o) }
             }
         }
     }
@@ -293,6 +297,7 @@ private fun OrdersList(
 private fun OrderRow(
     o: OrderSummaryUi,
     onSaveClick: (String) -> Unit = {},
+    onDeleteClick: (String) -> Unit = {},
     onClick: () -> Unit
 ) {
     ElevatedCard(
@@ -313,11 +318,18 @@ private fun OrderRow(
                 )
             },
             trailingContent = {
-                if (o.isDraft) {
-                    AssistChip(onClick = { onSaveClick(o.id) }, label = { Text("Save") }, enabled = true)
-                } else {
-                    Text(o.totalFormatted ?: "")
+                Row (
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (o.isDraft) {
+                        AssistChip(onClick = { onSaveClick(o.id) }, label = { Text("Save") }, enabled = true)
+                    } else {
+                        Text(o.totalFormatted ?: "")
+                    }
+                    AssistChip(onClick = { onDeleteClick(o.id) }, label = { Text("Delete") }, enabled = true)
                 }
+
             }
         )
     }

@@ -41,6 +41,12 @@ interface OrderItemDao {
     suspend fun deleteByOrderId(orderId: String)
 
     /**
+     * Delete an existing order item.
+     */
+    @Query("DELETE FROM orders WHERE id = :orderId")
+    suspend fun deleteProductById(orderId: String)
+
+    /**
      * Fetch all items for a given order as Flow for reactive UI binding.
      */
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
