@@ -2,6 +2,7 @@ package com.mkumar.data.repository
 
 import com.mkumar.data.OrderSummaryDomain
 import com.mkumar.data.ProductEntry
+import com.mkumar.data.ProductType
 import com.mkumar.data.local.MKumarDatabase
 import com.mkumar.data.local.dao.CustomerDao
 import com.mkumar.data.local.dao.OrderDao
@@ -25,12 +26,24 @@ class OrderRepository @Inject constructor(
     suspend fun ordersForCustomer(customerId: String): List<OrderSummaryDomain> {
         val orderEntities = orderDao.observeForCustomer(customerId).first()
         return orderEntities.map { entity ->
+            val orderItems = orderItemDao.getItemsForOrder(entity.id)
+            val productsOfOrder = mutableListOf<ProductEntry>()
+            for (product in orderItems) {
+                val entry = ProductEntry(
+                    id = product.id,
+                    productType = ProductType.fromLabel(product.productTypeLabel),
+                    productOwnerName = product.productOwnerName,
+                    formData = ProductEntry.deserializeFormData(product.formDataJson)
+                )
+                productsOfOrder.add(entry)
+            }
             OrderSummaryDomain(
                 id = entity.id,
                 occurredAt = Instant.ofEpochMilli(entity.occurredAt),
                 isDraft = true,
                 subtitle = "",
-                totalFormatted = "0"
+                totalFormatted = "0",
+                products = productsOfOrder
             )
         }
     }

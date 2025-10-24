@@ -1,3 +1,4 @@
+// File: app/src/main/java/com/mkumar/data/ProductType.kt
 package com.mkumar.data
 
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -31,5 +32,9 @@ sealed class ProductType {
 
     companion object {
         val allTypes = listOf(Frame, Lens, ContactLens)
+
+        fun fromLabel(label: String): ProductType =
+            allTypes.find { it.label == label } ?: Lens
+
     }
 }

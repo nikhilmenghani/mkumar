@@ -118,7 +118,8 @@ class CustomerDetailsViewModel @Inject constructor(
                         subtitle = o.subtitle,                 // e.g., "Glasses + Case" or "3 items"
                         timeFormatted = o.occurredAt.atZone(zone).format(timeFmt),
                         totalFormatted = if (o.isDraft) null else o.totalFormatted,
-                        isDraft = o.isDraft
+                        isDraft = o.isDraft,
+                        products = o.products
                     )
                 }
 

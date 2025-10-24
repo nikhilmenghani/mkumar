@@ -5,5 +5,6 @@ data class OrderSummaryDomain(
     val subtitle: String,        // "Glasses + Case" or "3 items"
     val occurredAt: java.time.Instant,
     val totalFormatted: String?, // null when draft
-    val isDraft: Boolean
+    val isDraft: Boolean,
+    val products: List<ProductEntry> = emptyList(),
 )

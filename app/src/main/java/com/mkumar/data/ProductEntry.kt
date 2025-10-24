@@ -14,4 +14,10 @@ data class ProductEntry(
     fun serializeFormData(): String? {
         return formData?.let { Json.encodeToString(it) }
     }
+
+    companion object {
+        fun deserializeFormData(json: String?): ProductFormData? {
+            return json?.let { Json.decodeFromString<ProductFormData>(it) }
+        }
+    }
 }
