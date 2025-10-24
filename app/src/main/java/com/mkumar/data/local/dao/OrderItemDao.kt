@@ -5,12 +5,16 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.mkumar.data.local.entities.OrderItemEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface OrderItemDao {
 
+
+    @Upsert
+    suspend fun upsert(order: OrderItemEntity)
     /**
      * Insert or replace a list of order items.
      * Usually called when saving an order with items in one transaction.

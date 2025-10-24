@@ -51,6 +51,8 @@ import com.mkumar.ui.components.chips.ProductChipRow
 import com.mkumar.ui.components.forms.ProductFormSwitcher
 import com.mkumar.ui.components.selectors.ProductSelector
 import com.mkumar.viewmodel.CustomerDetailsViewModel
+import java.util.UUID
+import kotlin.collections.orEmpty
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +80,8 @@ fun CustomerDetailsScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-                    customerDetailsViewModel.onNewSale()
+                    showCustomerDialog = true
+                    selectedOrder = customerDetailsViewModel.createNewOrder()
                 },
                 icon = { Icon(Icons.Outlined.AddShoppingCart, contentDescription = null) },
                 text = { Text("New Sale") }
@@ -111,95 +114,113 @@ fun CustomerDetailsScreen(
         }
     }
     if (showCustomerDialog) {
-        val selectedProductType = remember { mutableStateOf<ProductType?>(null) }
-        val selectedOrderId = selectedOrder?.id ?: ""
+        val selectedOrderId = selectedOrder?.id ?: UUID.randomUUID().toString()
         val latestSelectedOrder = customerDetailsViewModel.getOrderById(selectedOrderId)
-        val openFormFlow = customerDetailsViewModel.getOpenFormFlowForOrder(selectedOrderId)
-
-        BaseBottomSheet(
-            title = "Customer Details ${selectedOrder?.id}",
-            sheetContent = {
-                val scrollState = rememberScrollState()
-                // Content for customer details
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .verticalScroll(scrollState)
-                        .padding(bottom = 72.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    ProductSelector(
-                        availableTypes = ProductType.allTypes,
-                        selectedType = selectedProductType.value,
-                        onTypeSelected = { selectedProductType.value = it },
-                        onAddClick = {
-                            val newProductEntry = ProductEntry(
-                                productType = selectedProductType.value!!,
-                                productOwnerName = customerName
-                            )
-                            selectedOrder?.let { order ->
-                                customerDetailsViewModel.addProductToOrder(
-                                    order.id,
-                                    newProductEntry
-                                )
-                            }
-                        }
-                    )
-
-                    // Chips for this customer's products
-                    ProductChipRow(
-                        products = latestSelectedOrder?.products,
-                        selectedId = latestSelectedOrder?.selectedProductId,
-                        onChipClick = { productId -> customerDetailsViewModel.openForm(selectedOrderId, productId) },
-                        onChipDelete = { productId -> customerDetailsViewModel.removeProductFromOrder(selectedOrderId, productId )},
-                        getCurrentBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
-                        hasUnsavedChanges = { product, buf -> customerDetailsViewModel.hasUnsavedChanges(selectedOrderId, product, buf) }
-                    )
-
-                    // Form switcher (only for this customer's open forms)
-                    ProductFormSwitcher(
-                        selectedProduct = latestSelectedOrder?.products?.find { it.id == latestSelectedOrder.selectedProductId },
-                        openForms = openFormFlow,
-                        getEditingBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
-                        updateEditingBuffer = { productId, data ->
-                            customerDetailsViewModel.updateEditingBuffer(
-                                selectedOrderId,
-                                productId,
-                                data
-                            )
-                        },
-                        onOwnerChange = { productId, newName ->
-                            customerDetailsViewModel.updateProductOwnerName(
-                                selectedOrderId,
-                                productId,
-                                newName
-                            )
-                        },
-                        hasUnsavedChanges = { product, buf ->
-                            customerDetailsViewModel.hasUnsavedChanges(
-                                selectedOrderId,
-                                product,
-                                buf
-                            )
-                        },
-                        onFormSave = { productId, data ->
-                            customerDetailsViewModel.saveProductFormData(selectedOrderId, productId, data)
-                        }
-                    )
-                }
-            },
+        CustomerDetailsBottomSheet(
+            customerName = customerName,
+            selectedOrder = latestSelectedOrder,
+            customerDetailsViewModel = customerDetailsViewModel,
             onDismiss = { showCustomerDialog = false },
-            showDismiss = true,
             onDoneClick = {
                 customerDetailsViewModel.saveProductsToOrder(
                     selectedOrderId,
                     latestSelectedOrder?.products.orEmpty()
                 )
                 showCustomerDialog = false
-            },
-            showDone = true
+            }
         )
     }
+}
+
+@Composable
+private fun CustomerDetailsBottomSheet(
+    customerName: String,
+    selectedOrder: OrderSummaryUi?,
+    customerDetailsViewModel: CustomerDetailsViewModel,
+    onDismiss: () -> Unit,
+    onDoneClick: () -> Unit
+) {
+    val selectedProductType = remember { mutableStateOf<ProductType?>(null) }
+    val selectedOrderId = selectedOrder?.id ?: ""
+    val openFormFlow = customerDetailsViewModel.getOpenFormFlowForOrder(selectedOrderId)
+
+    BaseBottomSheet(
+        title = "Customer Details ${selectedOrder?.id}",
+        sheetContent = {
+            val scrollState = rememberScrollState()
+            // Content for customer details
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(scrollState)
+                    .padding(bottom = 72.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ProductSelector(
+                    availableTypes = ProductType.allTypes,
+                    selectedType = selectedProductType.value,
+                    onTypeSelected = { selectedProductType.value = it },
+                    onAddClick = {
+                        val newProductEntry = ProductEntry(
+                            productType = selectedProductType.value!!,
+                            productOwnerName = customerName
+                        )
+                        selectedOrder?.let { order ->
+                            customerDetailsViewModel.addProductToOrder(
+                                order.id,
+                                newProductEntry
+                            )
+                        }
+                    }
+                )
+
+                // Chips for this customer's products
+                ProductChipRow(
+                    products = selectedOrder?.products,
+                    selectedId = selectedOrder?.selectedProductId,
+                    onChipClick = { productId -> customerDetailsViewModel.openForm(selectedOrderId, productId) },
+                    onChipDelete = { productId -> customerDetailsViewModel.removeProductFromOrder(selectedOrderId, productId )},
+                    getCurrentBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
+                    hasUnsavedChanges = { product, buf -> customerDetailsViewModel.hasUnsavedChanges(selectedOrderId, product, buf) }
+                )
+
+                // Form switcher (only for this customer's open forms)
+                ProductFormSwitcher(
+                    selectedProduct = selectedOrder?.products?.find { it.id == selectedOrder.selectedProductId },
+                    openForms = openFormFlow,
+                    getEditingBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
+                    updateEditingBuffer = { productId, data ->
+                        customerDetailsViewModel.updateEditingBuffer(
+                            selectedOrderId,
+                            productId,
+                            data
+                        )
+                    },
+                    onOwnerChange = { productId, newName ->
+                        customerDetailsViewModel.updateProductOwnerName(
+                            selectedOrderId,
+                            productId,
+                            newName
+                        )
+                    },
+                    hasUnsavedChanges = { product, buf ->
+                        customerDetailsViewModel.hasUnsavedChanges(
+                            selectedOrderId,
+                            product,
+                            buf
+                        )
+                    },
+                    onFormSave = { productId, data ->
+                        customerDetailsViewModel.saveProductFormData(selectedOrderId, productId, data)
+                    }
+                )
+            }
+        },
+        onDismiss = onDismiss,
+        showDismiss = true,
+        onDoneClick = onDoneClick,
+        showDone = true
+    )
 }
 
 @Composable

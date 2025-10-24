@@ -12,7 +12,6 @@ import com.mkumar.data.local.entities.OrderItemEntity
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Instant
-import java.util.UUID
 import javax.inject.Inject
 
 class OrderRepository @Inject constructor(
@@ -48,13 +47,12 @@ class OrderRepository @Inject constructor(
         }
     }
 
-    suspend fun createDraftOrder(customerId: String): String {
-        // Create new draft order entity
+    suspend fun createDraftOrder(customerId: String, orderId: String): String {
         val newOrder = OrderEntity(
-            id = UUID.randomUUID().toString(),
+            id = orderId,
             customerId = customerId,
         )
-        orderDao.insert(newOrder)
+        orderDao.upsert(newOrder)
         return newOrder.id
     }
 
@@ -70,7 +68,7 @@ class OrderRepository @Inject constructor(
             subtotal = 0L
         )
 
-        orderItemDao.insert(newOrderItem)
+        orderItemDao.upsert(newOrderItem)
         return newOrderItem.id
     }
 

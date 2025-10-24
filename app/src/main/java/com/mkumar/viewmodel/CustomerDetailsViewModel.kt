@@ -142,20 +142,28 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-    fun onNewSale() {
-        val id = currentCustomerId ?: return
-        if (creatingDraft) return
-        creatingDraft = true
-        viewModelScope.launch {
-            runCatching {
-                orders.createDraftOrder(id)
-            }.onSuccess {
-                refresh()
-            }.onFailure { e ->
-                _ui.update { it.copy(error = e.message ?: "Failed to create draft") }
-            }
-            creatingDraft = false
+    fun createNewOrder(): OrderSummaryUi {
+        val newOrderId = java.util.UUID.randomUUID().toString()
+        val newOrder = OrderSummaryUi(
+            id = newOrderId,
+            invoiceShort = "INV-" + newOrderId.takeLast(6).uppercase(Locale.getDefault()),
+            subtitle = "",
+            timeFormatted = "",
+            totalFormatted = null,
+            isDraft = true,
+            products = emptyList()
+        )
+        _ui.update { state ->
+            val updatedOrdersByDay = state.ordersByDay.toMutableMap()
+            val todayKey = java.time.LocalDate.now().format(
+                DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", Locale.getDefault())
+            )
+            val todaysOrders = updatedOrdersByDay[todayKey]?.toMutableList() ?: mutableListOf()
+            todaysOrders.add(0, newOrder) // Add to the start of today's orders
+            updatedOrdersByDay[todayKey] = todaysOrders
+            state.copy(ordersByDay = updatedOrdersByDay)
         }
+        return newOrder
     }
 
     fun addProductToOrder(orderId: String, productEntry: ProductEntry) {
@@ -225,9 +233,10 @@ class CustomerDetailsViewModel @Inject constructor(
     }
 
     fun saveProductsToOrder(orderId: String, productEntries: List<ProductEntry>) {
+        val customerId = currentCustomerId ?: return
         viewModelScope.launch {
             runCatching {
-                // Update the order in your repository
+                orders.createDraftOrder(customerId, orderId)
                 for (productEntry in productEntries) {
                     orders.addProductToOrder(orderId, productEntry)
                 }
