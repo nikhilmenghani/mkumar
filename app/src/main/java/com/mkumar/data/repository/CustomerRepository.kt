@@ -75,6 +75,15 @@ class CustomerRepository @Inject constructor(
         customer.id
     }
 
+    suspend fun deleteCustomer(customerId: String) = db.withTransaction {
+        val orderList: List<OrderEntity> = orderDao.getForCustomer(customerId)
+        for (order in orderList) {
+            orderItemDao.deleteByOrderId(order.id)
+            orderDao.deleteById(order.id)
+        }
+        customerDao.deleteById(customerId)
+    }
+
     suspend fun createOrder(
         customerId: String,
         draft: OrderDraft

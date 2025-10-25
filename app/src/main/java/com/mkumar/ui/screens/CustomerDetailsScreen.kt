@@ -18,9 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -217,6 +215,7 @@ private fun CustomerDetailsBottomSheet(
                     },
                     onFormSave = { productId, data ->
                         customerDetailsViewModel.saveProductFormData(selectedOrderId, productId, data)
+                        selectedProductType.value = null
                     }
                 )
             }

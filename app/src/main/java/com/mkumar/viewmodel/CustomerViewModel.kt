@@ -3,23 +3,17 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.data.CustomerFormState
-import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductFormData
-import com.mkumar.data.ProductType
 import com.mkumar.data.local.entities.CustomerEntity
 import com.mkumar.data.repository.CustomerRepository
-import com.mkumar.data.repository.OrderDraft
-import com.mkumar.data.repository.OrderItemInput
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import java.time.Clock
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.time.ExperimentalTime
@@ -71,6 +65,12 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
             // If you want "update if same phone exists", do a DAO lookup and reuse ID.
             repository.upsertCustomerOnly(customer)
             // optional: update search index here if you wired SearchDao
+        }
+    }
+
+    fun removeCustomer(customerID: String) {
+        viewModelScope.launch {
+            repository.deleteCustomer(customerID)
         }
     }
 

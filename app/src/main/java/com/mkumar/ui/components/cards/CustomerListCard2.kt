@@ -59,9 +59,9 @@ fun CustomerListCard2(
     onEdit: (CustomerFormState) -> Unit = {},
     onDelete: (CustomerFormState) -> Unit = {},
     overflowActions: List<MenuAction> = listOf(
-        MenuAction("Edit", onEdit),
-        MenuAction("Share") { /* TODO */ },
-        MenuAction("Duplicate") { /* TODO */ },
+//        MenuAction("Edit", onEdit),
+//        MenuAction("Share") { /* TODO */ },
+//        MenuAction("Duplicate") { /* TODO */ },
         MenuAction("Delete", onDelete),
     ),
     showPhoneRow: Boolean = true
@@ -112,9 +112,9 @@ fun CustomerListCard2(
                         }
                     }
                 }
-                IconButton(onClick = { onSync(customer) }) {
-                    Icon(Icons.Outlined.Sync, contentDescription = "Sync to GitHub")
-                }
+//                IconButton(onClick = { onSync(customer) }) {
+//                    Icon(Icons.Outlined.Sync, contentDescription = "Sync to GitHub")
+//                }
                 OverflowMenu(items = overflowActions, customer = customer)
             }
         }

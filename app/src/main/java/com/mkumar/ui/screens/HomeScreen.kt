@@ -129,9 +129,9 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
         floatingActionButton = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StandardFab(
-                    text = if (customers.size >= 3) "Max 3 customers" else "Add a new Customer",
+                    text = "Add a new Customer",
                     icon = { Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(24.dp)) },
-                    onClick = { if (customers.size < 3) showAddCustomerSheet = true },
+                    onClick = { showAddCustomerSheet = true },
                 )
                 if (!isLatestVersion) {
                     StandardFab(
@@ -180,6 +180,9 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 onSync = { customer ->
                     jsonPreview = vm.serializeCustomer(customer.id)
                     showJsonDialog = true
+                },
+                onDelete = { customer ->
+                    vm.removeCustomer(customer.id)
                 }
             )
         }
@@ -256,7 +259,8 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
 fun CustomerList(
     customers: List<CustomerFormState>,
     onClick: (CustomerFormState) -> Unit = {},
-    onSync: (CustomerFormState) -> Unit = {}
+    onSync: (CustomerFormState) -> Unit = {},
+    onDelete: (CustomerFormState) -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -269,7 +273,7 @@ fun CustomerList(
                 onClick = onClick,
                 onSync = onSync,
                 onEdit = {},
-                onDelete = {},
+                onDelete = onDelete,
             )
         }
     }
