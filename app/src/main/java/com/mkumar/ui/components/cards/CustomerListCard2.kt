@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.mkumar.data.CustomerFormState
 import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductType
+import com.mkumar.ui.theme.AppColors
 
 /** Strongly typed overflow action */
 data class MenuAction(
@@ -69,7 +70,7 @@ fun CustomerListCard2(
         onClick = { onClick(customer) },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = AppColors.outlinedCardColors(),
         modifier = modifier
             .fillMaxWidth()
             .semantics { contentDescription = "Customer ${customer.name}" }

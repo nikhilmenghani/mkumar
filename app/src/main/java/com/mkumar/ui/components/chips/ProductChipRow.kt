@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.ProductType
+import com.mkumar.ui.theme.AppColors
 
 @Composable
 fun ProductChipRow(
@@ -71,6 +73,7 @@ fun ProductChipRow(
                     label = {
                         Text("${product.productType.label} #${safeProducts.indexOf(product) + 1}")
                     },
+                    colors = AppColors.filterChipColors(),
                     leadingIcon = {
                         when {
                             product.isSaved && !hasUnsavedChanges(product, getCurrentBuffer(product)) ->

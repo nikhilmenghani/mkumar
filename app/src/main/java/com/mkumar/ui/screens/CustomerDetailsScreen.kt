@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +54,7 @@ import com.mkumar.data.ProductType
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.ui.components.cards.ProductChipRowCard
 import com.mkumar.ui.components.cards.ProductFormCard
+import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import java.util.UUID
 
@@ -227,9 +229,7 @@ private fun CustomerDetailsBottomSheet(
 @Composable
 private fun HeaderCard(header: CustomerHeaderUi) {
     OutlinedCard(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        colors = AppColors.outlinedCardColors(),
         border = BorderStroke(1.dp, Color.Black),
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -300,11 +300,11 @@ private fun OrderRow(
     onDeleteClick: (String) -> Unit = {},
     onClick: () -> Unit
 ) {
-    ElevatedCard(
+    OutlinedCard(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = AppColors.outlinedCardColors(),
     ) {
         ListItem(
             headlineContent = {

@@ -1,5 +1,6 @@
 package com.mkumar.ui.components.cards
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,8 @@ import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.ProductType
 import com.mkumar.ui.components.chips.ProductChipRow
+import com.mkumar.ui.theme.AppColors
+import com.mkumar.ui.theme.NikThemePreview
 
 
 @Composable
@@ -33,7 +36,7 @@ fun ProductChipRowCard(
         modifier = Modifier
             .fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = AppColors.elevatedCardColors(),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -56,19 +59,21 @@ fun ProductChipRowCard(
 }
 
 @Composable
-@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 fun ProductChipRowCardPreview() {
     val sampleProducts = listOf(
         ProductEntry(id = "1", productType = ProductType.fromLabel("Lens"), isSaved = true),
         ProductEntry(id = "2", productType = ProductType.fromLabel("ContactLens"), isSaved = false),
         ProductEntry(id = "3", productType = ProductType.fromLabel("Frame"), isSaved = true)
     )
-    ProductChipRowCard(
-        products = sampleProducts,
-        selectedId = "2",
-        onChipClick = {},
-        onChipDelete = {},
-        getCurrentBuffer = { null },
-        hasUnsavedChanges = { _, _ -> false }
-    )
+    NikThemePreview {
+        ProductChipRowCard(
+            products = sampleProducts,
+            selectedId = "2",
+            onChipClick = {},
+            onChipDelete = {},
+            getCurrentBuffer = { null },
+            hasUnsavedChanges = { _, _ -> false }
+        )
+    }
 }
