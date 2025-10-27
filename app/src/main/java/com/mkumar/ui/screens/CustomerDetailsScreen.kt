@@ -118,7 +118,7 @@ fun CustomerDetailsScreen(
                         val selectedOrderId = id
                         customerDetailsViewModel.saveProductsToOrder(
                             selectedOrderId,
-                            customerDetailsViewModel.getOrderById(selectedOrderId)?.products.orEmpty()
+                            customerDetailsViewModel.getOrderById(selectedOrderId)
                         )
                     },
                     onDeleteClick = { id ->

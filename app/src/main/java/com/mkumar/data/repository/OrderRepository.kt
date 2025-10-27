@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Instant
 import javax.inject.Inject
+import kotlin.Int
 
 class OrderRepository @Inject constructor(
     private val db: MKumarDatabase,
@@ -54,10 +55,21 @@ class OrderRepository @Inject constructor(
         }
     }
 
-    suspend fun createDraftOrder(customerId: String, orderId: String): String {
+    suspend fun createDraftOrder(
+        customerId: String,
+        orderId: String,
+        totalAmount: Int = 0,
+        adjustedAmount: Int = 0,
+        remainingBalance: Int = 0,
+        advanceTotal: Int = 0,
+    ): String {
         val newOrder = OrderEntity(
             id = orderId,
             customerId = customerId,
+            totalAmount = totalAmount,
+            remainingBalance = remainingBalance,
+            advanceTotal = advanceTotal,
+            adjustedAmount = adjustedAmount,
         )
         orderDao.upsert(newOrder)
         return newOrder.id

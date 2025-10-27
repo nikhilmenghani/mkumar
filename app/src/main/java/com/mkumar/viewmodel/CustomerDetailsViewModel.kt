@@ -255,16 +255,19 @@ class CustomerDetailsViewModel @Inject constructor(
         _openForms.update { it - orderId }
     }
 
-    fun saveProductsToOrder(orderId: String, productEntries: List<ProductEntry>) {
+    fun saveProductsToOrder(orderId: String, orderSummaryUi: OrderSummaryUi?) {
         val customerId = currentCustomerId ?: return
         viewModelScope.launch {
             runCatching {
-                // find the total amount from products and store in order level
-                for (product in productEntries) {
-                    product.finalTotal
-                }
-                orders.createDraftOrder(customerId, orderId)
-                for (productEntry in productEntries) {
+                orders.createDraftOrder(
+                    customerId = customerId,
+                    orderId = orderId,
+                    totalAmount = orderSummaryUi?.totalAmount ?: 0,
+                    advanceTotal = orderSummaryUi?.advanceTotal ?: 0,
+                    remainingBalance = orderSummaryUi?.remainingBalance ?: 0,
+                    adjustedAmount = orderSummaryUi?.adjustedAmount ?: 0
+                )
+                for (productEntry in orderSummaryUi?.products.orEmpty()) {
                     orders.addProductToOrder(orderId, productEntry)
                 }
             }.onSuccess {

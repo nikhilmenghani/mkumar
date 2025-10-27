@@ -51,7 +51,4 @@ data class OrderEntity(
 
     /** advanceTotal amount in minor units (0 if none) */
     val advanceTotal: Int = 0,
-
-    /** Computed: subtotal - discountAmount (redundant but handy for queries/UI) */
-    val balanceRemaining: Int = 0
 )
