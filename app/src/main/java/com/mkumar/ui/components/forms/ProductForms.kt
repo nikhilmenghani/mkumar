@@ -1,8 +1,11 @@
 package com.mkumar.ui.components.forms
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -13,6 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductFormData
 
@@ -108,7 +113,14 @@ fun LensForm(
                 .padding(bottom = 8.dp)
                 .onFocusChanged {
                     if (leftSphereFocused && !it.isFocused) {
-                        onChange(ProductFormData.LensData(leftSphere, leftAxis, rightSphere, rightAxis))
+                        onChange(
+                            ProductFormData.LensData(
+                                leftSphere,
+                                leftAxis,
+                                rightSphere,
+                                rightAxis
+                            )
+                        )
                     }
                     leftSphereFocused = it.isFocused
                 }
@@ -124,7 +136,14 @@ fun LensForm(
                 .padding(bottom = 8.dp)
                 .onFocusChanged {
                     if (leftAxisFocused && !it.isFocused) {
-                        onChange(ProductFormData.LensData(leftSphere, leftAxis, rightSphere, rightAxis))
+                        onChange(
+                            ProductFormData.LensData(
+                                leftSphere,
+                                leftAxis,
+                                rightSphere,
+                                rightAxis
+                            )
+                        )
                     }
                     leftAxisFocused = it.isFocused
                 }
@@ -140,7 +159,14 @@ fun LensForm(
                 .padding(bottom = 8.dp)
                 .onFocusChanged {
                     if (rightSphereFocused && !it.isFocused) {
-                        onChange(ProductFormData.LensData(leftSphere, leftAxis, rightSphere, rightAxis))
+                        onChange(
+                            ProductFormData.LensData(
+                                leftSphere,
+                                leftAxis,
+                                rightSphere,
+                                rightAxis
+                            )
+                        )
                     }
                     rightSphereFocused = it.isFocused
                 }
@@ -156,7 +182,14 @@ fun LensForm(
                 .padding(bottom = 8.dp)
                 .onFocusChanged {
                     if (rightAxisFocused && !it.isFocused) {
-                        onChange(ProductFormData.LensData(leftSphere, leftAxis, rightSphere, rightAxis))
+                        onChange(
+                            ProductFormData.LensData(
+                                leftSphere,
+                                leftAxis,
+                                rightSphere,
+                                rightAxis
+                            )
+                        )
                     }
                     rightAxisFocused = it.isFocused
                 }
@@ -183,6 +216,10 @@ fun ContactLensForm(
 ) {
     var power by remember { mutableStateOf(initialData?.power.orEmpty()) }
     var duration by remember { mutableStateOf(initialData?.duration.orEmpty()) }
+    var unitPrice by remember { mutableStateOf(initialData?.unitPrice.toString()) }
+    var discountPct by remember { mutableStateOf(initialData?.discountPct.toString()) }
+    var total by remember { mutableStateOf(initialData?.total.toString()) }
+
 
     Column {
         var isPowerFocused by remember { mutableStateOf(false) }
@@ -195,7 +232,14 @@ fun ContactLensForm(
                 .padding(bottom = 8.dp)
                 .onFocusChanged {
                     if (isPowerFocused && !it.isFocused) {
-                        onChange(ProductFormData.ContactLensData(power, duration))
+                        onChange(
+                            ProductFormData.ContactLensData(
+                                power = power,
+                                duration = duration,
+                                unitPrice = unitPrice.toLongOrNull() ?: 0L,
+                                discountPct = discountPct.toIntOrNull() ?: 0
+                            )
+                        )
                     }
                     isPowerFocused = it.isFocused
                 }
@@ -211,18 +255,112 @@ fun ContactLensForm(
                 .padding(bottom = 8.dp)
                 .onFocusChanged {
                     if (isDurationFocused && !it.isFocused) {
-                        onChange(ProductFormData.ContactLensData(power, duration))
+                        onChange(
+                            ProductFormData.ContactLensData(
+                                power = power,
+                                duration = duration,
+                                unitPrice = unitPrice.toLongOrNull() ?: 0L,
+                                discountPct = discountPct.toIntOrNull() ?: 0
+                            )
+                        )
                     }
                     isDurationFocused = it.isFocused
                 }
         )
 
+        ItemPriceEditor(
+            initialUnitPrice = unitPrice,
+            initialDiscountPct = discountPct,
+            onUnitPriceChange = { newPrice ->
+                unitPrice = newPrice
+                onChange(
+                    ProductFormData.ContactLensData(
+                        power = power,
+                        duration = duration,
+                        unitPrice = newPrice.toLongOrNull() ?: 0L,
+                        discountPct = discountPct.toIntOrNull() ?: 0
+                    )
+                )
+            },
+            onDiscountChange = { newDiscount ->
+                discountPct = newDiscount
+                onChange(
+                    ProductFormData.ContactLensData(
+                        power = power,
+                        duration = duration,
+                        unitPrice = unitPrice.toLongOrNull() ?: 0L,
+                        discountPct = newDiscount.toIntOrNull() ?: 0
+                    )
+                )
+            }
+        )
         if (showSave) {
             Button(
-                onClick = { onSave(ProductFormData.ContactLensData(power, duration)) }
+                onClick = {
+                    onSave(
+                        ProductFormData.ContactLensData(
+                            power = power,
+                            duration = duration,
+                            unitPrice = unitPrice.toLongOrNull() ?: 0L,
+                            discountPct = discountPct.toIntOrNull() ?: 0
+                        )
+                    )
+                }
             ) {
                 Text("Save Contact Lens")
             }
         }
+    }
+}
+
+@Composable
+fun ItemPriceEditor(
+    initialUnitPrice: String,
+    initialDiscountPct: String,
+    onUnitPriceChange: (String) -> Unit,
+    onDiscountChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var unitPrice by remember { mutableStateOf(if (initialUnitPrice == "0") "" else initialUnitPrice) }
+    var discountPct by remember { mutableStateOf(initialDiscountPct) }
+
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            value = unitPrice,
+            onValueChange = { txt ->
+                val filtered = txt.filter { it.isDigit() || it == ',' }
+                unitPrice = filtered
+                onUnitPriceChange(filtered)
+            },
+            label = { Text("Unit Price (₹)") },
+            placeholder = { Text("e.g. 1,200") },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
+            ),
+            singleLine = true,
+            modifier = Modifier.weight(1f)
+                .padding(bottom = 8.dp)
+        )
+        OutlinedTextField(
+            value = discountPct,
+            onValueChange = { txt ->
+                val clamped =
+                    txt.filter { it.isDigit() }.take(3).toIntOrNull()?.coerceIn(0, 100)?.toString()
+                        ?: ""
+                discountPct = clamped
+                onDiscountChange(clamped)
+            },
+            label = { Text("Discount %") },
+            placeholder = { Text("e.g. 10") },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done
+            ),
+            singleLine = true,
+            suffix = { Text("%") },
+            modifier = Modifier.weight(1f)
+                .padding(bottom = 8.dp)
+        )
     }
 }

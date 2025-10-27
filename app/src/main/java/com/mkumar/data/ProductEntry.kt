@@ -9,10 +9,19 @@ data class ProductEntry(
     val productType: ProductType,
     val productOwnerName: String = "",
     val formData: ProductFormData? = null,
+    val quantity: Int = 1,
+    val unitPriceMinor: Long = 0L,
+    val discountPercentage: Double = 0.0,
+    val finalTotal: Long = 0L,
     val isSaved: Boolean = false
 ) {
     fun serializeFormData(): String? {
         return formData?.let { Json.encodeToString(it) }
+    }
+
+    fun calculateFinalTotal(): Long {
+        val discountedPrice = unitPriceMinor * quantity * (1 - discountPercentage / 100)
+        return discountedPrice.toLong()
     }
 
     companion object {
