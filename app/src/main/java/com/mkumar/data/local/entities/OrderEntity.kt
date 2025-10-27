@@ -40,12 +40,18 @@ data class OrderEntity(
     /** When the order occurred (epoch millis) */
     val occurredAt: Long = System.currentTimeMillis(),
 
-    /** Sum of item subtotals (minor units) */
-    val subtotal: Long = 0L,
+    /** Adjusted Amount applied to subtotal (minor units) */
+    val adjustedAmount: Int? = 0,
 
-    /** Absolute discount in minor units (0 if none) */
-    val discountAmount: Long = 0L,
+    /** Sum of item subtotals (minor units) */
+    val totalAmount: Int? = 0,
+
+    /** Absolute amount in minor units (0 if none) */
+    val remainingBalance: Int? = 0,
+
+    /** advanceTotal amount in minor units (0 if none) */
+    val advanceTotal: Int = 0,
 
     /** Computed: subtotal - discountAmount (redundant but handy for queries/UI) */
-    val grandTotal: Long = 0L
+    val balanceRemaining: Int = 0
 )

@@ -10,9 +10,9 @@ data class ProductEntry(
     val productOwnerName: String = "",
     val formData: ProductFormData? = null,
     val quantity: Int = 1,
-    val unitPrice: Long = 0L,
-    val discountPercentage: Double = 0.0,
-    val finalTotal: Long = 0L,
+    val unitPrice: Int = 0,
+    val discountPercentage: Int = 0,
+    val finalTotal: Int = 0,
     val isSaved: Boolean = false
 ) {
     fun serializeFormData(): String? {

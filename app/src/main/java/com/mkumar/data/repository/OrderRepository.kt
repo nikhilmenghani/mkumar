@@ -45,7 +45,10 @@ class OrderRepository @Inject constructor(
                 occurredAt = Instant.ofEpochMilli(entity.occurredAt),
                 isDraft = true,
                 subtitle = "",
-                totalFormatted = "0",
+                advanceTotal = entity.advanceTotal,
+                remainingBalance = entity.remainingBalance,
+                totalAmount = entity.totalAmount,
+                adjustedAmount = entity.adjustedAmount,
                 products = productsOfOrder
             )
         }
@@ -67,10 +70,10 @@ class OrderRepository @Inject constructor(
             productTypeLabel = productEntry.productType.label,
             productOwnerName = productEntry.productOwnerName,
             formDataJson = productEntry.serializeFormData(),
-            unitPrice = productEntry.formData?.unitPrice ?: 0L,
+            unitPrice = productEntry.formData?.unitPrice ?: 0,
             quantity = productEntry.formData?.quantity ?: 1,
-            subtotal = productEntry.formData?.total?.toLong() ?: 0L,
-            discountPercentage = productEntry.formData?.discountPct?.toDouble() ?: 0.0,
+            subtotal = productEntry.formData?.total ?: 0,
+            discountPercentage = productEntry.formData?.discountPct ?: 0,
         )
 
         orderItemDao.upsert(newOrderItem)

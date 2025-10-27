@@ -75,7 +75,10 @@ class CustomerDetailsViewModel @Inject constructor(
                         invoiceShort = invoiceShort,
                         subtitle = o.subtitle,                 // e.g., "Glasses + Case" or "3 items"
                         timeFormatted = o.occurredAt.atZone(zone).format(timeFmt),
-                        totalFormatted = if (o.isDraft) null else o.totalFormatted,
+                        advanceTotal = o.advanceTotal,
+                        remainingBalance = o.remainingBalance,
+                        totalAmount = o.totalAmount,
+                        adjustedAmount = o.adjustedAmount,
                         isDraft = o.isDraft,
                         products = o.products
                     )
@@ -107,7 +110,10 @@ class CustomerDetailsViewModel @Inject constructor(
             invoiceShort = "INV-" + newOrderId.takeLast(6).uppercase(Locale.getDefault()),
             subtitle = "",
             timeFormatted = "",
-            totalFormatted = null,
+            advanceTotal = 0,
+            remainingBalance = 0,
+            totalAmount = 0,
+            adjustedAmount = 0,
             isDraft = true,
             products = emptyList()
         )
@@ -122,6 +128,26 @@ class CustomerDetailsViewModel @Inject constructor(
             state.copy(ordersByDay = updatedOrdersByDay)
         }
         return newOrder
+    }
+
+    fun updateOrderTotals(orderId: String, totalAmount: Int, adjustedAmount: Int, advanceTotal: Int, remainingBalance: Int) {
+        _ui.update { state ->
+            val updatedOrdersByDay = state.ordersByDay.mapValues { (_, orders) ->
+                orders.map { order ->
+                    if (order.id == orderId) {
+                        order.copy(
+                            advanceTotal = advanceTotal,
+                            remainingBalance = remainingBalance,
+                            totalAmount = totalAmount,
+                            adjustedAmount = adjustedAmount
+                        )
+                    } else {
+                        order
+                    }
+                }
+            }
+            state.copy(ordersByDay = updatedOrdersByDay)
+        }
     }
 
     fun deleteOrder(orderId: String) {
@@ -206,6 +232,10 @@ class CustomerDetailsViewModel @Inject constructor(
                                 if (product.id == productId) {
                                     product.copy(
                                         formData = formData,
+                                        unitPrice = formData.unitPrice,
+                                        quantity = formData.quantity,
+                                        discountPercentage = formData.discountPct,
+                                        finalTotal = formData.total,
                                         isSaved = true
                                     )
                                 } else {
@@ -229,6 +259,10 @@ class CustomerDetailsViewModel @Inject constructor(
         val customerId = currentCustomerId ?: return
         viewModelScope.launch {
             runCatching {
+                // find the total amount from products and store in order level
+                for (product in productEntries) {
+                    product.finalTotal
+                }
                 orders.createDraftOrder(customerId, orderId)
                 for (productEntry in productEntries) {
                     orders.addProductToOrder(orderId, productEntry)

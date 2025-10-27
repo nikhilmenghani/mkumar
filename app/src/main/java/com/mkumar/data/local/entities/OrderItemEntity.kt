@@ -49,13 +49,13 @@ data class OrderItemEntity(
     val formDataJson: String? = null,
 
     /** Per-unit price in minor units (optional if you derive only from form data) */
-    val unitPrice: Long = 0L,
+    val unitPrice: Int = 0,
 
     /** Whole number of units */
     val quantity: Int = 1,
     /** Discount percentage (0.0 - 100.0) */
-    val discountPercentage: Double = 0.0,
+    val discountPercentage: Int = 0,
 
     /** unitPrice * quantity in minor units */
-    val subtotal: Long = unitPrice * quantity
+    val subtotal: Int = unitPrice * quantity
 )

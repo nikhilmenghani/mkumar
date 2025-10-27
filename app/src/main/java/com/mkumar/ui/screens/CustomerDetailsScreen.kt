@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -34,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,11 +52,13 @@ import com.mkumar.data.OrderSummaryUi
 import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductType
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
+import com.mkumar.ui.components.cards.OrderTotalsCard
 import com.mkumar.ui.components.cards.ProductChipRowCard
 import com.mkumar.ui.components.cards.ProductFormCard
 import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import java.util.UUID
+import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,9 +125,9 @@ fun CustomerDetailsScreen(
                         customerDetailsViewModel.deleteOrder(id)
                     },
                     onOrderClick = { order ->
-                    showCustomerDialog = true
-                    selectedOrder = order
-                })
+                        showCustomerDialog = true
+                        selectedOrder = order
+                    })
             }
         }
     }
@@ -150,12 +154,23 @@ private fun CustomerDetailsBottomSheet(
     val selectedOrderId = selectedOrder?.id ?: ""
     val openFormFlow = customerDetailsViewModel.getOpenFormFlowForOrder(selectedOrderId)
 
+    // Calculate totalAmount from products
+    val totalAmount = selectedOrder?.products?.sumOf { it.finalTotal } ?: 0
+    var advanceTotal = selectedOrder?.advanceTotal ?: 0
+
+    // adjustedAmount state: initialize to advanceTotal only once
+    var adjustedAmount by remember(selectedOrderId) {
+        mutableIntStateOf(selectedOrder?.adjustedAmount ?: advanceTotal)
+    }
+
+    // remainingBalance calculation
+    val remainingBalance = adjustedAmount - advanceTotal
+
     BaseBottomSheet(
         title = "Customer Details ${selectedOrder?.id}",
         showTitle = false,
         sheetContent = {
             val scrollState = rememberScrollState()
-            // Content for customer details
             Column(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
@@ -167,10 +182,31 @@ private fun CustomerDetailsBottomSheet(
                 ProductChipRowCard(
                     products = selectedOrder?.products,
                     selectedId = selectedOrder?.selectedProductId,
-                    onChipClick = { productId -> customerDetailsViewModel.openForm(selectedOrderId, productId) },
-                    onChipDelete = { productId -> customerDetailsViewModel.removeProductFromOrder(selectedOrderId, productId )},
-                    getCurrentBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
-                    hasUnsavedChanges = { product, buf -> customerDetailsViewModel.hasUnsavedChanges(selectedOrderId, product, buf) }
+                    onChipClick = { productId ->
+                        customerDetailsViewModel.openForm(
+                            selectedOrderId,
+                            productId
+                        )
+                    },
+                    onChipDelete = { productId ->
+                        customerDetailsViewModel.removeProductFromOrder(
+                            selectedOrderId,
+                            productId
+                        )
+                    },
+                    getCurrentBuffer = { product ->
+                        customerDetailsViewModel.getEditingProductData(
+                            selectedOrderId,
+                            product
+                        )
+                    },
+                    hasUnsavedChanges = { product, buf ->
+                        customerDetailsViewModel.hasUnsavedChanges(
+                            selectedOrderId,
+                            product,
+                            buf
+                        )
+                    }
                 )
 
                 ProductFormCard(
@@ -191,7 +227,12 @@ private fun CustomerDetailsBottomSheet(
                     },
                     selectedProduct = selectedOrder?.products?.find { it.id == selectedOrder.selectedProductId },
                     openForms = openFormFlow,
-                    getEditingBuffer = { product -> customerDetailsViewModel.getEditingProductData(selectedOrderId, product) },
+                    getEditingBuffer = { product ->
+                        customerDetailsViewModel.getEditingProductData(
+                            selectedOrderId,
+                            product
+                        )
+                    },
                     updateEditingBuffer = { productId, data ->
                         customerDetailsViewModel.updateEditingBuffer(
                             selectedOrderId,
@@ -214,10 +255,36 @@ private fun CustomerDetailsBottomSheet(
                         )
                     },
                     onFormSave = { productId, data ->
-                        customerDetailsViewModel.saveProductFormData(selectedOrderId, productId, data)
+                        customerDetailsViewModel.saveProductFormData(
+                            selectedOrderId,
+                            productId,
+                            data
+                        )
                         selectedProductType.value = null
                     }
                 )
+
+                if (selectedOrder?.products?.any { it.isSaved } == true) {
+                    OrderTotalsCard(
+                        onAdvanceTotalChange = { newAdvanceTotal ->
+                            advanceTotal = newAdvanceTotal
+                            customerDetailsViewModel.updateOrderTotals(
+                                selectedOrderId,
+                                totalAmount, adjustedAmount, newAdvanceTotal, remainingBalance
+                            )
+                        },
+                        totalAmount = totalAmount,
+                        initialAdvanceTotal = advanceTotal,
+                        adjustedAmount = adjustedAmount,
+                        onAdjustedAmountChange = { newAdjustedAmount ->
+                            adjustedAmount = newAdjustedAmount
+                            customerDetailsViewModel.updateOrderTotals(
+                                selectedOrderId,
+                                totalAmount, newAdjustedAmount, advanceTotal, remainingBalance
+                            )
+                        }
+                    )
+                }
             }
         },
         onDismiss = onDismiss,
@@ -286,7 +353,11 @@ private fun OrdersList(
                 )
             }
             items(orders, key = { it.id }) { o ->
-                OrderRow(o, onSaveClick = onSaveClick, onDeleteClick = onDeleteClick) { onOrderClick(o) }
+                OrderRow(
+                    o,
+                    onSaveClick = onSaveClick,
+                    onDeleteClick = onDeleteClick
+                ) { onOrderClick(o) }
             }
         }
     }
@@ -317,16 +388,24 @@ private fun OrderRow(
                 )
             },
             trailingContent = {
-                Row (
+                Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (o.isDraft) {
-                        AssistChip(onClick = { onSaveClick(o.id) }, label = { Text("Save") }, enabled = true)
+                        AssistChip(
+                            onClick = { onSaveClick(o.id) },
+                            label = { Text("Save") },
+                            enabled = true
+                        )
                     } else {
-                        Text(o.totalFormatted ?: "")
+                        Text(o.adjustedAmount.toString())
                     }
-                    AssistChip(onClick = { onDeleteClick(o.id) }, label = { Text("Delete") }, enabled = true)
+                    AssistChip(
+                        onClick = { onDeleteClick(o.id) },
+                        label = { Text("Delete") },
+                        enabled = true
+                    )
                 }
 
             }
@@ -392,7 +471,10 @@ fun PreviewOrdersList() {
             subtitle = "First order",
             timeFormatted = "10:00 AM",
             isDraft = false,
-            totalFormatted = "$100.00"
+            advanceTotal = 100,
+            remainingBalance = 50,
+            totalAmount = 150,
+            adjustedAmount = 0
         ),
         OrderSummaryUi(
             id = "2",
@@ -400,7 +482,10 @@ fun PreviewOrdersList() {
             subtitle = "Second order",
             timeFormatted = "11:30 AM",
             isDraft = true,
-            totalFormatted = null
+            advanceTotal = 100,
+            remainingBalance = 50,
+            totalAmount = 150,
+            adjustedAmount = 0
         )
     )
     OrdersList(
