@@ -32,7 +32,11 @@ class OrderRepository @Inject constructor(
                     id = product.id,
                     productType = ProductType.fromLabel(product.productTypeLabel),
                     productOwnerName = product.productOwnerName,
-                    formData = ProductEntry.deserializeFormData(product.formDataJson)
+                    formData = ProductEntry.deserializeFormData(product.formDataJson),
+                    unitPrice = product.unitPrice,
+                    quantity = product.quantity,
+                    discountPercentage = product.discountPercentage,
+                    finalTotal = product.subtotal,
                 )
                 productsOfOrder.add(entry)
             }
@@ -63,9 +67,10 @@ class OrderRepository @Inject constructor(
             productTypeLabel = productEntry.productType.label,
             productOwnerName = productEntry.productOwnerName,
             formDataJson = productEntry.serializeFormData(),
-            unitPrice = 0L,
-            quantity = 1,
-            subtotal = 0L
+            unitPrice = productEntry.formData?.unitPrice ?: 0L,
+            quantity = productEntry.formData?.quantity ?: 1,
+            subtotal = productEntry.formData?.total?.toLong() ?: 0L,
+            discountPercentage = productEntry.formData?.discountPct?.toDouble() ?: 0.0,
         )
 
         orderItemDao.upsert(newOrderItem)

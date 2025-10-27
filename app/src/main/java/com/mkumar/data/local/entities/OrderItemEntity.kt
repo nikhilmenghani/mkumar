@@ -53,6 +53,8 @@ data class OrderItemEntity(
 
     /** Whole number of units */
     val quantity: Int = 1,
+    /** Discount percentage (0.0 - 100.0) */
+    val discountPercentage: Double = 0.0,
 
     /** unitPrice * quantity in minor units */
     val subtotal: Long = unitPrice * quantity
