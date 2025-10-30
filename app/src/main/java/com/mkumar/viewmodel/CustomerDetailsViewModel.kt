@@ -339,14 +339,26 @@ class CustomerDetailsViewModel @Inject constructor(
         return product.isSaved && product.formData != buffer
     }
 
-    fun getEditingProductData(orderId: String, product: ProductEntry): ProductFormData? {
-        return editingBuffer[orderId]?.get(product.id) ?: product.formData
+    fun getProductFormData(orderId: String, entry: ProductEntry): ProductFormData? {
+        val order = _ui.value.ordersByDay.values.flatten().firstOrNull { it.id == orderId } ?: return null
+        val found = order.products.firstOrNull { it.id == entry.id } ?: return null
+        return found.formData
     }
 
-    fun updateEditingBuffer(orderId: String, productId: String, formData: ProductFormData) {
-        val map = editingBuffer.getOrPut(orderId) { mutableMapOf() }
-        map[productId] = formData
+
+    fun updateProductFormData(orderId: String, productId: String, formData: ProductFormData) {
+        _ui.updateOrders { order ->
+            if (order.id == orderId) {
+                order.copy(
+                    products = order.products.map { product ->
+                        if (product.id == productId) product.copy(formData = formData)
+                        else product
+                    }
+                )
+            } else order
+        }
     }
+
 
     fun onOrderClick(orderId: String) {
         // Phase 1: optional no-op or toast; wire route in later phases
@@ -354,5 +366,17 @@ class CustomerDetailsViewModel @Inject constructor(
 
     fun clearError() {
         _ui.update { it.copy(error = null) }
+    }
+
+    private inline fun MutableStateFlow<CustomerDetailsUiState>.updateOrders(
+        crossinline transform: (OrderSummaryUi) -> OrderSummaryUi
+    ) {
+        update { state ->
+            state.copy(
+                ordersByDay = state.ordersByDay.mapValues { (_, orders) ->
+                    orders.map(transform)
+                }
+            )
+        }
     }
 }

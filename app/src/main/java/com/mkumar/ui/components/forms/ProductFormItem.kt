@@ -32,24 +32,21 @@ import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun ProductFormSwitcher(
-    selectedProduct: ProductEntry?,
-//    openForms: StateFlow<String>,
-    getEditingBuffer: (ProductEntry) -> ProductFormData?,
-    updateEditingBuffer: (String, ProductFormData) -> Unit,
-    onOwnerChange: (String, String) -> Unit,
+fun ProductFormItem(
+    selectedProduct: ProductEntry,
+    productFormData: ProductFormData?,
+    updateProductFormData: (String, ProductFormData) -> Unit,
+//    onOwnerChange: (String, String) -> Unit,
     hasUnsavedChanges: (ProductEntry, ProductFormData?) -> Boolean,
-    onFormSave: (String, ProductFormData) -> Unit
+//    onFormSave: (String, ProductFormData) -> Unit
 ) {
-    if (selectedProduct == null) return
-//    val openFormId by openForms.collectAsState()
-//    val showForm = selectedProduct.id == openFormId
-    val editingFormData by rememberUpdatedState(getEditingBuffer(selectedProduct))
-    val isDirty by remember(selectedProduct.id, editingFormData) {
-        derivedStateOf {
-            !selectedProduct.isSaved || hasUnsavedChanges(selectedProduct, editingFormData)
-        }
-    }
+//    if (selectedProduct == null) return
+//    val productFormData by rememberUpdatedState(getProductFormData(selectedProduct))
+//    val isDirty by remember(selectedProduct.id, productFormData) {
+//        derivedStateOf {
+//            !selectedProduct.isSaved || hasUnsavedChanges(selectedProduct, productFormData)
+//        }
+//    }
 
     AnimatedContent(
         targetState = selectedProduct,
@@ -79,9 +76,9 @@ fun ProductFormSwitcher(
 
                 RenderProductForm(
                     product = product,
-                    editingFormData = editingFormData,
-                    onFormChanged = {
-                        updateEditingBuffer(product.id, it)
+                    productFormData = productFormData,
+                    updateProductFormData = {
+                        updateProductFormData(product.id, it)
                     },
 //                    showSaveButton = isDirty,
 //                    onSave = { formData ->
@@ -105,29 +102,29 @@ fun ProductFormSwitcher(
 @Composable
 private fun RenderProductForm(
     product: ProductEntry,
-    editingFormData: ProductFormData?,
-    onFormChanged: (ProductFormData) -> Unit,
+    productFormData: ProductFormData?,
+    updateProductFormData: (ProductFormData) -> Unit,
 //    showSaveButton: Boolean,
 //    onSave: (ProductFormData) -> Unit
 ) {
     when (product.productType) {
         is ProductType.Frame -> FrameForm(
-            initialData = editingFormData as? ProductFormData.FrameData,
-            onChange = onFormChanged,
+            initialData = productFormData as? ProductFormData.FrameData,
+            onChange = updateProductFormData,
 //            showSave = showSaveButton,
 //            onSave = onSave
         )
 
         is ProductType.Lens -> LensForm(
-            initialData = editingFormData as? ProductFormData.LensData,
-            onChange = onFormChanged,
+            initialData = productFormData as? ProductFormData.LensData,
+            onChange = updateProductFormData,
 //            showSave = showSaveButton,
 //            onSave = onSave
         )
 
         is ProductType.ContactLens -> ContactLensForm(
-            initialData = editingFormData as? ProductFormData.ContactLensData,
-            onChange = onFormChanged,
+            initialData = productFormData as? ProductFormData.ContactLensData,
+            onChange = updateProductFormData,
 //            showSave = showSaveButton,
 //            onSave = onSave
         )

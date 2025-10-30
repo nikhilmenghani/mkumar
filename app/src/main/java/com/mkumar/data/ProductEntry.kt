@@ -8,6 +8,7 @@ data class ProductEntry(
     val id: String = UUID.randomUUID().toString(),
     val productType: ProductType,
     val productOwnerName: String = "",
+    val productDescription: String = "",
     val formData: ProductFormData? = null,
     val quantity: Int = 1,
     val unitPrice: Int = 0,

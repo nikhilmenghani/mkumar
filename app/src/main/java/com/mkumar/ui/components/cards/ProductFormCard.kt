@@ -28,7 +28,7 @@ fun ProductFormCard(
     onTypeSelected: (ProductType) -> Unit,
     onAddClick: (ProductType) -> Unit,
     selectedProduct: ProductEntry?,
-    openForms: StateFlow<String>,
+//    openForms: StateFlow<String>,
     getEditingBuffer: (ProductEntry) -> ProductFormData?,
     updateEditingBuffer: (String, ProductFormData) -> Unit,
     onOwnerChange: (String, String) -> Unit,
@@ -59,7 +59,7 @@ fun ProductFormCard(
             // Form switcher (only for this customer's open forms)
             ProductFormSwitcher(
                 selectedProduct = selectedProduct,
-                openForms = openForms,
+//                openForms = openForms,
                 getEditingBuffer = getEditingBuffer,
                 updateEditingBuffer = updateEditingBuffer,
                 onOwnerChange = onOwnerChange,

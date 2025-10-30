@@ -9,12 +9,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
@@ -53,12 +50,9 @@ import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductType
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.ui.components.cards.OrderTotalsCard
-import com.mkumar.ui.components.cards.ProductChipRowCard
-import com.mkumar.ui.components.cards.ProductFormCard
 import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import java.util.UUID
-import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +65,7 @@ fun CustomerDetailsScreen(
     var selectedOrder by remember { mutableStateOf<OrderSummaryUi?>(null) }
     val state by customerDetailsViewModel.ui.collectAsStateWithLifecycle()
     val customerName = state.header?.displayName ?: "Customer"
+    val phoneNumber = state.header?.phoneFormatted ?: ""
 
     Scaffold(
         topBar = {
@@ -134,8 +129,9 @@ fun CustomerDetailsScreen(
     if (showCustomerDialog) {
         val selectedOrderId = selectedOrder?.id ?: UUID.randomUUID().toString()
         val latestSelectedOrder = customerDetailsViewModel.getOrderById(selectedOrderId)
-        CustomerDetailsBottomSheet(
+        OrderEntryAccordionScreenWrapper(
             customerName = customerName,
+            phoneNumber = phoneNumber,
             selectedOrder = latestSelectedOrder,
             customerDetailsViewModel = customerDetailsViewModel,
             onDismiss = { showCustomerDialog = false }
@@ -144,146 +140,78 @@ fun CustomerDetailsScreen(
 }
 
 @Composable
-private fun CustomerDetailsBottomSheet(
+private fun OrderEntryAccordionScreenWrapper(
     customerName: String,
+    phoneNumber: String,
     selectedOrder: OrderSummaryUi?,
     customerDetailsViewModel: CustomerDetailsViewModel,
     onDismiss: () -> Unit
 ) {
     val selectedProductType = remember { mutableStateOf<ProductType?>(null) }
     val selectedOrderId = selectedOrder?.id ?: ""
-    val openFormFlow = customerDetailsViewModel.getOpenFormFlowForOrder(selectedOrderId)
 
-    // Calculate totalAmount from products
     val totalAmount = selectedOrder?.products?.sumOf { it.finalTotal } ?: 0
     var advanceTotal = selectedOrder?.advanceTotal ?: 0
-
-    // adjustedAmount state: initialize to advanceTotal only once
     var adjustedAmount by remember(selectedOrderId) {
         mutableIntStateOf(selectedOrder?.adjustedAmount ?: advanceTotal)
     }
-
-    // remainingBalance calculation
     val remainingBalance = adjustedAmount - advanceTotal
 
     BaseBottomSheet(
         title = "Customer Details ${selectedOrder?.id}",
         showTitle = false,
         sheetContent = {
-            val scrollState = rememberScrollState()
-            Column(
+            LazyColumn(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .verticalScroll(scrollState)
-                    .padding(bottom = 72.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 72.dp)
             ) {
-                // Chips for this customer's products
-                ProductChipRowCard(
-                    products = selectedOrder?.products,
-                    selectedId = selectedOrder?.selectedProductId,
-                    onChipClick = { productId ->
-                        customerDetailsViewModel.openForm(
-                            selectedOrderId,
-                            productId
-                        )
-                    },
-                    onChipDelete = { productId ->
-                        customerDetailsViewModel.removeProductFromOrder(
-                            selectedOrderId,
-                            productId
-                        )
-                    },
-                    getCurrentBuffer = { product ->
-                        customerDetailsViewModel.getEditingProductData(
-                            selectedOrderId,
-                            product
-                        )
-                    },
-                    hasUnsavedChanges = { product, buf ->
-                        customerDetailsViewModel.hasUnsavedChanges(
-                            selectedOrderId,
-                            product,
-                            buf
-                        )
-                    }
-                )
-
-                ProductFormCard(
-                    availableTypes = ProductType.allTypes,
-                    selectedType = selectedProductType.value,
-                    onTypeSelected = { selectedProductType.value = it },
-                    onAddClick = {
-                        val newProductEntry = ProductEntry(
-                            productType = selectedProductType.value!!,
-                            productOwnerName = customerName
-                        )
-                        selectedOrder?.let { order ->
-                            customerDetailsViewModel.addProductToOrder(
-                                order.id,
-                                newProductEntry
-                            )
-                        }
-                    },
-                    selectedProduct = selectedOrder?.products?.find { it.id == selectedOrder.selectedProductId },
-                    openForms = openFormFlow,
-                    getEditingBuffer = { product ->
-                        customerDetailsViewModel.getEditingProductData(
-                            selectedOrderId,
-                            product
-                        )
-                    },
-                    updateEditingBuffer = { productId, data ->
-                        customerDetailsViewModel.updateEditingBuffer(
-                            selectedOrderId,
-                            productId,
-                            data
-                        )
-                    },
-                    onOwnerChange = { productId, newName ->
-                        customerDetailsViewModel.updateProductOwnerName(
-                            selectedOrderId,
-                            productId,
-                            newName
-                        )
-                    },
-                    hasUnsavedChanges = { product, buf ->
-                        customerDetailsViewModel.hasUnsavedChanges(
-                            selectedOrderId,
-                            product,
-                            buf
-                        )
-                    },
-                    onFormSave = { productId, data ->
-                        customerDetailsViewModel.saveProductFormData(
-                            selectedOrderId,
-                            productId,
-                            data
-                        )
-                        selectedProductType.value = null
-                    }
-                )
-
-                if (selectedOrder?.products?.any { it.isSaved } == true) {
-                    OrderTotalsCard(
-                        onAdvanceTotalChange = { newAdvanceTotal ->
-                            advanceTotal = newAdvanceTotal
-                            customerDetailsViewModel.updateOrderTotals(
-                                selectedOrderId,
-                                totalAmount, adjustedAmount, newAdvanceTotal, remainingBalance
-                            )
+                item {
+                    OrderEntryAccordionScreen(
+                        customerName = customerName,
+                        phoneNumber = phoneNumber,
+                        products = selectedOrder?.products,
+                        getProductFormData = { product -> customerDetailsViewModel.getProductFormData(selectedOrderId, product) },
+                        updateProductFormData = { productId, data -> customerDetailsViewModel.updateProductFormData(selectedOrderId, productId, data) },
+                        onOwnerChange = { productId, newName -> customerDetailsViewModel.updateProductOwnerName(selectedOrderId, productId, newName) },
+                        hasUnsavedChanges = { product, buf -> customerDetailsViewModel.hasUnsavedChanges(selectedOrderId, product, buf) },
+                        onFormSave = { productId, data ->
+                            customerDetailsViewModel.saveProductFormData(selectedOrderId, productId, data)
+                            selectedProductType.value = null
                         },
-                        totalAmount = totalAmount,
-                        initialAdvanceTotal = advanceTotal,
-                        adjustedAmount = adjustedAmount,
-                        onAdjustedAmountChange = { newAdjustedAmount ->
-                            adjustedAmount = newAdjustedAmount
-                            customerDetailsViewModel.updateOrderTotals(
-                                selectedOrderId,
-                                totalAmount, newAdjustedAmount, advanceTotal, remainingBalance
+                        availableTypes = ProductType.allTypes,
+                        selectedType = selectedProductType.value,
+                        onTypeSelected = { selectedProductType.value = it },
+                        onAddClick = {
+                            val newProductEntry = ProductEntry(
+                                productType = selectedProductType.value!!,
+                                productOwnerName = customerName
                             )
-                        }
+                            selectedOrder?.let { order ->
+                                customerDetailsViewModel.addProductToOrder(order.id, newProductEntry)
+                                selectedProductType.value = null
+                            }
+                        },
                     )
+                }
+                if (selectedOrder?.products?.any { it.isSaved } == true) {
+                    item {
+                        OrderTotalsCard(
+                            onAdvanceTotalChange = { newAdvanceTotal ->
+                                advanceTotal = newAdvanceTotal
+                                customerDetailsViewModel.updateOrderTotals(selectedOrderId, totalAmount, adjustedAmount, newAdvanceTotal, remainingBalance)
+                            },
+                            totalAmount = totalAmount,
+                            initialAdvanceTotal = advanceTotal,
+                            adjustedAmount = adjustedAmount,
+                            onAdjustedAmountChange = { newAdjustedAmount ->
+                                adjustedAmount = newAdjustedAmount
+                                customerDetailsViewModel.updateOrderTotals(selectedOrderId, totalAmount, newAdjustedAmount, advanceTotal, remainingBalance)
+                            }
+                        )
+                    }
                 }
             }
         },
