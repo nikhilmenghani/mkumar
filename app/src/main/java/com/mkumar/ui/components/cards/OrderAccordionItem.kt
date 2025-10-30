@@ -121,7 +121,6 @@ fun OrderAccordionItem(
                         ProductFormItem(
                             selectedProduct = selectedProduct,
                             productFormData = productFormData,
-                            hasUnsavedChanges = hasUnsavedChanges,
                             updateProductFormData = updateProductFormData,
                         )
                         Row(

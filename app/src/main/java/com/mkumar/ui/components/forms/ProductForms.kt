@@ -3,7 +3,6 @@ package com.mkumar.ui.components.forms
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,8 +20,6 @@ import com.mkumar.ui.components.inputs.ItemPriceEditor
 fun FrameForm(
     initialData: ProductFormData.FrameData? = null,
     onChange: (ProductFormData.FrameData) -> Unit,
-//    showSave: Boolean = true,
-//    onSave: (ProductFormData.FrameData) -> Unit
 ) {
     var brand by remember { mutableStateOf(initialData?.brand.orEmpty()) }
     var color by remember { mutableStateOf(initialData?.color.orEmpty()) }
@@ -171,22 +168,6 @@ fun FrameForm(
                 )
             }
         )
-
-//        if (showSave) {
-//            Button(
-//                onClick = { onSave(ProductFormData.FrameData(
-//                    brand = brand,
-//                    color = color,
-//                    size = size,
-//                    unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                    discountPct = discountPct.toIntOrNull() ?: 0,
-//                    quantity = quantity.toIntOrNull() ?: 1,
-//                    total = total.toInt()
-//                )) }
-//            ) {
-//                Text("Save Frame")
-//            }
-//        }
     }
 }
 
@@ -194,8 +175,6 @@ fun FrameForm(
 fun LensForm(
     initialData: ProductFormData.LensData? = null,
     onChange: (ProductFormData.LensData) -> Unit,
-//    showSave: Boolean = true,
-//    onSave: (ProductFormData.LensData) -> Unit
 ) {
     var leftSphere by remember { mutableStateOf(initialData?.leftSphere.orEmpty()) }
     var leftAxis by remember { mutableStateOf(initialData?.leftAxis.orEmpty()) }
@@ -380,24 +359,6 @@ fun LensForm(
                 )
             }
         )
-
-//        if (showSave) {
-//            Button(
-//                onClick = {
-//                    onSave(ProductFormData.LensData(
-//                        leftSphere = leftSphere,
-//                        leftAxis = leftAxis,
-//                        rightSphere = rightSphere,
-//                        rightAxis = rightAxis,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()))
-//                }
-//            ) {
-//                Text("Save Lens")
-//            }
-//        }
     }
 }
 
@@ -405,8 +366,6 @@ fun LensForm(
 fun ContactLensForm(
     initialData: ProductFormData.ContactLensData? = null,
     onChange: (ProductFormData.ContactLensData) -> Unit,
-//    showSave: Boolean = true,
-//    onSave: (ProductFormData.ContactLensData) -> Unit
 ) {
     var power by remember { mutableStateOf(initialData?.power.orEmpty()) }
     var duration by remember { mutableStateOf(initialData?.duration.orEmpty()) }
@@ -523,25 +482,6 @@ fun ContactLensForm(
                 )
             }
         )
-
-//        if (showSave) {
-//            Button(
-//                onClick = {
-//                    onSave(
-//                        ProductFormData.ContactLensData(
-//                            power = power,
-//                            duration = duration,
-//                            unitPrice = unitPrice.toInt(),
-//                            discountPct = discountPct.toIntOrNull() ?: 0,
-//                            quantity = quantity.toIntOrNull() ?: 1,
-//                            total = total.toInt()
-//                        )
-//                    )
-//                }
-//            ) {
-//                Text("Save Contact Lens")
-//            }
-//        }
     }
 }
 

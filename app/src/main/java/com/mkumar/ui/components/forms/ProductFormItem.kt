@@ -36,17 +36,7 @@ fun ProductFormItem(
     selectedProduct: ProductEntry,
     productFormData: ProductFormData?,
     updateProductFormData: (String, ProductFormData) -> Unit,
-//    onOwnerChange: (String, String) -> Unit,
-    hasUnsavedChanges: (ProductEntry, ProductFormData?) -> Boolean,
-//    onFormSave: (String, ProductFormData) -> Unit
 ) {
-//    if (selectedProduct == null) return
-//    val productFormData by rememberUpdatedState(getProductFormData(selectedProduct))
-//    val isDirty by remember(selectedProduct.id, productFormData) {
-//        derivedStateOf {
-//            !selectedProduct.isSaved || hasUnsavedChanges(selectedProduct, productFormData)
-//        }
-//    }
 
     AnimatedContent(
         targetState = selectedProduct,
@@ -80,19 +70,6 @@ fun ProductFormItem(
                     updateProductFormData = {
                         updateProductFormData(product.id, it)
                     },
-//                    showSaveButton = isDirty,
-//                    onSave = { formData ->
-//                        validateAndSave(
-//                            formData = formData,
-//                            validate = ProductFormValidators::validate,
-//                            onSuccess = {
-//                                validationError = null
-//                                onOwnerChange(product.id, ownerName)
-//                                onFormSave(product.id, formData)
-//                            },
-//                            onError = { errorMsg -> validationError = errorMsg }
-//                        )
-//                    }
                 )
             }
         }
@@ -104,29 +81,21 @@ private fun RenderProductForm(
     product: ProductEntry,
     productFormData: ProductFormData?,
     updateProductFormData: (ProductFormData) -> Unit,
-//    showSaveButton: Boolean,
-//    onSave: (ProductFormData) -> Unit
 ) {
     when (product.productType) {
         is ProductType.Frame -> FrameForm(
             initialData = productFormData as? ProductFormData.FrameData,
             onChange = updateProductFormData,
-//            showSave = showSaveButton,
-//            onSave = onSave
         )
 
         is ProductType.Lens -> LensForm(
             initialData = productFormData as? ProductFormData.LensData,
             onChange = updateProductFormData,
-//            showSave = showSaveButton,
-//            onSave = onSave
         )
 
         is ProductType.ContactLens -> ContactLensForm(
             initialData = productFormData as? ProductFormData.ContactLensData,
             onChange = updateProductFormData,
-//            showSave = showSaveButton,
-//            onSave = onSave
         )
     }
 }
