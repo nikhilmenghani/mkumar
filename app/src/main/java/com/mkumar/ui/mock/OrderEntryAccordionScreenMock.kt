@@ -1,8 +1,7 @@
 package com.mkumar.ui.mock
 
-import com.mkumar.ui.order.mock.OrderAccordionItem
-import com.mkumar.ui.order.mock.OrderHeaderCard
-import com.mkumar.ui.order.mock.OrderTotalsCard2
+import com.mkumar.ui.components.cards.OrderHeaderCard
+import com.mkumar.ui.components.cards.OrderTotalsCard2
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
