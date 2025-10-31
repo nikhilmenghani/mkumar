@@ -73,6 +73,7 @@ fun CustomerDetailsScreen(
                 onDiscard = { viewModel.onIntent(CustomerDetailsIntent.DiscardDraft) },
                 onUpdateOccurredAt = { viewModel.onIntent(CustomerDetailsIntent.UpdateOccurredAt(it)) },
                 onRemoveItem = { id -> viewModel.onIntent(CustomerDetailsIntent.RemoveItem(id)) },
+                viewModel = viewModel,
                 modifier = Modifier.fillMaxWidth()
             )
         }

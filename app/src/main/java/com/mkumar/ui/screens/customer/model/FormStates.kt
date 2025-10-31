@@ -1,8 +1,6 @@
 package com.mkumar.ui.screens.customer.model
 
-
 import androidx.compose.runtime.Immutable
-
 
 @Immutable
 data class LensFormState(
@@ -12,7 +10,6 @@ data class LensFormState(
     val discountPercentage: Int = 0,
 )
 
-
 @Immutable
 data class FrameFormState(
     val model: String = "",
@@ -20,7 +17,6 @@ data class FrameFormState(
     val unitPrice: Int = 0,
     val discountPercentage: Int = 0,
 )
-
 
 @Immutable
 data class ContactLensFormState(

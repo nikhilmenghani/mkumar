@@ -1,9 +1,7 @@
 package com.mkumar.ui.screens.customer.model
 
-
 import androidx.compose.runtime.Immutable
 import java.time.Instant
-
 
 @Immutable
 data class CustomerHeaderUi(
@@ -15,25 +13,22 @@ data class CustomerHeaderUi(
     val totalSpent: Int, // rupees minor units
 )
 
-
 @Immutable
 data class OrderRowUi(
     val id: String,
     val occurredAt: Instant,
     val itemsLabel: String,
     val amount: Int,
-    val isQueued: Boolean, // not yet synced
-    val isSynced: Boolean, // successfully synced
+    val isQueued: Boolean,     // not yet synced
+    val isSynced: Boolean,     // successfully synced
     val hasInvoice: Boolean,
 )
-
 
 @Immutable
 data class OrderFilterUi(
     val query: String = "",
     val sortNewestFirst: Boolean = true,
 )
-
 
 @Immutable
 data class CustomerDetailsUiState(
@@ -43,7 +38,6 @@ data class CustomerDetailsUiState(
     val filter: OrderFilterUi = OrderFilterUi(),
     val newOrder: NewOrderUi = NewOrderUi()
 )
-
 
 // New Order creation flow (bottom sheet)
 @Immutable
@@ -56,9 +50,7 @@ data class NewOrderUi(
     val saving: Boolean = false,
 )
 
-
 enum class ProductType { LENS, FRAME, CONTACT_LENS }
-
 
 sealed interface NewOrderIntent {
     data object Save : NewOrderIntent
@@ -68,29 +60,24 @@ sealed interface NewOrderIntent {
     data class ContactLensChanged(val state: ContactLensFormState) : NewOrderIntent
 }
 
-
 sealed interface CreateOrderResult {
     data object NoChanges : CreateOrderResult
     data class Success(val orderId: String) : CreateOrderResult
     data class Error(val reason: String?) : CreateOrderResult
 }
 
-
 // Lightweight ViewModel contract so UI compiles
-interface CustomerDetailsViewModel {
+interface CustomerDetailsContract {
     val ui: kotlinx.coroutines.flow.StateFlow<CustomerDetailsUiState>
-
 
     fun startNewOrder()
     fun onNewOrderIntent(intent: NewOrderIntent)
     suspend fun createOrder(): CreateOrderResult
 
-
     fun onFilterChange(newFilter: OrderFilterUi)
     fun refreshFromCloud()
     fun onOrderAction(action: OrderRowAction)
 }
-
 
 sealed interface OrderRowAction {
     data class ViewInvoice(val orderId: String) : OrderRowAction

@@ -1,6 +1,5 @@
 package com.mkumar.ui.screens.customer.components
 
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -9,7 +8,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.screens.customer.model.ContactLensFormState
 import androidx.compose.foundation.text.KeyboardOptions
-
 
 @Composable
 fun ContactLensForm(

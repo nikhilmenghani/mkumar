@@ -7,7 +7,8 @@
 // ---------- FILE: com/mkumar/viewmodel/CustomerDetailsUiState.kt ----------
 package com.mkumar.viewmodel
 
-import com.mkumar.data.ProductType
+
+import com.mkumar.ui.screens.customer.model.ProductType
 import java.time.Instant
 
 /** Lightweight UI customer model */

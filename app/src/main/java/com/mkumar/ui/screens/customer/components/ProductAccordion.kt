@@ -1,6 +1,5 @@
 package com.mkumar.ui.screens.customer.components
 
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -17,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-
 @Composable
 fun ProductAccordion(
     title: String,
@@ -32,7 +30,7 @@ fun ProductAccordion(
             .padding(vertical = 6.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
     ) {
-// Collapsed header — fixed height for visual consistency
+        // Collapsed header — fixed height for visual consistency
         Row(
             Modifier
                 .fillMaxWidth()
