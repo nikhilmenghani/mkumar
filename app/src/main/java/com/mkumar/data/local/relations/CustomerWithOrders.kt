@@ -2,8 +2,8 @@ package com.mkumar.data.local.relations
 
 import androidx.room.Embedded
 import androidx.room.Relation
-import com.mkumar.data.local.entities.CustomerEntity
-import com.mkumar.data.local.entities.OrderEntity
+import com.mkumar.data.db.entities.CustomerEntity
+import com.mkumar.data.db.entities.OrderEntity
 
 data class CustomerWithOrders(
     @Embedded val customer: CustomerEntity,

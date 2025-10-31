@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.data.CustomerFormState
 import com.mkumar.data.ProductFormData
-import com.mkumar.data.local.entities.CustomerEntity
-import com.mkumar.data.repository.CustomerRepository
+import com.mkumar.data.db.entities.CustomerEntity
+import com.mkumar.repository.CustomerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,7 +37,7 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
     val openForms: StateFlow<Map<String, Set<String>>> = _openForms
 
     val customersUi: StateFlow<List<CustomerFormState>> =
-        combine(repository.getAllCustomersFlow(), uiStateByCustomer) { entities, cache ->
+        combine(repository.observeAll(), uiStateByCustomer) { entities, cache ->
             entities
                 .map { e ->
                     // Reuse any in-memory products/buffers if present
@@ -63,14 +63,14 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
         )
         viewModelScope.launch {
             // If you want "update if same phone exists", do a DAO lookup and reuse ID.
-            repository.upsertCustomerOnly(customer)
+            repository.upsert(customer)
             // optional: update search index here if you wired SearchDao
         }
     }
 
     fun removeCustomer(customerID: String) {
         viewModelScope.launch {
-            repository.deleteCustomer(customerID)
+            repository.deleteById(customerID)
         }
     }
 

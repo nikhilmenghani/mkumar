@@ -23,11 +23,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mkumar.common.extension.navigateWithState
-import com.mkumar.ui.screens.CustomerDetailsScreen
 import com.mkumar.ui.screens.HomeScreen
 import com.mkumar.ui.screens.PreferenceScreen
+import com.mkumar.ui.screens.customer.CustomerDetailsScreen
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.CustomerViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+
 
 data class NavItem(
     val label: String,
@@ -54,8 +56,10 @@ object Routes {
 val excludedScreens = listOf(Screens.Profile.name, Screens.Apps.name)
 
 @Composable
-fun ScreenNavigator(customerViewModel: CustomerViewModel, customerDetailsViewModel: CustomerDetailsViewModel) {
-    val navController: NavHostController = rememberNavController()
+fun ScreenNavigator(
+    customerViewModel: CustomerViewModel // <- keep only this one
+) {
+    val navController = rememberNavController()
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) },
         contentWindowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0)
@@ -63,8 +67,7 @@ fun ScreenNavigator(customerViewModel: CustomerViewModel, customerDetailsViewMod
         NavigationHost(
             navController = navController,
             modifier = Modifier.padding(innerPadding),
-            customerViewModel = customerViewModel,
-            customerDetailsViewModel = customerDetailsViewModel
+            customerViewModel = customerViewModel
         )
     }
 }
@@ -98,8 +101,7 @@ fun BottomNavigationBar(navController: NavHostController) {
 fun NavigationHost(
     navController: NavHostController,
     modifier: Modifier,
-    customerViewModel: CustomerViewModel,
-    customerDetailsViewModel: CustomerDetailsViewModel
+    customerViewModel: CustomerViewModel
 ) {
     NavHost(
         navController = navController,
@@ -107,27 +109,24 @@ fun NavigationHost(
         modifier = modifier
     ) {
         composable(route = Screens.Home.name) {
-            // From your HomeScreen, navigate like:
-            // navController.navigateWithState(Routes.customerDetail(customerId))
+            // Navigate like: navController.navigateWithState(Routes.customerDetail(customerId))
             HomeScreen(navController = navController, vm = customerViewModel)
         }
+
         composable(route = Screens.Settings.name) {
             PreferenceScreen(navController = navController)
         }
-        // --- Changed: CustomerDetail destination now declares a {customerId} argument
+
         composable(
-            route = Routes.CustomerDetailWithArg,
+            route = Routes.CustomerDetailWithArg, // "CustomerDetail/{customerId}"
             arguments = listOf(navArgument("customerId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val customerId = requireNotNull(backStackEntry.arguments?.getString("customerId")) {
-                "customerId missing"
-            }
-            // If your VM exposes setCustomerId, wire it here (keeps your current pattern)
-            customerDetailsViewModel.setCustomerId(customerId)
+            val vm: CustomerDetailsViewModel =
+                hiltViewModel(backStackEntry)
 
             CustomerDetailsScreen(
                 navController = navController,
-                customerDetailsViewModel = customerDetailsViewModel
+                viewModel = vm
             )
         }
     }

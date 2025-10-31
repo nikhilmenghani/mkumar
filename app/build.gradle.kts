@@ -7,11 +7,16 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.serialization)
+    id("androidx.room")
 }
 
 android {
     namespace = "com.mkumar"
     compileSdk = 36
+
+    room {
+        schemaDirectory("$projectDir/schemas")
+    }
 
     signingConfigs {
         create("release") {
@@ -107,6 +112,8 @@ dependencies {
     // Hilt for Dependency Injection
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)

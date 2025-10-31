@@ -1,382 +1,262 @@
 package com.mkumar.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mkumar.data.CustomerDetailsUiState
-import com.mkumar.data.CustomerHeaderUi
-import com.mkumar.data.OrderSummaryUi
-import com.mkumar.data.ProductEntry
-import com.mkumar.data.ProductFormData
-import com.mkumar.data.repository.CustomerRepository
-import com.mkumar.data.repository.OrderRepository
+import com.mkumar.data.db.entities.OrderEntity
+import com.mkumar.domain.pricing.PricingInput
+import com.mkumar.domain.pricing.PricingService
+import com.mkumar.repository.CustomerRepository
+import com.mkumar.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-import javax.inject.Inject
+import java.time.Instant
+import java.util.UUID
 
 @HiltViewModel
 class CustomerDetailsViewModel @Inject constructor(
-    private val customers: CustomerRepository,
-    private val orders: OrderRepository
+    private val customerRepo: CustomerRepository,
+    private val orderRepo: OrderRepository,
+    private val pricing: PricingService,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val customerId: String =
+        checkNotNull(savedStateHandle["customerId"]) { "customerId nav-arg is required" }
 
     private val _ui = MutableStateFlow(CustomerDetailsUiState())
     val ui: StateFlow<CustomerDetailsUiState> = _ui.asStateFlow()
 
-    private var currentCustomerId: String? = null
-    private var creatingDraft = false
+    private val _effects = Channel<CustomerDetailsEffect>(capacity = Channel.BUFFERED)
+    val effects: Flow<CustomerDetailsEffect> = _effects.consumeAsFlow()
 
-    val editingBuffer: MutableMap<String, MutableMap<String, ProductFormData?>> = mutableMapOf()
-
-    private val _openForms = MutableStateFlow<Map<String, String>>(emptyMap())
-    val openForms: StateFlow<Map<String, String>> = _openForms
-
-    fun setCustomerId(id: String) {
-        if (currentCustomerId == id) return
-        currentCustomerId = id
-        refresh()
+    init {
+        observeViaCustomerWithOrders()
     }
 
-    fun refresh() {
-        val id = currentCustomerId ?: return
+    private fun observeViaCustomerWithOrders() {
         viewModelScope.launch {
-            _ui.update { it.copy(isLoading = true, error = null) }
-            runCatching {
-                val header = customers.customerHeader(id) // domain model
-                val orderSummaries = orders.ordersForCustomer(id) // domain model list
+            _ui.updateLoading(true)
 
-                val locale = Locale.getDefault()
-                val zone = ZoneId.systemDefault()
-                val dayFmt = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", locale)
-                val timeFmt = DateTimeFormatter.ofPattern("h:mm a", locale)
-
-                val headerUi = CustomerHeaderUi(
-                    id = header.id,
-                    displayName = header.displayName,
-                    phoneFormatted = header.phoneFormatted,
-                    totalOrders = header.totalOrders,
-                    lifetimeValueFormatted = header.lifetimeValueFormatted, // can be null in Phase 1
-                    lastVisitFormatted = header.lastVisitFormatted
-                )
-
-                val uiOrders = orderSummaries.map { o ->
-                    val invoiceShort = "INV-" + o.id.takeLast(6).uppercase(locale)
-                    OrderSummaryUi(
-                        id = o.id,
-                        invoiceShort = invoiceShort,
-                        subtitle = o.subtitle,                 // e.g., "Glasses + Case" or "3 items"
-                        timeFormatted = o.occurredAt.atZone(zone).format(timeFmt),
-                        advanceTotal = o.advanceTotal,
-                        remainingBalance = o.remainingBalance,
-                        totalAmount = o.totalAmount,
-                        adjustedAmount = o.adjustedAmount,
-                        isDraft = o.isDraft,
-                        products = o.products
+            customerRepo.observeWithOrders(customerId)
+                .filterNotNull()
+                .map { rel ->
+                    // If you have an OrderItemDao, plug it here:
+                    // itemsOf = { id -> orderItemDao.getItemsForOrderSync(id).map { it.toUi() } }
+                    rel.toUi(pricing = pricing)
+                }
+                .onEach { mapped ->
+                    _ui.value = _ui.value.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        customer = mapped.customer,
+                        orders = mapped.orders,
+                        errorMessage = null
                     )
                 }
-
-                val grouped = uiOrders.groupBy { o ->
-                    // We need the day string; take from a representative occurredAt in domain.
-                    // If domain doesn’t expose LocalDate, you can compute along with uiOrders.
-                    val domain = orderSummaries.first { it.id == o.id }
-                    domain.occurredAt.atZone(zone).toLocalDate().format(dayFmt)
-                }.toSortedMap(compareByDescending { dayStr ->
-                    // Stable sort by actual date descending; parse back to LocalDate
-                    // (If parsing is too heavy, repository can return pre-grouped with keys.)
-                    // Simple fallback: keep insertion order from sorted summaries.
-                    dayStr
-                })
-
-                _ui.update { it.copy(isLoading = false, header = headerUi, ordersByDay = grouped) }
-            }.onFailure { e ->
-                _ui.update { it.copy(isLoading = false, error = e.message ?: "Unknown error") }
-            }
+                .launchIn(this)
         }
     }
 
-    fun createNewOrder(): OrderSummaryUi {
-        val newOrderId = java.util.UUID.randomUUID().toString()
-        val newOrder = OrderSummaryUi(
-            id = newOrderId,
-            invoiceShort = "INV-" + newOrderId.takeLast(6).uppercase(Locale.getDefault()),
-            subtitle = "",
-            timeFormatted = "",
-            advanceTotal = 0,
-            remainingBalance = 0,
-            totalAmount = 0,
+    @Suppress("unused")
+    private fun observeViaSplitStreams() {
+        viewModelScope.launch {
+            _ui.updateLoading(true)
+
+            val customerFlow = customerRepo.observeWithOrders(customerId)
+                .map { it?.customer }
+                .filterNotNull()
+                .map { c -> UiCustomer(c.id, c.name, c.phone) }
+
+            val ordersFlow = orderRepo.observeOrdersForCustomer(customerId)
+                .map { orders ->
+                    orders.map { order ->
+                        UiOrder(
+                            id = order.id,
+                            occurredAt = Instant.ofEpochMilli(order.occurredAt),
+                            items = emptyList(),
+                            subtotalBeforeAdjust = 0,
+                            adjustedAmount = 0,
+                            totalAmount = 0,
+                            advanceTotal = 0,
+                            remainingBalance = 0
+                        )
+                    }.sortedByDescending { it.occurredAt }
+                }
+
+            combine(customerFlow, ordersFlow) { customer, orders ->
+                _ui.value.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    customer = customer,
+                    orders = orders,
+                    errorMessage = null
+                )
+            }.onEach { _ui.value = it }
+                .launchIn(this)
+        }
+    }
+
+    fun onIntent(intent: CustomerDetailsIntent) {
+        when (intent) {
+            is CustomerDetailsIntent.Refresh -> refresh()
+            is CustomerDetailsIntent.NewSale -> openNewSale()
+            is CustomerDetailsIntent.CloseSheet -> closeSheet()
+
+            is CustomerDetailsIntent.AddItem -> addItem(intent.item)
+            is CustomerDetailsIntent.UpdateItem -> updateItem(intent.item)
+            is CustomerDetailsIntent.RemoveItem -> removeItem(intent.itemId)
+            is CustomerDetailsIntent.UpdateOccurredAt -> updateOccurredAt(intent.occurredAt)
+
+            is CustomerDetailsIntent.SaveDraftAsOrder -> saveDraft()
+            is CustomerDetailsIntent.DiscardDraft -> discardDraft()
+        }
+    }
+
+    private fun refresh() {
+        viewModelScope.launch {
+            _ui.updateRefreshing(true)
+            _ui.updateRefreshing(false)
+        }
+    }
+
+    private fun openNewSale() {
+        viewModelScope.launch {
+            _ui.value = _ui.value.copy(
+                isOrderSheetOpen = true,
+                draft = OrderDraft(occurredAt = Instant.now())
+            )
+            _effects.trySend(CustomerDetailsEffect.OpenOrderSheet)
+        }
+    }
+
+    private fun closeSheet() {
+        viewModelScope.launch {
+            _ui.value = _ui.value.copy(isOrderSheetOpen = false)
+            _effects.trySend(CustomerDetailsEffect.CloseOrderSheet)
+        }
+    }
+
+    // --- Draft mutations ---
+
+    private fun addItem(item: UiOrderItem) = mutateDraft { draft ->
+        val updated = draft.items + item.ensureId()
+        recomputeTotals(updated, draft.occurredAt)
+    }
+
+    private fun updateItem(item: UiOrderItem) = mutateDraft { draft ->
+        val updated = draft.items.map { if (it.id == item.id) item else it }
+        recomputeTotals(updated, draft.occurredAt)
+    }
+
+    private fun removeItem(itemId: String) = mutateDraft { draft ->
+        val updated = draft.items.filterNot { it.id == itemId }
+        recomputeTotals(updated, draft.occurredAt)
+    }
+
+    private fun updateOccurredAt(instant: Instant) = mutateDraft { draft ->
+        recomputeTotals(draft.items, instant)
+    }
+
+    private fun mutateDraft(block: (OrderDraft) -> OrderDraft) {
+        val s = _ui.value
+        val updated = block(s.draft).copy(hasUnsavedChanges = true)
+        _ui.value = s.copy(draft = updated)
+    }
+
+    /** Draft pricing uses orderId = "DRAFT", adjusted = 0, advance = 0. */
+    private fun recomputeTotals(items: List<UiOrderItem>, occurredAt: Instant): OrderDraft {
+        val input = PricingInput(
+            orderId = "DRAFT",
+            items = items.map { it.toItemInput() },
             adjustedAmount = 0,
-            isDraft = true,
-            products = emptyList()
+            advanceTotal = 0
         )
-        _ui.update { state ->
-            val updatedOrdersByDay = state.ordersByDay.toMutableMap()
-            val todayKey = java.time.LocalDate.now().format(
-                DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", Locale.getDefault())
-            )
-            val todaysOrders = updatedOrdersByDay[todayKey]?.toMutableList() ?: mutableListOf()
-            todaysOrders.add(0, newOrder) // Add to the start of today's orders
-            updatedOrdersByDay[todayKey] = todaysOrders
-            state.copy(ordersByDay = updatedOrdersByDay)
-        }
-        return newOrder
+        val result = pricing.price(input)
+        return OrderDraft(
+            occurredAt = occurredAt,
+            items = items,
+            subtotalBeforeAdjust = result.subtotalBeforeAdjust,
+            adjustedAmount = result.adjustedAmount,
+            totalAmount = result.totalAmount,
+            advanceTotal = result.advanceTotal,
+            remainingBalance = result.remainingBalance,
+            hasUnsavedChanges = true
+        )
     }
 
-    fun updateOrderTotals(orderId: String, totalAmount: Int, adjustedAmount: Int, advanceTotal: Int, remainingBalance: Int) {
-        _ui.update { state ->
-            val updatedOrdersByDay = state.ordersByDay.mapValues { (_, orders) ->
-                orders.map { order ->
-                    if (order.id == orderId) {
-                        order.copy(
-                            advanceTotal = advanceTotal,
-                            remainingBalance = remainingBalance,
-                            totalAmount = totalAmount,
-                            adjustedAmount = adjustedAmount
-                        )
-                    } else {
-                        order
-                    }
-                }
-            }
-            state.copy(ordersByDay = updatedOrdersByDay)
-        }
-    }
+    // --- Persist order ---
 
-    fun deleteOrder(orderId: String) {
+    private fun saveDraft() {
         viewModelScope.launch {
-            runCatching {
-                orders.deleteOrder(orderId)
-            }.onSuccess {
-                // Refresh UI state after successful deletion
-                _ui.update { state ->
-                    val updatedOrdersByDay = state.ordersByDay.mapValues { (_, orders) ->
-                        orders.filterNot { it.id == orderId }
-                    }.filterValues { it.isNotEmpty() } // Remove empty day groups
-                    state.copy(ordersByDay = updatedOrdersByDay)
-                }
-                // Also clear any open forms related to this order
-                _openForms.update { it - orderId }
-                editingBuffer.remove(orderId)
-                refresh()
-            }.onFailure { e ->
-                _ui.update { it.copy(error = e.message ?: "Failed to delete order") }
+            val s = _ui.value
+            val draft = s.draft
+            val customer = s.customer
+            if (customer == null) {
+                emitMessage("Customer not found.")
+                return@launch
             }
-        }
-    }
-
-    fun deleteProductFromOrder(orderId: String, productId: String) {
-        viewModelScope.launch {
-            runCatching {
-                orders.deleteOrderItem(productId)
-            }.onSuccess {
-                removeProductFromOrder(orderId, productId)
-                refresh()
-            }.onFailure { e ->
-                _ui.update { it.copy(error = e.message ?: "Failed to delete product") }
+            if (draft.items.isEmpty()) {
+                emitMessage("Please add at least one item.")
+                return@launch
             }
-        }
-    }
 
-    fun addProductToOrder(orderId: String, productEntry: ProductEntry) {
-        _ui.update { state ->
-            val updatedOrdersByDay = state.ordersByDay.mapValues { (_, orders) ->
-                orders.map { order ->
-                    if (order.id == orderId) {
-                        order.copy(
-                            products = order.products + productEntry,
-                            selectedProductId = productEntry.id
-                        )
-                    } else {
-                        order
-                    }
-                }
-            }
-            state.copy(ordersByDay = updatedOrdersByDay)
-        }
-        openForm(orderId, productEntry.id)
-    }
-
-    fun removeProductFromOrder(orderId: String, productId: String) {
-        _ui.update { state ->
-            val updatedOrdersByDay = state.ordersByDay.mapValues { (_, orders) ->
-                orders.map { order ->
-                    if (order.id == orderId) {
-                        order.copy(
-                            products = order.products.filterNot { it.id == productId },
-                            selectedProductId = if (order.selectedProductId == productId) null else order.selectedProductId
-                        )
-                    } else {
-                        order
-                    }
-                }
-            }
-            state.copy(ordersByDay = updatedOrdersByDay)
-        }
-    }
-
-    fun saveProductFormData(orderId: String, productId: String, formData: ProductFormData) {
-        _ui.update { state ->
-            val updatedOrdersByDay = state.ordersByDay.mapValues { (_, orders) ->
-                orders.map { order ->
-                    if (order.id == orderId) {
-                        order.copy(
-                            products = order.products.map { product ->
-                                if (product.id == productId) {
-                                    product.copy(
-                                        formData = formData,
-                                        unitPrice = formData.unitPrice,
-                                        quantity = formData.quantity,
-                                        discountPercentage = formData.discountPct,
-                                        finalTotal = formData.total,
-                                        isSaved = true
-                                    )
-                                } else {
-                                    product
-                                }
-                            }
-                        )
-                    } else {
-                        order
-                    }
-                }
-            }
-            state.copy(ordersByDay = updatedOrdersByDay)
-        }
-        // Clear editing buffer after save
-        editingBuffer[orderId]?.remove(productId)
-        _openForms.update { it - orderId }
-    }
-
-    fun saveProductsToOrder(orderId: String, orderSummaryUi: OrderSummaryUi?) {
-        val customerId = currentCustomerId ?: return
-        viewModelScope.launch {
-            runCatching {
-                orders.createDraftOrder(
-                    customerId = customerId,
-                    orderId = orderId,
-                    totalAmount = orderSummaryUi?.totalAmount ?: 0,
-                    advanceTotal = orderSummaryUi?.advanceTotal ?: 0,
-                    remainingBalance = orderSummaryUi?.remainingBalance ?: 0,
-                    adjustedAmount = orderSummaryUi?.adjustedAmount ?: 0
+            try {
+                val orderEntity = OrderEntity(
+                    id = UUID.randomUUID().toString(),
+                    customerId = customer.id,
+                    occurredAt = draft.occurredAt.toEpochMilli(),
                 )
-                for (productEntry in orderSummaryUi?.products.orEmpty()) {
-                    orders.addProductToOrder(orderId, productEntry)
-                }
-            }.onSuccess {
-                // Refresh UI state after successful update
-                refresh()
-            }.onFailure { e ->
-                _ui.update { it.copy(error = e.message ?: "Failed to add products") }
-            }
-        }
-    }
+                orderRepo.upsert(orderEntity)
 
-    fun getOrderById(orderId: String): OrderSummaryUi? {
-        return _ui.value.ordersByDay
-            .values
-            .flatten()
-            .find { it.id == orderId }
-    }
-
-    fun openForm(orderId: String, productId: String) {
-        _openForms.update { it + (orderId to productId) }
-        // keep selectedProductId stable (no random UUID overwrites)
-        selectProduct(orderId, productId)
-    }
-
-    fun selectProduct(orderId: String, productId: String) {
-        _ui.update { state ->
-            val updatedOrdersByDay = state.ordersByDay.mapValues { (_, orders) ->
-                orders.map { order ->
-                    if (order.id == orderId) {
-                        order.copy(selectedProductId = productId)
-                    } else {
-                        order
-                    }
-                }
-            }
-            state.copy(ordersByDay = updatedOrdersByDay)
-        }
-    }
-
-    fun updateProductOwnerName(orderId: String, productId: String, newName: String) {
-        _ui.update { state ->
-            val updatedOrdersByDay = state.ordersByDay.mapValues { (_, orders) ->
-                orders.map { order ->
-                    if (order.id == orderId) {
-                        order.copy(
-                            products = order.products.map { product ->
-                                if (product.id == productId) {
-                                    product.copy(productOwnerName = newName)
-                                } else {
-                                    product
-                                }
-                            }
-                        )
-                    } else {
-                        order
-                    }
-                }
-            }
-            state.copy(ordersByDay = updatedOrdersByDay)
-        }
-    }
-
-    fun getOpenFormFlowForOrder(orderId: String): StateFlow<String> {
-        return openForms.map { it[orderId] ?: "" }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, "")
-    }
-
-    fun hasUnsavedChanges(orderId: String, product: ProductEntry, buffer: ProductFormData?): Boolean {
-        return product.isSaved && product.formData != buffer
-    }
-
-    fun getProductFormData(orderId: String, entry: ProductEntry): ProductFormData? {
-        val order = _ui.value.ordersByDay.values.flatten().firstOrNull { it.id == orderId } ?: return null
-        val found = order.products.firstOrNull { it.id == entry.id } ?: return null
-        return found.formData
-    }
-
-
-    fun updateProductFormData(orderId: String, productId: String, formData: ProductFormData) {
-        _ui.updateOrders { order ->
-            if (order.id == orderId) {
-                order.copy(
-                    products = order.products.map { product ->
-                        if (product.id == productId) product.copy(formData = formData)
-                        else product
-                    }
+                _ui.value = s.copy(
+                    isOrderSheetOpen = false,
+                    draft = OrderDraft(),
+                    errorMessage = null
                 )
-            } else order
+                _effects.trySend(CustomerDetailsEffect.CloseOrderSheet)
+                emitMessage("Order saved.")
+            } catch (t: Throwable) {
+                _ui.value = s.copy(errorMessage = t.message ?: "Failed to save order")
+                emitMessage("Failed to save order.")
+            }
         }
     }
 
-
-    fun onOrderClick(orderId: String) {
-        // Phase 1: optional no-op or toast; wire route in later phases
-    }
-
-    fun clearError() {
-        _ui.update { it.copy(error = null) }
-    }
-
-    private inline fun MutableStateFlow<CustomerDetailsUiState>.updateOrders(
-        crossinline transform: (OrderSummaryUi) -> OrderSummaryUi
-    ) {
-        update { state ->
-            state.copy(
-                ordersByDay = state.ordersByDay.mapValues { (_, orders) ->
-                    orders.map(transform)
-                }
-            )
+    private fun discardDraft() {
+        viewModelScope.launch {
+            _ui.value = _ui.value.copy(draft = OrderDraft())
+            emitMessage("Discarded changes.")
         }
+    }
+
+    // --- Helpers ---
+
+    private fun UiOrderItem.ensureId(): UiOrderItem =
+        if (id.isBlank()) copy(id = java.util.UUID.randomUUID().toString()) else this
+
+    private fun UiOrderItem.toItemInput(): PricingInput.ItemInput =
+        PricingInput.ItemInput(
+            itemId = id,
+            quantity = quantity,
+            unitPrice = unitPrice,
+            discountPercentage = discountPercentage
+        )
+
+    private fun emitMessage(msg: String) {
+        _effects.trySend(CustomerDetailsEffect.ShowMessage(msg))
     }
 }
+
