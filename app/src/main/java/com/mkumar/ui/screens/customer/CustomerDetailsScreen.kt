@@ -36,14 +36,17 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderActionBar
 import com.mkumar.ui.screens.customer.components.OrderList
@@ -68,6 +71,7 @@ fun CustomerDetailsScreen(
     val scope = rememberCoroutineScope()
     // Bottom sheet state driven by ui.isOrderSheetOpen
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showCustomerDialog by remember { mutableStateOf(false) }
 
     // Snackbar + one-off effects
     val snackbarHostState = remember { SnackbarHostState() }
@@ -76,30 +80,32 @@ fun CustomerDetailsScreen(
             when (effect) {
                 is CustomerDetailsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
                 is CustomerDetailsEffect.OpenOrderSheet ->
-                    runCatching { sheetState.show() }
+                    runCatching { showCustomerDialog = true }
 
                 CustomerDetailsEffect.CloseOrderSheet ->
-                    runCatching { sheetState.hide() }
+                    runCatching { showCustomerDialog = false}
             }
         }
     }
 
-    if (ui.isOrderSheetOpen) {
-        ModalBottomSheet(
-            onDismissRequest = { viewModel.onIntent(CustomerDetailsIntent.CloseSheet) },
-            sheetState = sheetState,
-            dragHandle = { BottomSheetDefaults.DragHandle() }
-        ) {
-            OrderDraftSheet(
-                state = ui,
-                onSave = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
-                onDiscard = { viewModel.onIntent(CustomerDetailsIntent.DiscardDraft) },
-                onUpdateOccurredAt = { viewModel.onIntent(CustomerDetailsIntent.UpdateOccurredAt(it)) },
-                onRemoveItem = { id -> viewModel.onIntent(CustomerDetailsIntent.RemoveItem(id)) },
-                viewModel = viewModel,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+    if (showCustomerDialog){
+        BaseBottomSheet(
+            title = "Customer Details ${ui.draft.editingOrderId}",
+            showTitle = false,
+            sheetContent = {
+                OrderDraftSheet(
+                    state = ui,
+                    onSave = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
+                    onDiscard = { viewModel.onIntent(CustomerDetailsIntent.DiscardDraft) },
+                    onUpdateOccurredAt = { viewModel.onIntent(CustomerDetailsIntent.UpdateOccurredAt(it)) },
+                    onRemoveItem = { id -> viewModel.onIntent(CustomerDetailsIntent.RemoveItem(id)) },
+                    viewModel = viewModel,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            onDismiss = { showCustomerDialog = false },
+            showDismiss = true
+        )
     }
 
     Scaffold(
@@ -151,12 +157,12 @@ fun CustomerDetailsScreen(
             )
 
             // Actions
-            OrderActionBar(
-                filter = OrderFilterUi(), // Hook up when you add query/sort to state
-                onFilterChange = { /* no-op for now */ },
-                onRefresh = { viewModel.onIntent(CustomerDetailsIntent.Refresh) },
-                modifier = Modifier.fillMaxWidth()
-            )
+//            OrderActionBar(
+//                filter = OrderFilterUi(), // Hook up when you add query/sort to state
+//                onFilterChange = { /* no-op for now */ },
+//                onRefresh = { viewModel.onIntent(CustomerDetailsIntent.Refresh) },
+//                modifier = Modifier.fillMaxWidth()
+//            )
 
             Divider()
 
