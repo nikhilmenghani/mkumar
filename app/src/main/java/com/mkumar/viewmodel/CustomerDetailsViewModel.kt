@@ -233,9 +233,14 @@ class CustomerDetailsViewModel @Inject constructor(
 
     private fun mutateDraft(block: (OrderDraft) -> OrderDraft) {
         val s = _ui.value
-        val updated = block(s.draft).copy(hasUnsavedChanges = true)
+        val prev = s.draft
+        val updated = block(prev).copy(
+            hasUnsavedChanges = true,
+            editingOrderId = prev.editingOrderId
+        )
         _ui.value = s.copy(draft = updated)
     }
+
 
     /** Draft pricing uses orderId = "DRAFT", adjusted = 0, advance = 0. */
     private fun recomputeTotals(items: List<UiOrderItem>, occurredAt: Instant): OrderDraft {
@@ -246,6 +251,8 @@ class CustomerDetailsViewModel @Inject constructor(
             advanceTotal = 0
         )
         val result = pricing.price(input)
+        val prev = _ui.value.draft
+
         return OrderDraft(
             occurredAt = occurredAt,
             items = items,
@@ -254,7 +261,8 @@ class CustomerDetailsViewModel @Inject constructor(
             totalAmount = result.totalAmount,
             advanceTotal = result.advanceTotal,
             remainingBalance = result.remainingBalance,
-            hasUnsavedChanges = true
+            hasUnsavedChanges = true,
+            editingOrderId = prev.editingOrderId
         )
     }
 
