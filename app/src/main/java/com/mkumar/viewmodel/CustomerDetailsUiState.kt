@@ -51,7 +51,8 @@ data class OrderDraft(
     val totalAmount: Int = 0,
     val advanceTotal: Int = 0,
     val remainingBalance: Int = 0,
-    val hasUnsavedChanges: Boolean = false
+    val hasUnsavedChanges: Boolean = false,
+    val editingOrderId: String? = null
 )
 
 /** Screen state */

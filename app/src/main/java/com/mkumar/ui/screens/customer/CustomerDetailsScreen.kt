@@ -191,7 +191,6 @@ fun CustomerDetailsScreen(
                             is OrderRowAction.Delete -> viewModel.onIntent(CustomerDetailsIntent.DeleteOrder(action.orderId))
                             is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId))
                             is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId))
-                            else -> Unit
                         }
                     },
                     modifier = Modifier.fillMaxSize()

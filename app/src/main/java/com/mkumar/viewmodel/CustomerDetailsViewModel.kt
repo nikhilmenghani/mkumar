@@ -4,10 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.data.db.entities.OrderEntity
+import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.domain.pricing.PricingInput
 import com.mkumar.domain.pricing.PricingService
 import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
+import com.mkumar.repository.ProductRepository
+import com.mkumar.ui.screens.customer.model.ProductType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -29,6 +32,7 @@ import java.util.UUID
 class CustomerDetailsViewModel @Inject constructor(
     private val customerRepo: CustomerRepository,
     private val orderRepo: OrderRepository,
+    private val orderItemRepo: ProductRepository,
     private val pricing: PricingService,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -140,7 +144,7 @@ class CustomerDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             _ui.value = _ui.value.copy(
                 isOrderSheetOpen = true,
-                draft = OrderDraft(occurredAt = Instant.now())
+                draft = OrderDraft(occurredAt = Instant.now(), editingOrderId = null)
             )
             _effects.trySend(CustomerDetailsEffect.OpenOrderSheet())
         }
@@ -154,17 +158,13 @@ class CustomerDetailsViewModel @Inject constructor(
                 return@launch
             }
 
-            // TODO: replace with your actual items source when available
-            // e.g. orderItemRepo.getItemsForOrder(orderId)
-            val uiItems: List<UiOrderItem> = runCatching {
-                // If you already expose items in your order relation, map them here.
-                // For now, fall back to empty so the sheet still opens.
-                emptyList<UiOrderItem>()
-            }.getOrDefault(emptyList())
+            val entities = runCatching { orderItemRepo.getItemsForOrder(orderId) }.getOrDefault(emptyList())
+            val uiItems = entities
+                .map { it.toUiItem() }
 
             val occurredAt = Instant.ofEpochMilli(order.occurredAt)
             // Reuse your pricing pipeline to recompute totals for a read-back draft:
-            val draft = recomputeTotals(uiItems, occurredAt).copy(hasUnsavedChanges = false)
+            val draft = recomputeTotals(uiItems, occurredAt).copy(hasUnsavedChanges = false, editingOrderId = order.id)
 
             _ui.value = _ui.value.copy(
                 isOrderSheetOpen = true,
@@ -260,6 +260,18 @@ class CustomerDetailsViewModel @Inject constructor(
 
     // --- Persist order ---
 
+    // In your ViewModel
+    private fun UiOrderItem.toEntity(orderId: String): OrderItemEntity =
+        OrderItemEntity(
+            id = id.ifBlank { UUID.randomUUID().toString() },
+            orderId = orderId,
+            quantity = quantity,
+            unitPrice = unitPrice,
+            discountPercentage = discountPercentage.coerceIn(0, 100),
+            productTypeLabel = productType.toString(),
+            productOwnerName = name,
+        )
+
     private fun saveDraft() {
         viewModelScope.launch {
             val s = _ui.value
@@ -275,12 +287,18 @@ class CustomerDetailsViewModel @Inject constructor(
             }
 
             try {
+                val orderId = draft.editingOrderId ?: UUID.randomUUID().toString()
                 val orderEntity = OrderEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = orderId,
                     customerId = customer.id,
                     occurredAt = draft.occurredAt.toEpochMilli(),
                 )
+                val itemEntities = draft.items.map { it.toEntity(orderId) }
+
                 orderRepo.upsert(orderEntity)
+                for (item in itemEntities) {
+                    orderItemRepo.upsert(item)
+                }
 
                 _ui.value = s.copy(
                     isOrderSheetOpen = false,
@@ -295,6 +313,16 @@ class CustomerDetailsViewModel @Inject constructor(
             }
         }
     }
+
+    private fun OrderItemEntity.toUiItem() = UiOrderItem(
+        id = id,
+        quantity = quantity,
+        unitPrice = unitPrice,
+        discountPercentage = discountPercentage,
+        productType = ProductType.valueOf(productTypeLabel),
+        name = productOwnerName
+    )
+
 
     private fun discardDraft() {
         viewModelScope.launch {
