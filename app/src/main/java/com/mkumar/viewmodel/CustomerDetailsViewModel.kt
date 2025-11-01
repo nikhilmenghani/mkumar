@@ -115,6 +115,7 @@ class CustomerDetailsViewModel @Inject constructor(
             is CustomerDetailsIntent.NewSale -> openNewSale()
             is CustomerDetailsIntent.CloseSheet -> closeSheet()
 
+            is CustomerDetailsIntent.OpenOrder -> openExistingOrder(intent.orderId)
             is CustomerDetailsIntent.AddItem -> addItem(intent.item)
             is CustomerDetailsIntent.UpdateItem -> updateItem(intent.item)
             is CustomerDetailsIntent.RemoveItem -> removeItem(intent.itemId)
@@ -138,9 +139,38 @@ class CustomerDetailsViewModel @Inject constructor(
                 isOrderSheetOpen = true,
                 draft = OrderDraft(occurredAt = Instant.now())
             )
-            _effects.trySend(CustomerDetailsEffect.OpenOrderSheet)
+            _effects.trySend(CustomerDetailsEffect.OpenOrderSheet())
         }
     }
+
+    private fun openExistingOrder(orderId: String) {
+        viewModelScope.launch {
+            val order: OrderEntity? = runCatching { orderRepo.getOrder(orderId) }.getOrNull()
+            if (order == null) {
+                emitMessage("Order not found.")
+                return@launch
+            }
+
+            // TODO: replace with your actual items source when available
+            // e.g. orderItemRepo.getItemsForOrder(orderId)
+            val uiItems: List<UiOrderItem> = runCatching {
+                // If you already expose items in your order relation, map them here.
+                // For now, fall back to empty so the sheet still opens.
+                emptyList<UiOrderItem>()
+            }.getOrDefault(emptyList())
+
+            val occurredAt = Instant.ofEpochMilli(order.occurredAt)
+            // Reuse your pricing pipeline to recompute totals for a read-back draft:
+            val draft = recomputeTotals(uiItems, occurredAt).copy(hasUnsavedChanges = false)
+
+            _ui.value = _ui.value.copy(
+                isOrderSheetOpen = true,
+                draft = draft
+            )
+            _effects.trySend(CustomerDetailsEffect.OpenOrderSheet(order.id))
+        }
+    }
+
 
     private fun closeSheet() {
         viewModelScope.launch {

@@ -80,6 +80,7 @@ interface CustomerDetailsContract {
 }
 
 sealed interface OrderRowAction {
+    data class Open(val id: String) : OrderRowAction
     data class ViewInvoice(val orderId: String) : OrderRowAction
     data class Delete(val orderId: String) : OrderRowAction
     data class Share(val orderId: String) : OrderRowAction

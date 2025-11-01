@@ -46,6 +46,8 @@ fun CustomerDetailsScreen(
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    // Bottom sheet state driven by ui.isOrderSheetOpen
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // Snackbar + one-off effects
     val snackbarHostState = remember { SnackbarHostState() }
@@ -53,14 +55,15 @@ fun CustomerDetailsScreen(
         viewModel.effects.collectLatest { effect ->
             when (effect) {
                 is CustomerDetailsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
-                CustomerDetailsEffect.OpenOrderSheet -> { /* handled by state flag below */ }
-                CustomerDetailsEffect.CloseOrderSheet -> { /* handled by state flag below */ }
+                is CustomerDetailsEffect.OpenOrderSheet ->
+                    runCatching { sheetState.show() }
+
+                CustomerDetailsEffect.CloseOrderSheet ->
+                    runCatching { sheetState.hide() }
             }
         }
     }
 
-    // Bottom sheet state driven by ui.isOrderSheetOpen
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     if (ui.isOrderSheetOpen) {
         ModalBottomSheet(
             onDismissRequest = { viewModel.onIntent(CustomerDetailsIntent.CloseSheet) },
@@ -162,7 +165,12 @@ fun CustomerDetailsScreen(
                 }
                 OrderList(
                     orders = rows,
-                    onAction = { /* wire when you implement actions */ },
+                    onAction = { action ->
+                        when (action) {
+                            is OrderRowAction.Open -> viewModel.onIntent(CustomerDetailsIntent.OpenOrder(action.id))
+                            else -> Unit
+                        }
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }

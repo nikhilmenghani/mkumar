@@ -67,14 +67,17 @@ data class CustomerDetailsUiState(
 
 sealed interface CustomerDetailsEffect {
     data class ShowMessage(val message: String) : CustomerDetailsEffect
-    data object OpenOrderSheet : CustomerDetailsEffect
+    data class OpenOrderSheet(val orderId: String? = null) : CustomerDetailsEffect
     data object CloseOrderSheet : CustomerDetailsEffect
 }
+
 
 sealed interface CustomerDetailsIntent {
     data object Refresh : CustomerDetailsIntent
     data object NewSale : CustomerDetailsIntent
     data object CloseSheet : CustomerDetailsIntent
+
+    data class OpenOrder(val orderId: String) : CustomerDetailsIntent
 
     data class AddItem(val item: UiOrderItem) : CustomerDetailsIntent
     data class UpdateItem(val item: UiOrderItem) : CustomerDetailsIntent
