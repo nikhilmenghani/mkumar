@@ -116,6 +116,9 @@ class CustomerDetailsViewModel @Inject constructor(
             is CustomerDetailsIntent.CloseSheet -> closeSheet()
 
             is CustomerDetailsIntent.OpenOrder -> openExistingOrder(intent.orderId)
+            is CustomerDetailsIntent.DeleteOrder -> deleteOrder(intent.orderId)
+            is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId)
+            is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId)
             is CustomerDetailsIntent.AddItem -> addItem(intent.item)
             is CustomerDetailsIntent.UpdateItem -> updateItem(intent.item)
             is CustomerDetailsIntent.RemoveItem -> removeItem(intent.itemId)
@@ -170,6 +173,34 @@ class CustomerDetailsViewModel @Inject constructor(
             _effects.trySend(CustomerDetailsEffect.OpenOrderSheet(order.id))
         }
     }
+
+    private fun deleteOrder(orderId: String) {
+        viewModelScope.launch {
+            try {
+                orderRepo.delete(orderId)
+                emitMessage("Order deleted.")
+            } catch (t: Throwable) {
+                emitMessage("Failed to delete order: ${t.message}")
+            }
+        }
+    }
+
+    private fun shareOrder(orderId: String) {
+        viewModelScope.launch {
+            // Here you can enqueue a share effect or open a chooser.
+            _effects.trySend(CustomerDetailsEffect.ShowMessage("Share feature coming soon."))
+            // later you can create CustomerDetailsEffect.ShareOrder(orderId)
+        }
+    }
+
+    private fun viewInvoice(orderId: String) {
+        viewModelScope.launch {
+            // If you generate invoices as PDFs, trigger opening the file here
+            _effects.trySend(CustomerDetailsEffect.ShowMessage("Opening invoice for $orderId..."))
+            // Later you can emit CustomerDetailsEffect.ViewInvoice(orderId, fileUri)
+        }
+    }
+
 
 
     private fun closeSheet() {

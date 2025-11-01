@@ -10,14 +10,34 @@
 // -----------------------------
 package com.mkumar.ui.screens.customer
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,15 +47,15 @@ import androidx.navigation.NavHostController
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderActionBar
 import com.mkumar.ui.screens.customer.components.OrderList
-import com.mkumar.ui.screens.customer.model.*
+import com.mkumar.ui.screens.customer.model.CustomerHeaderUi
+import com.mkumar.ui.screens.customer.model.OrderFilterUi
+import com.mkumar.ui.screens.customer.model.OrderRowAction
+import com.mkumar.ui.screens.customer.model.OrderRowUi
 import com.mkumar.viewmodel.CustomerDetailsEffect
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.UiOrderItem
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,7 +187,10 @@ fun CustomerDetailsScreen(
                     orders = rows,
                     onAction = { action ->
                         when (action) {
-                            is OrderRowAction.Open -> viewModel.onIntent(CustomerDetailsIntent.OpenOrder(action.id))
+                            is OrderRowAction.Open -> viewModel.onIntent(CustomerDetailsIntent.OpenOrder(action.orderId))
+                            is OrderRowAction.Delete -> viewModel.onIntent(CustomerDetailsIntent.DeleteOrder(action.orderId))
+                            is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId))
+                            is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId))
                             else -> Unit
                         }
                     },

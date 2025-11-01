@@ -78,6 +78,9 @@ sealed interface CustomerDetailsIntent {
     data object CloseSheet : CustomerDetailsIntent
 
     data class OpenOrder(val orderId: String) : CustomerDetailsIntent
+    data class DeleteOrder(val orderId: String) : CustomerDetailsIntent
+    data class ShareOrder(val orderId: String) : CustomerDetailsIntent
+    data class ViewInvoice(val orderId: String) : CustomerDetailsIntent
 
     data class AddItem(val item: UiOrderItem) : CustomerDetailsIntent
     data class UpdateItem(val item: UiOrderItem) : CustomerDetailsIntent
