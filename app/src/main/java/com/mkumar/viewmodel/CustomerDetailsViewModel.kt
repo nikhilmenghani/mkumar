@@ -12,22 +12,21 @@ import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
 import com.mkumar.repository.ProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.UUID
-import kotlin.String
+import javax.inject.Inject
 
 @HiltViewModel
 class CustomerDetailsViewModel @Inject constructor(
@@ -125,8 +124,6 @@ class CustomerDetailsViewModel @Inject constructor(
             is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId)
             is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId)
             is CustomerDetailsIntent.AddItem -> addItem(intent.product)
-            is CustomerDetailsIntent.UpdateItem -> updateItem(intent.item)
-            is CustomerDetailsIntent.RemoveItem -> removeItem(intent.itemId)
             is CustomerDetailsIntent.UpdateOccurredAt -> updateOccurredAt(intent.occurredAt)
 
             is CustomerDetailsIntent.SaveDraftAsOrder -> saveDraft()
@@ -136,24 +133,76 @@ class CustomerDetailsViewModel @Inject constructor(
 
     fun onNewOrderIntent(intent: NewOrderIntent) {
         when (intent) {
-            is NewOrderIntent.FormUpdate -> updateFormData(intent.productId, intent.newData)
-            is NewOrderIntent.FormDelete -> removeItem(intent.productId)
+            is NewOrderIntent.FormUpdate -> onSaveItem(intent.productId, intent.newData)
+            is NewOrderIntent.FormDelete -> onDeleteItem(intent.productId)
             is NewOrderIntent.Save -> TODO()
             is NewOrderIntent.SelectType -> TODO()
         }
     }
 
-    fun updateFormData(productId: String, formData: ProductFormData) {
-        // Update the form data for the specified product in the draft
-        mutateDraft { draft ->
-            val updatedItems = draft.items.map { item ->
-                if (item.id == productId) {
-                    item.copy(formData = formData)
-                } else {
-                    item
+    fun onSaveItem(productId: String, newForm: ProductFormData) {
+        viewModelScope.launch {
+            val s = _ui.value
+            val draft = s.draft
+            val orderId = draft.editingOrderId
+            val current = draft.items.firstOrNull { it.id == productId } ?: return@launch
+
+            // If order doesn't exist yet, keep it local only.
+            if (orderId == null) {
+                mutateDraft { d ->
+                    d.copy(items = d.items.map { if (it.id == productId) it.copy(formData = newForm) else it })
+                        .let { recomputeTotals(it.items, d.occurredAt) }
                 }
+                emitMessage("Item updated locally. Save the order to persist.")
+                return@launch
             }
-            draft.copy(items = updatedItems)
+
+            val updated = current.copy(formData = newForm)
+            val entity = updated.toEntity(orderId)
+            try {
+                // 1) Persist
+                orderItemRepo.upsert(entity)
+
+                // 2) Reflect in UI draft
+                mutateDraft { d ->
+                    d.copy(items = d.items.map { if (it.id == productId) updated else it })
+                        .let { recomputeTotals(it.items, d.occurredAt) }
+                }
+                emitMessage("Item saved.")
+            } catch (t: Throwable) {
+                emitMessage("Failed to save item: ${t.message ?: "unknown error"}")
+            }
+        }
+    }
+
+    fun onDeleteItem(itemId: String) {
+        viewModelScope.launch {
+            val s = _ui.value
+            val orderId = s.draft.editingOrderId
+
+            // If order not yet created, just remove from draft.
+            if (orderId == null) {
+                mutateDraft { d ->
+                    val updated = d.items.filterNot { it.id == itemId }
+                    recomputeTotals(updated, d.occurredAt)
+                }
+                emitMessage("Item removed from draft.")
+                return@launch
+            }
+
+            try {
+                // 1) Persist delete
+                orderItemRepo.deleteProductById(itemId)
+
+                // 2) Reflect in UI draft
+                mutateDraft { d ->
+                    val updated = d.items.filterNot { it.id == itemId }
+                    recomputeTotals(updated, d.occurredAt)
+                }
+                emitMessage("Item deleted.")
+            } catch (t: Throwable) {
+                emitMessage("Failed to delete item: ${t.message ?: "unknown error"}")
+            }
         }
     }
 
@@ -166,11 +215,50 @@ class CustomerDetailsViewModel @Inject constructor(
 
     private fun openNewSale() {
         viewModelScope.launch {
-            _ui.value = _ui.value.copy(
-                isOrderSheetOpen = true,
-                draft = OrderDraft(occurredAt = Instant.now(), editingOrderId = null)
+            val s = _ui.value
+            val customer = s.customer
+            if (customer == null) {
+                emitMessage("Customer not found.")
+                return@launch
+            }
+
+            // 1) If a prior draft existed with no items, delete that empty order row.
+            s.draft.editingOrderId?.let { oldId ->
+                try {
+                    val hasItems = orderItemRepo.countItemsForOrder(oldId) > 0
+                    if (!hasItems) orderRepo.delete(oldId)
+                } catch (_: Throwable) {
+                    // Non-fatal: continue creating the new sale
+                }
+            }
+
+            // 2) Create a brand-new order row (DRAFT state if you have status)
+            val now = Instant.now()
+            val newOrderId = UUID.randomUUID().toString()
+            val orderEntity = OrderEntity(
+                id = newOrderId,
+                customerId = customer.id,
+                occurredAt = now.toEpochMilli(),
+                // status = OrderStatus.DRAFT, // if you have this column
             )
-            _effects.trySend(CustomerDetailsEffect.OpenOrderSheet())
+
+            try {
+                orderRepo.upsert(orderEntity)
+
+                // 3) Open sheet with a fresh draft bound to this orderId
+                _ui.value = s.copy(
+                    isOrderSheetOpen = true,
+                    draft = OrderDraft(
+                        occurredAt = now,
+                        editingOrderId = newOrderId,
+                        // other defaults as needed
+                    ),
+                    errorMessage = null
+                )
+                _effects.trySend(CustomerDetailsEffect.OpenOrderSheet())
+            } catch (t: Throwable) {
+                emitMessage("Failed to start new sale: ${t.message ?: "unknown error"}")
+            }
         }
     }
 
@@ -225,8 +313,6 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-
-
     private fun closeSheet() {
         viewModelScope.launch {
             _ui.value = _ui.value.copy(isOrderSheetOpen = false)
@@ -249,15 +335,15 @@ class CustomerDetailsViewModel @Inject constructor(
         recomputeTotals(updated, draft.occurredAt)
     }
 
-    private fun updateItem(item: UiOrderItem) = mutateDraft { draft ->
-        val updated = draft.items.map { if (it.id == item.id) item else it }
-        recomputeTotals(updated, draft.occurredAt)
-    }
+//    private fun updateItem(item: UiOrderItem) = mutateDraft { draft ->
+//        val updated = draft.items.map { if (it.id == item.id) item else it }
+//        recomputeTotals(updated, draft.occurredAt)
+//    }
 
-    private fun removeItem(itemId: String) = mutateDraft { draft ->
-        val updated = draft.items.filterNot { it.id == itemId }
-        recomputeTotals(updated, draft.occurredAt)
-    }
+//    private fun removeItem(itemId: String) = mutateDraft { draft ->
+//        val updated = draft.items.filterNot { it.id == itemId }
+//        recomputeTotals(updated, draft.occurredAt)
+//    }
 
     private fun updateOccurredAt(instant: Instant) = mutateDraft { draft ->
         recomputeTotals(draft.items, instant)
@@ -273,6 +359,52 @@ class CustomerDetailsViewModel @Inject constructor(
         _ui.value = s.copy(draft = updated)
     }
 
+    private fun discardDraft() {
+        viewModelScope.launch {
+            _ui.value = _ui.value.copy(draft = OrderDraft())
+            emitMessage("Discarded changes.")
+        }
+    }
+
+    private fun saveDraft() {
+        viewModelScope.launch {
+            val s = _ui.value
+            val draft = s.draft
+            val customer = s.customer
+            if (customer == null) { emitMessage("Customer not found."); return@launch }
+            if (draft.items.isEmpty()) { emitMessage("Please add at least one item."); return@launch }
+
+            // We expect this to exist because we created it at New Sale.
+            val orderId = draft.editingOrderId ?: UUID.randomUUID().toString()
+
+            val orderEntity = OrderEntity(
+                id = orderId,
+                customerId = customer.id,
+                occurredAt = draft.occurredAt.toEpochMilli(),
+            )
+            val itemEntities = draft.items.map { it.toEntity(orderId) }
+
+            try {
+                // If you have a transaction helper, use it:
+                // orderRepo.withTransaction { ... }
+                orderRepo.upsert(orderEntity)
+                for (item in itemEntities) orderItemRepo.upsert(item)
+
+                // Optional: mark status = CONFIRMED here if you track status
+
+                _ui.value = s.copy(
+                    isOrderSheetOpen = false,
+                    draft = OrderDraft(),
+                    errorMessage = null
+                )
+                _effects.trySend(CustomerDetailsEffect.CloseOrderSheet)
+                emitMessage("Order saved.")
+            } catch (t: Throwable) {
+                _ui.value = s.copy(errorMessage = t.message ?: "Failed to save order")
+                emitMessage("Failed to save order.")
+            }
+        }
+    }
 
     /** Draft pricing uses orderId = "DRAFT", adjusted = 0, advance = 0. */
     private fun recomputeTotals(items: List<UiOrderItem>, occurredAt: Instant): OrderDraft {
@@ -310,49 +442,8 @@ class CustomerDetailsViewModel @Inject constructor(
             discountPercentage = discountPercentage.coerceIn(0, 100),
             productTypeLabel = productType.toString(),
             productOwnerName = name,
+            formDataJson = serializeFormData()
         )
-
-    private fun saveDraft() {
-        viewModelScope.launch {
-            val s = _ui.value
-            val draft = s.draft
-            val customer = s.customer
-            if (customer == null) {
-                emitMessage("Customer not found.")
-                return@launch
-            }
-            if (draft.items.isEmpty()) {
-                emitMessage("Please add at least one item.")
-                return@launch
-            }
-
-            try {
-                val orderId = draft.editingOrderId ?: UUID.randomUUID().toString()
-                val orderEntity = OrderEntity(
-                    id = orderId,
-                    customerId = customer.id,
-                    occurredAt = draft.occurredAt.toEpochMilli(),
-                )
-                val itemEntities = draft.items.map { it.toEntity(orderId) }
-
-                orderRepo.upsert(orderEntity)
-                for (item in itemEntities) {
-                    orderItemRepo.upsert(item)
-                }
-
-                _ui.value = s.copy(
-                    isOrderSheetOpen = false,
-                    draft = OrderDraft(),
-                    errorMessage = null
-                )
-                _effects.trySend(CustomerDetailsEffect.CloseOrderSheet)
-                emitMessage("Order saved.")
-            } catch (t: Throwable) {
-                _ui.value = s.copy(errorMessage = t.message ?: "Failed to save order")
-                emitMessage("Failed to save order.")
-            }
-        }
-    }
 
     private fun OrderItemEntity.toUiItem() = UiOrderItem(
         id = id,
@@ -360,16 +451,9 @@ class CustomerDetailsViewModel @Inject constructor(
         unitPrice = unitPrice,
         discountPercentage = discountPercentage,
         productType = ProductType.valueOf(productTypeLabel),
-        name = productOwnerName
+        name = productOwnerName,
+        formData = UiOrderItem.deserializeFormData(formDataJson)
     )
-
-
-    private fun discardDraft() {
-        viewModelScope.launch {
-            _ui.value = _ui.value.copy(draft = OrderDraft())
-            emitMessage("Discarded changes.")
-        }
-    }
 
     // --- Helpers ---
 

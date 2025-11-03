@@ -38,6 +38,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            isMinifyEnabled = false
+        }
         release {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false

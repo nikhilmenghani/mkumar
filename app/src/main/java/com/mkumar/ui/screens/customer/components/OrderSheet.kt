@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -81,17 +80,16 @@ fun OrderSheet(
                         onDelete = { productId ->
                             viewModel.onNewOrderIntent(NewOrderIntent.FormDelete(productId))
                         }
-
                     )
                 }
                 ProductSelector(
                     selectedType = selectedType,
                     onTypeSelected = { selectedType = it },
-                    onAddClick = { type -> viewModel.onIntent(CustomerDetailsIntent.AddItem(selectedType)) }
+                    onAddClick = { type -> viewModel.onIntent(CustomerDetailsIntent.AddItem(type)) }
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(onClick = onDiscard, modifier = Modifier.weight(1f)) { Text("Discard") }
+//                    OutlinedButton(onClick = onDiscard, modifier = Modifier.weight(1f)) { Text("Discard") }
                     Button(onClick = onSave, enabled = state.draft.items.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Save Order") }
                 }
             }

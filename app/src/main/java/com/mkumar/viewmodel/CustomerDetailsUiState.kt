@@ -8,7 +8,6 @@
 package com.mkumar.viewmodel
 
 
-import android.accessibilityservice.GestureDescription
 import com.mkumar.data.ProductFormData
 import kotlinx.serialization.json.Json
 import java.time.Instant
@@ -102,8 +101,8 @@ sealed interface CustomerDetailsIntent {
     data class ViewInvoice(val orderId: String) : CustomerDetailsIntent
 
     data class AddItem(val product: ProductType) : CustomerDetailsIntent
-    data class UpdateItem(val item: UiOrderItem) : CustomerDetailsIntent
-    data class RemoveItem(val itemId: String) : CustomerDetailsIntent
+//    data class UpdateItem(val item: UiOrderItem) : CustomerDetailsIntent
+//    data class RemoveItem(val itemId: String) : CustomerDetailsIntent
     data class UpdateOccurredAt(val occurredAt: Instant) : CustomerDetailsIntent
 
     data object SaveDraftAsOrder : CustomerDetailsIntent

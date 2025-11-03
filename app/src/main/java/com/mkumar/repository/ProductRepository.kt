@@ -10,4 +10,5 @@ interface ProductRepository {
     suspend fun deleteProductById(itemId: String)
     fun observeItemsForOrder(orderId: String): Flow<List<OrderItemEntity>>
     suspend fun getItemsForOrder(orderId: String): List<OrderItemEntity>
+    fun countItemsForOrder(orderId: String): Int
 }

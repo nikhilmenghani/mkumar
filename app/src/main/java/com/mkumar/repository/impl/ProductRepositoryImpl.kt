@@ -25,4 +25,7 @@ class ProductRepositoryImpl @Inject constructor(
 
     override suspend fun getItemsForOrder(orderId: String): List<OrderItemEntity> =
         orderItemDao.getItemsForOrder(orderId)
+
+    override fun countItemsForOrder(orderId: String): Int =
+        orderItemDao.countForOrder(orderId)
 }

@@ -57,4 +57,7 @@ interface OrderItemDao {
      */
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
     suspend fun getItemsForOrder(orderId: String): List<OrderItemEntity>
+
+    @Query("SELECT COUNT(*) FROM order_items WHERE orderId = :orderId")
+    fun countForOrder(orderId: String): Int
 }
