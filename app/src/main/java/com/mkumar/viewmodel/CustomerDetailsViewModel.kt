@@ -3,6 +3,7 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mkumar.data.ProductFormData
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.domain.pricing.PricingInput
@@ -10,7 +11,6 @@ import com.mkumar.domain.pricing.PricingService
 import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
 import com.mkumar.repository.ProductRepository
-import com.mkumar.ui.screens.customer.model.ProductType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.UUID
+import kotlin.String
 
 @HiltViewModel
 class CustomerDetailsViewModel @Inject constructor(
@@ -123,13 +124,36 @@ class CustomerDetailsViewModel @Inject constructor(
             is CustomerDetailsIntent.DeleteOrder -> deleteOrder(intent.orderId)
             is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId)
             is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId)
-            is CustomerDetailsIntent.AddItem -> addItem(intent.item)
+            is CustomerDetailsIntent.AddItem -> addItem(intent.product)
             is CustomerDetailsIntent.UpdateItem -> updateItem(intent.item)
             is CustomerDetailsIntent.RemoveItem -> removeItem(intent.itemId)
             is CustomerDetailsIntent.UpdateOccurredAt -> updateOccurredAt(intent.occurredAt)
 
             is CustomerDetailsIntent.SaveDraftAsOrder -> saveDraft()
             is CustomerDetailsIntent.DiscardDraft -> discardDraft()
+        }
+    }
+
+    fun onNewOrderIntent(intent: NewOrderIntent) {
+        when (intent) {
+            is NewOrderIntent.FormUpdate -> updateFormData(intent.productId, intent.newData)
+            is NewOrderIntent.FormDelete -> removeItem(intent.productId)
+            is NewOrderIntent.Save -> TODO()
+            is NewOrderIntent.SelectType -> TODO()
+        }
+    }
+
+    fun updateFormData(productId: String, formData: ProductFormData) {
+        // Update the form data for the specified product in the draft
+        mutateDraft { draft ->
+            val updatedItems = draft.items.map { item ->
+                if (item.id == productId) {
+                    item.copy(formData = formData)
+                } else {
+                    item
+                }
+            }
+            draft.copy(items = updatedItems)
         }
     }
 
@@ -212,7 +236,15 @@ class CustomerDetailsViewModel @Inject constructor(
 
     // --- Draft mutations ---
 
-    private fun addItem(item: UiOrderItem) = mutateDraft { draft ->
+    private fun addItem(product: ProductType) = mutateDraft { draft ->
+        val item = UiOrderItem(
+            id = "",
+            quantity = 1,
+            unitPrice = 0,
+            discountPercentage = 0,
+            productType = product,
+            name = product.toString()
+        )
         val updated = draft.items + item.ensureId()
         recomputeTotals(updated, draft.occurredAt)
     }

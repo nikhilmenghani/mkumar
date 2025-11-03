@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -53,5 +54,28 @@ fun ProductAccordion(
                 Spacer(Modifier.height(8.dp))
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewProductAccordion() {
+    var expanded by remember { mutableStateOf(false) }
+    ProductAccordion(
+        title = "Product Details",
+        expanded = expanded,
+        onToggle = { expanded = !expanded },
+        fixedCollapsedHeight = 56.dp
+    ) {
+        Text("Sample product information goes here.")
+    }
+
+    ProductAccordion(
+        title = "Product Details",
+        expanded = true,
+        onToggle = { expanded = !expanded },
+        fixedCollapsedHeight = 56.dp
+    ) {
+        Text("Sample product information goes here.")
     }
 }

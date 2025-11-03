@@ -7,7 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.mkumar.ui.screens.customer.model.ProductType
+import com.mkumar.viewmodel.ProductType
 
 @Composable
 fun ProductTypePicker(

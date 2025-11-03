@@ -26,8 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mkumar.ui.screens.customer.model.OrderRowAction
 import com.mkumar.ui.screens.customer.model.OrderRowUi
+import com.mkumar.viewmodel.OrderRowAction
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 

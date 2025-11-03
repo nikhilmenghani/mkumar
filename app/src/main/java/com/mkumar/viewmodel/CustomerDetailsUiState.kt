@@ -8,24 +8,19 @@
 package com.mkumar.viewmodel
 
 
-import com.mkumar.ui.screens.customer.model.ProductType
+import android.accessibilityservice.GestureDescription
+import com.mkumar.data.ProductFormData
+import kotlinx.serialization.json.Json
 import java.time.Instant
+import java.util.UUID
+
+enum class ProductType { LENS, FRAME, CONTACT_LENS }
 
 /** Lightweight UI customer model */
 data class UiCustomer(
     val id: String,
     val name: String,
     val phone: String
-)
-
-/** UI order item uses rupees + percentage discount */
-data class UiOrderItem(
-    val id: String,                 // stable id
-    val productType: ProductType,
-    val name: String,
-    val quantity: Int,
-    val unitPrice: Int,             // rupees
-    val discountPercentage: Int     // 0..100
 )
 
 /**
@@ -41,6 +36,29 @@ data class UiOrder(
     val advanceTotal: Int,
     val remainingBalance: Int
 )
+
+/** UI order item uses rupees + percentage discount */
+data class UiOrderItem(
+    val id: String = UUID.randomUUID().toString(),
+    val productType: ProductType,
+    val productDescription: String = "",
+    val formData: ProductFormData? = null,
+    val name: String,
+    val quantity: Int,
+    val unitPrice: Int,
+    val discountPercentage: Int,
+    val finalTotal: Int = 0,
+) {
+    fun serializeFormData(): String? {
+        return formData?.let { Json.encodeToString(it) }
+    }
+
+    companion object {
+        fun deserializeFormData(json: String?): ProductFormData? {
+            return json?.let { Json.decodeFromString<ProductFormData>(it) }
+        }
+    }
+}
 
 /** Draft used in bottom sheet while composing a new order. */
 data class OrderDraft(
@@ -83,11 +101,25 @@ sealed interface CustomerDetailsIntent {
     data class ShareOrder(val orderId: String) : CustomerDetailsIntent
     data class ViewInvoice(val orderId: String) : CustomerDetailsIntent
 
-    data class AddItem(val item: UiOrderItem) : CustomerDetailsIntent
+    data class AddItem(val product: ProductType) : CustomerDetailsIntent
     data class UpdateItem(val item: UiOrderItem) : CustomerDetailsIntent
     data class RemoveItem(val itemId: String) : CustomerDetailsIntent
     data class UpdateOccurredAt(val occurredAt: Instant) : CustomerDetailsIntent
 
     data object SaveDraftAsOrder : CustomerDetailsIntent
     data object DiscardDraft : CustomerDetailsIntent
+}
+
+sealed interface OrderRowAction {
+    data class Open(val orderId: String) : OrderRowAction
+    data class ViewInvoice(val orderId: String) : OrderRowAction
+    data class Delete(val orderId: String) : OrderRowAction
+    data class Share(val orderId: String) : OrderRowAction
+}
+
+sealed interface NewOrderIntent {
+    data object Save : NewOrderIntent
+    data class SelectType(val type: ProductType) : NewOrderIntent
+    data class FormUpdate(val productId: String, val newData: ProductFormData) : NewOrderIntent
+    data class FormDelete(val productId: String) : NewOrderIntent
 }

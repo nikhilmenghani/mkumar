@@ -21,12 +21,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.mkumar.data.ProductType
+import com.mkumar.viewmodel.ProductType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductSelector(
-    availableTypes: List<ProductType>,
     selectedType: ProductType?,
     onTypeSelected: (ProductType) -> Unit,
     onAddClick: (ProductType) -> Unit
@@ -44,7 +43,7 @@ fun ProductSelector(
         ) {
             OutlinedTextField(
                 readOnly = true,
-                value = selectedType?.label ?: "",
+                value = selectedType.toString(),
                 onValueChange = {},
                 label = { Text("Choose Product Type") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -55,9 +54,9 @@ fun ProductSelector(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
-                availableTypes.forEach { type ->
+                ProductType.entries.forEach { type ->
                     DropdownMenuItem(
-                        text = { Text(type.label) },
+                        text = { Text(type.toString()) },
                         onClick = {
                             onTypeSelected(type)
                             expanded = false

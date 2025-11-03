@@ -10,11 +10,14 @@
 // -----------------------------
 package com.mkumar.ui.screens.customer
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
@@ -46,17 +49,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.mkumar.ui.components.accordions.AccordionItem
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderActionBar
 import com.mkumar.ui.screens.customer.components.OrderList
+import com.mkumar.ui.screens.customer.components.OrderSheet
 import com.mkumar.ui.screens.customer.model.CustomerHeaderUi
-import com.mkumar.ui.screens.customer.model.OrderFilterUi
-import com.mkumar.ui.screens.customer.model.OrderRowAction
 import com.mkumar.ui.screens.customer.model.OrderRowUi
 import com.mkumar.viewmodel.CustomerDetailsEffect
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsViewModel
+import com.mkumar.viewmodel.OrderRowAction
 import com.mkumar.viewmodel.UiOrderItem
 import kotlinx.coroutines.flow.collectLatest
 
@@ -93,15 +97,23 @@ fun CustomerDetailsScreen(
             title = "Customer Details ${ui.draft.editingOrderId}",
             showTitle = false,
             sheetContent = {
-                OrderDraftSheet(
-                    state = ui,
-                    onSave = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
-                    onDiscard = { viewModel.onIntent(CustomerDetailsIntent.DiscardDraft) },
-                    onUpdateOccurredAt = { viewModel.onIntent(CustomerDetailsIntent.UpdateOccurredAt(it)) },
-                    onRemoveItem = { id -> viewModel.onIntent(CustomerDetailsIntent.RemoveItem(id)) },
-                    viewModel = viewModel,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 72.dp)
+                ) {
+                    item {
+                        OrderSheet(
+                            state = ui,
+                            onSave = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
+                            onDiscard = { viewModel.onIntent(CustomerDetailsIntent.DiscardDraft) },
+                            viewModel = viewModel,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             },
             onDismiss = { showCustomerDialog = false },
             showDismiss = true

@@ -8,8 +8,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.mkumar.ui.screens.customer.model.OrderRowAction
 import com.mkumar.ui.screens.customer.model.OrderRowUi
+import com.mkumar.viewmodel.OrderRowAction
 
 @Composable
 fun OrderList(

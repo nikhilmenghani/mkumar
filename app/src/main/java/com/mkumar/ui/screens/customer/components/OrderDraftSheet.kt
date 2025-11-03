@@ -29,10 +29,10 @@ import com.mkumar.ui.components.quickforms.ContactLensQuickForm
 import com.mkumar.ui.components.quickforms.FrameQuickForm
 import com.mkumar.ui.components.quickforms.LensQuickForm
 import com.mkumar.ui.screens.customer.components.ProductTypePicker
-import com.mkumar.ui.screens.customer.model.ProductType
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsUiState
 import com.mkumar.viewmodel.CustomerDetailsViewModel
+import com.mkumar.viewmodel.ProductType
 import com.mkumar.viewmodel.UiOrderItem
 import java.time.Instant
 import java.time.ZoneId
@@ -100,7 +100,7 @@ fun OrderDraftSheet(
                         off = (lensOff.toIntOrNull() ?: 0).coerceIn(0, 100),
                         type = ProductType.LENS
                     )
-                    viewModel.onIntent(CustomerDetailsIntent.AddItem(item))
+//                    viewModel.onIntent(CustomerDetailsIntent.AddItem(item))
                 }
             )
 
@@ -117,7 +117,7 @@ fun OrderDraftSheet(
                         off = (frameOff.toIntOrNull() ?: 0).coerceIn(0, 100),
                         type = ProductType.FRAME
                     )
-                    CustomerDetailsIntent.AddItem(item)
+//                    CustomerDetailsIntent.AddItem(item)
                 }
             )
 
@@ -134,7 +134,7 @@ fun OrderDraftSheet(
                         off = (clOff.toIntOrNull() ?: 0).coerceIn(0, 100),
                         type = ProductType.CONTACT_LENS
                     )
-                    CustomerDetailsIntent.AddItem(item)
+//                    CustomerDetailsIntent.AddItem(item)
                 }
             )
 

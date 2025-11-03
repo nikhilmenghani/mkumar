@@ -11,43 +11,50 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductFormData
-import com.mkumar.data.ProductType
+import com.mkumar.data.ProductFormDataSaver
 import com.mkumar.ui.components.forms.ProductFormItem
+import com.mkumar.ui.components.forms.defaultFormFor
+import com.mkumar.viewmodel.ProductType
+import com.mkumar.viewmodel.UiOrderItem
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun OrderAccordionItem(
-    selectedProduct: ProductEntry?,
+    selectedProduct: UiOrderItem?,
     selectedType: ProductType?,
-    getProductFormData: (ProductEntry) -> ProductFormData?,
-    updateProductFormData: (String, ProductFormData) -> Unit,
-    hasUnsavedChanges: (ProductEntry, ProductFormData?) -> Boolean,
     onFormSave: (String, ProductFormData) -> Unit,
+    onDelete: (String) -> Unit,
     collapsedHeight: Dp = 76.dp
 ) {
     if (selectedProduct == null) return
     var expanded by remember { mutableStateOf(false) }
-    val shape = MaterialTheme.shapes.extraLarge // typically 24.dp
-    val productFormData by rememberUpdatedState(getProductFormData(selectedProduct))
-    val isDirty by remember(selectedProduct.id, productFormData) {
-        derivedStateOf {
-            !selectedProduct.isSaved || hasUnsavedChanges(selectedProduct, productFormData)
-        }
+    val shape = RoundedCornerShape(12.dp)
+    val draftBeforeState = rememberSaveable(
+        selectedProduct.id,
+        saver = ProductFormDataSaver
+    ) {
+        selectedProduct.formData ?: defaultFormFor(selectedProduct.productType)
     }
+
+    var draft by remember { mutableStateOf(draftBeforeState) }
+
 
     Box(
         Modifier
@@ -67,10 +74,7 @@ fun OrderAccordionItem(
                 else
                     MaterialTheme.colorScheme.surfaceContainerLow
             ),
-            elevation = CardDefaults.elevatedCardElevation(
-                defaultElevation = if (expanded) 6.dp else 4.dp,
-                pressedElevation = 8.dp
-            )
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Column {
                 // Collapsed header — fixed height
@@ -82,7 +86,7 @@ fun OrderAccordionItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = selectedProduct.productDescription.ifBlank { "New ${selectedType?.label}" },
+                        text = selectedProduct.productDescription.ifBlank { "New ${selectedType?.toString()}" },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         maxLines = 2,
@@ -93,7 +97,7 @@ fun OrderAccordionItem(
                     )
                     Spacer(Modifier.width(16.dp))
                     Text(
-                        text = "₹${selectedProduct?.finalTotal}",
+                        text = "₹${selectedProduct.finalTotal}",
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
@@ -111,28 +115,25 @@ fun OrderAccordionItem(
                 // Expanded form (column form)
                 AnimatedVisibility(
                     visible = expanded,
-                    enter = expandVertically(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
                 ) {
                     Column(
-                        Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
                         ProductFormItem(
                             selectedProduct = selectedProduct,
-                            productFormData = productFormData,
-                            updateProductFormData = updateProductFormData,
+                            draft = draft,
+                            onDraftChange = { updatedDraft ->
+                                draft = updatedDraft
+                            },
+                            onSave = { productId, formData ->
+                                onFormSave(productId, formData)
+                            },
+                            onDelete = onDelete
                         )
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            OutlinedButton(onClick = { expanded = false }) { Text("Delete") }
-                            Button(onClick = {
-                                expanded = false
-                                productFormData?.let { onFormSave(selectedProduct.id, it) }
-                            }) { Text("Save Item") }
-                        }
                     }
                 }
             }
@@ -147,4 +148,27 @@ fun OrderAccordionItem(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewOrderAccordionItem() {
+    val sampleProduct = UiOrderItem(
+        id = "1",
+        productType = ProductType.LENS,
+        productDescription = "Sample Lens",
+        formData = defaultFormFor(ProductType.LENS),
+        finalTotal = 1200,
+        name = "Nikhil",
+        quantity = 1,
+        unitPrice = 25,
+        discountPercentage = 10
+    )
+    OrderAccordionItem(
+        selectedProduct = sampleProduct,
+        selectedType = ProductType.LENS,
+        onFormSave = { _, _ -> },
+        onDelete = {},
+        collapsedHeight = 76.dp
+    )
 }

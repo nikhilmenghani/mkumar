@@ -7,35 +7,36 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.mkumar.data.ProductEntry
 import com.mkumar.data.ProductFormData
-import com.mkumar.data.ProductType
-import com.mkumar.data.validation.ProductFormValidators
+import com.mkumar.data.ProductFormDataSaver
 import com.mkumar.data.validation.ValidationResult
-import kotlinx.coroutines.flow.StateFlow
+import com.mkumar.viewmodel.ProductType
+import com.mkumar.viewmodel.UiOrderItem
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ProductFormItem(
-    selectedProduct: ProductEntry,
-    productFormData: ProductFormData?,
-    updateProductFormData: (String, ProductFormData) -> Unit,
+    selectedProduct: UiOrderItem,
+    draft: ProductFormData,
+    onDraftChange: (ProductFormData) -> Unit,
+    onSave: (String, ProductFormData) -> Unit,
+    onDelete: (String) -> Unit,
 ) {
 
     AnimatedContent(
@@ -44,8 +45,11 @@ fun ProductFormItem(
         label = "ProductFormContent"
     ) { product ->
         key(product.id) {
+
+            val isDirty = remember(product.id, draft) { draft != product.formData }
+
             var ownerName by rememberSaveable(product.id) {
-                mutableStateOf(product.productOwnerName)
+                mutableStateOf("Nikhil")
             }
             var validationError by remember(product.id) {
                 mutableStateOf<String?>(null)
@@ -65,12 +69,19 @@ fun ProductFormItem(
                 }
 
                 RenderProductForm(
-                    product = product,
-                    productFormData = productFormData,
-                    updateProductFormData = {
-                        updateProductFormData(product.id, it)
-                    },
+                    productType = product.productType,
+                    productFormData = draft,
+                    updateProductFormData = { onDraftChange(it) },
                 )
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    OutlinedButton(onClick = { onDelete(product.id) }) { Text("Delete") }
+                    Button(onClick = {
+                        onSave(product.id, draft)
+                    }) { Text("Save Item") }
+                }
             }
         }
     }
@@ -78,26 +89,32 @@ fun ProductFormItem(
 
 @Composable
 private fun RenderProductForm(
-    product: ProductEntry,
+    productType: ProductType,
     productFormData: ProductFormData?,
-    updateProductFormData: (ProductFormData) -> Unit,
+    updateProductFormData: (ProductFormData) -> Unit
 ) {
-    when (product.productType) {
-        is ProductType.Frame -> FrameForm(
+    when (productType) {
+        ProductType.FRAME -> FrameForm(
             initialData = productFormData as? ProductFormData.FrameData,
             onChange = updateProductFormData,
         )
 
-        is ProductType.Lens -> LensForm(
+        ProductType.LENS -> LensForm(
             initialData = productFormData as? ProductFormData.LensData,
             onChange = updateProductFormData,
         )
 
-        is ProductType.ContactLens -> ContactLensForm(
+        ProductType.CONTACT_LENS -> ContactLensForm(
             initialData = productFormData as? ProductFormData.ContactLensData,
             onChange = updateProductFormData,
         )
     }
+}
+
+fun defaultFormFor(type: ProductType): ProductFormData = when (type) {
+    ProductType.FRAME -> ProductFormData.FrameData()
+    ProductType.LENS -> ProductFormData.LensData()
+    ProductType.CONTACT_LENS -> ProductFormData.ContactLensData()
 }
 
 private fun <T : ProductFormData> validateAndSave(
