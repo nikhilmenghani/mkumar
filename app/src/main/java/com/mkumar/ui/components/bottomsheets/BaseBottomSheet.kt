@@ -33,7 +33,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.mkumar.ui.components.fabs.AddProductSpeedMenuButton
+import com.mkumar.viewmodel.ProductType
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,7 +53,14 @@ fun BaseBottomSheet(
     onNextClick: () -> Unit = {},
     onPreviousClick: () -> Unit = {},
     onDoneClick: () -> Unit = {},
-    onDismissClick: () -> Unit = {}
+    onDismissClick: () -> Unit = {},
+
+    // 👇 NEW: Add Product FAB support
+    showAddProduct: Boolean = false,
+    addProductCommonTypes: List<ProductType> = emptyList(),
+    addProductLastUsed: ProductType? = null,
+    onAddProductClick: (ProductType) -> Unit = {},
+    onOpenProductPicker: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val bottomSheetState = rememberModalBottomSheetState(
@@ -69,9 +79,8 @@ fun BaseBottomSheet(
                 .fillMaxWidth()
                 .fillMaxHeight()
                 .imePadding(),
-            // ✅ Bottom bar without a Surface, same color as sheet background
             bottomBar = {
-                if (showNext || showPrevious || showDone || showDismiss) {
+                if (showNext || showPrevious || showDone || showDismiss || showAddProduct) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -85,39 +94,37 @@ fun BaseBottomSheet(
                             FloatingActionButton(
                                 onClick = onPreviousClick,
                                 modifier = Modifier.size(56.dp),
-                                containerColor = MaterialTheme.colorScheme.surface, // match sheet
+                                containerColor = MaterialTheme.colorScheme.surface,
                                 contentColor = MaterialTheme.colorScheme.onSurface
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Previous"
-                                )
-                            }
+                            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous") }
                         } else {
                             Spacer(Modifier.width(56.dp))
                         }
 
-                        // Right: Next / Done / Dismiss
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        // Right actions
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+
+                            if (showAddProduct) {
+                                AddProductSpeedMenuButton(
+                                    commonTypes = addProductCommonTypes,
+                                    lastUsed = addProductLastUsed,
+                                    onAddClick = onAddProductClick,
+                                    onOpenPicker = onOpenProductPicker
+                                )
+                            }
+
                             if (showNext) {
                                 FloatingActionButton(
                                     onClick = onNextClick,
                                     modifier = Modifier.size(56.dp),
                                     containerColor = MaterialTheme.colorScheme.surface,
                                     contentColor = MaterialTheme.colorScheme.onSurface
-                                ) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.ArrowForward,
-                                        contentDescription = "Next"
-                                    )
-                                }
+                                ) { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next") }
                             }
                             if (showDone) {
                                 FloatingActionButton(
                                     onClick = {
-                                        scope.launch {
-                                            bottomSheetState.hide()
-                                        }.invokeOnCompletion {
+                                        scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
                                             onDoneClick()
                                             onDismiss()
                                         }
@@ -125,16 +132,12 @@ fun BaseBottomSheet(
                                     modifier = Modifier.size(56.dp),
                                     containerColor = MaterialTheme.colorScheme.surface,
                                     contentColor = MaterialTheme.colorScheme.onSurface
-                                ) {
-                                    Icon(Icons.Default.Check, contentDescription = "Done")
-                                }
+                                ) { Icon(Icons.Default.Check, contentDescription = "Done") }
                             }
                             if (showDismiss) {
                                 FloatingActionButton(
                                     onClick = {
-                                        scope.launch {
-                                            bottomSheetState.hide()
-                                        }.invokeOnCompletion {
+                                        scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
                                             onDismissClick()
                                             onDismiss()
                                         }
@@ -142,9 +145,7 @@ fun BaseBottomSheet(
                                     modifier = Modifier.size(56.dp),
                                     containerColor = MaterialTheme.colorScheme.surface,
                                     contentColor = MaterialTheme.colorScheme.onSurface
-                                ) {
-                                    Icon(Icons.Default.Close, contentDescription = "Dismiss")
-                                }
+                                ) { Icon(Icons.Default.Close, contentDescription = "Dismiss") }
                             }
                         }
                     }
@@ -160,7 +161,7 @@ fun BaseBottomSheet(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleLarge,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
@@ -172,7 +173,6 @@ fun BaseBottomSheet(
                     )
                 }
 
-                // main content (your LazyColumn, form, etc.)
                 Box(
                     modifier = Modifier
                         .weight(1f, fill = true)

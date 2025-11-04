@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.mkumar.ui.components.accordions.OrderSummaryAccordion
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
+import com.mkumar.ui.components.bottomsheets.ProductPickerSheet
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderList
 import com.mkumar.ui.screens.customer.components.OrderSheet
@@ -58,6 +59,7 @@ import com.mkumar.viewmodel.CustomerDetailsEffect
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.OrderRowAction
+import com.mkumar.viewmodel.ProductType
 import com.mkumar.viewmodel.UiOrderItem
 import kotlinx.coroutines.flow.collectLatest
 
@@ -73,6 +75,7 @@ fun CustomerDetailsScreen(
     // Bottom sheet state driven by ui.isOrderSheetOpen
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showCustomerDialog by remember { mutableStateOf(false) }
+    var showProductPicker by remember { mutableStateOf(false) }
 
     // Snackbar + one-off effects
     val snackbarHostState = remember { SnackbarHostState() }
@@ -116,15 +119,6 @@ fun CustomerDetailsScreen(
                             remainingBalance = ui.draft.remainingBalance,
                             initiallyExpanded = false
                         )
-
-
-//                        OrderTotalsCardPro(
-//                            initialAdvanceTotal = ui.draft.advanceTotal,
-//                            onAdvanceTotalChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdvanceTotal(it)) },
-//                            totalAmount = ui.draft.totalAmount,                   // derived; read-only
-//                            adjustedAmount = ui.draft.adjustedAmount,
-//                            onAdjustedAmountChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdjustedAmount(it)) }
-//                        )
                     }
                 }
             },
@@ -132,8 +126,31 @@ fun CustomerDetailsScreen(
             showDismiss = true,
             onDoneClick = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
             showDone = true,
+            showAddProduct = true,
+            addProductCommonTypes = listOf(
+                ProductType.Frame,
+                ProductType.Lens,
+                ProductType.ContactLens,
+            ),
+            addProductLastUsed = null, // optional if you track it in VM
+            onAddProductClick = { type ->
+                viewModel.onIntent(CustomerDetailsIntent.AddItem(type))
+            },
+            onOpenProductPicker = {
+                showProductPicker = true
+            },
         )
     }
+
+    ProductPickerSheet(
+        isOpen = showProductPicker,
+        onDismiss = { showProductPicker = false },
+        allTypes = ProductType.entries.toList(),
+        onAddClick = { type ->
+            viewModel.onIntent(CustomerDetailsIntent.AddItem(type))
+            showProductPicker = false
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -182,14 +199,6 @@ fun CustomerDetailsScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
-
-            // Actions
-//            OrderActionBar(
-//                filter = OrderFilterUi(), // Hook up when you add query/sort to state
-//                onFilterChange = { /* no-op for now */ },
-//                onRefresh = { viewModel.onIntent(CustomerDetailsIntent.Refresh) },
-//                modifier = Modifier.fillMaxWidth()
-//            )
 
             Divider()
 
