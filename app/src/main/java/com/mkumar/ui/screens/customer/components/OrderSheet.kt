@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.components.cards.OrderAccordionItem
 import com.mkumar.ui.components.cards.OrderHeaderCard
+import com.mkumar.ui.components.cards.OrderHeaderCardPro
 import com.mkumar.ui.components.selectors.ProductSelector
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsUiState
@@ -28,6 +29,67 @@ import java.time.LocalDate
 
 @Composable
 fun OrderSheet(
+    state: CustomerDetailsUiState,
+    viewModel: CustomerDetailsViewModel,
+    modifier: Modifier = Modifier
+) {
+    val today = remember { LocalDate.now().toString() }
+    val safeProducts = state.draft.items.orEmpty()
+    var selectedType by remember { mutableStateOf(ProductType.Lens) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),         // keep alignment tidy
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Header stays aligned with same padding as other rows
+        OrderHeaderCardPro(
+            customerName = "Test Customer",
+            mobile = "1234567890",
+            displayedDate = today,
+            isDateReadOnly = false,               // or true if readonly
+            onPickDateTime = { picked ->
+                // if you already handle date via ViewModel, call that here instead
+                viewModel.onIntent(CustomerDetailsIntent.UpdateOccurredAt(picked))
+            }
+        )
+
+        if (safeProducts.isEmpty()) {
+            Text(
+                text = "No products added yet.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            // Plain Column + forEach is fine inside a non-scrollable parent
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                safeProducts.forEach { product ->
+                    OrderAccordionItem(
+                        selectedProduct = product,
+                        selectedType = product.productType,
+                        onFormSave = { productId, updated ->
+                            viewModel.onNewOrderIntent(NewOrderIntent.FormUpdate(productId, updated))
+                        },
+                        onDelete = { productId ->
+                            viewModel.onNewOrderIntent(NewOrderIntent.FormDelete(productId))
+                        }
+                    )
+                }
+            }
+        }
+
+        // Aligned selector at the end of the section
+        ProductSelector(
+            selectedType = selectedType,
+            onTypeSelected = { selectedType = it },
+            onAddClick = { type -> viewModel.onIntent(CustomerDetailsIntent.AddItem(type)) }
+        )
+    }
+}
+
+@Composable
+fun OrderSheet1(
     state: CustomerDetailsUiState,
     viewModel: CustomerDetailsViewModel,
     modifier: Modifier = Modifier
