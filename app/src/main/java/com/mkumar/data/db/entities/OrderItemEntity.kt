@@ -57,5 +57,7 @@ data class OrderItemEntity(
     val discountPercentage: Int = 0,
 
     /** unitPrice * quantity in minor units */
-    val subtotal: Int = unitPrice * quantity
+    val subtotal: Int = unitPrice * quantity,
+    /** Final total after discount applied in minor units */
+    val finalTotal: Int = 0
 )

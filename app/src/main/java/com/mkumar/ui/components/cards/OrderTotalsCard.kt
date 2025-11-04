@@ -185,12 +185,11 @@ fun OrderTotalsNoCard(
     totalAmount: Int,
     adjustedAmount: Int,
     onAdjustedAmountChange: (Int) -> Unit,
+    remainingBalance: Int
 ) {
-    var adjustedAmount by remember { mutableIntStateOf(adjustedAmount) }
-    var advanceTotal by remember { mutableIntStateOf(initialAdvanceTotal) }
-    val remainingBalance by remember (adjustedAmount, advanceTotal) {
-        mutableIntStateOf(adjustedAmount - advanceTotal)
-    }
+    var adjustedAmount by remember(adjustedAmount) { mutableIntStateOf(adjustedAmount) }
+    var advanceTotal by remember(initialAdvanceTotal) { mutableIntStateOf(initialAdvanceTotal) }
+
     Row(
         Modifier
             .fillMaxWidth()
@@ -236,7 +235,6 @@ fun OrderTotalsNoCard(
             onValueChange = {
                 advanceTotal = it.toIntOrNull() ?: 0
                 onAdvanceTotalChange(advanceTotal)
-//                        recalculateRemainingBalance()
             },
             label = { Text("Advance Total") },
             placeholder = { Text("e.g. 200") },

@@ -29,7 +29,11 @@ class PricingServiceImpl @Inject constructor() : PricingService {
         val adj = min(input.adjustedAmount.coerceAtLeast(0), subtotal)
         val total = max(0, subtotal)
         val adv = input.advanceTotal.coerceAtLeast(0)
-        val remaining = max(0, adj - adv)
+        val remaining = if (adj == 0) {
+            max(0, total - adv)
+        } else {
+            max(0, adj - adv)
+        }
 
         return PricingResult(
             orderId = input.orderId,

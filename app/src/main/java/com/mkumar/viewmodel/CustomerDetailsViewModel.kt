@@ -194,18 +194,29 @@ class CustomerDetailsViewModel @Inject constructor(
 
                 // 2) Reflect in UI draft
                 mutateDraft { d ->
-                    val newItems = d.items.map { if (it.id == productId) it.copy(
-                        formData = newForm,
-                        unitPrice = newForm.unitPrice,
-                        quantity = newForm.quantity,
-                        discountPercentage = newForm.discountPct,
-                        finalTotal = newForm.total
-                    ) else it }
-                    recomputeTotals(
+                    val newItems = d.items.map {
+                        if (it.id == productId) it.copy(
+                            formData = newForm,
+                            unitPrice = newForm.unitPrice,
+                            quantity = newForm.quantity,
+                            discountPercentage = newForm.discountPct,
+                            finalTotal = newForm.total
+                        ) else it
+                    }
+
+                    // Write zero into state first (source of truth)
+                    val cleared = d.copy(
                         items = newItems,
-                        occurredAt = d.occurredAt,
-                        adjustedAmount = d.adjustedAmount,
-                        advanceTotal = d.advanceTotal
+                        adjustedAmount = 0,
+                        advanceTotal = 0
+                    )
+
+                    // Then recompute totals using zero
+                    recomputeTotals(
+                        items = cleared.items,
+                        occurredAt = cleared.occurredAt,
+                        adjustedAmount = cleared.adjustedAmount,
+                        advanceTotal = cleared.advanceTotal
                     )
                 }
                 emitMessage("Item saved.")
@@ -237,7 +248,7 @@ class CustomerDetailsViewModel @Inject constructor(
                 // 2) Reflect in UI draft
                 mutateDraft { d ->
                     val updated = d.items.filterNot { it.id == itemId }
-                    recomputeTotals(updated, d.occurredAt)
+                    recomputeTotals(updated, d.occurredAt, adjustedAmount = 0, advanceTotal = d.advanceTotal)
                 }
                 emitMessage("Item deleted.")
             } catch (t: Throwable) {
@@ -517,7 +528,8 @@ class CustomerDetailsViewModel @Inject constructor(
             discountPercentage = discountPercentage.coerceIn(0, 100),
             productTypeLabel = productType.toString(),
             productOwnerName = name,
-            formDataJson = serializeFormData()
+            formDataJson = serializeFormData(),
+            finalTotal = finalTotal
         )
 
     private fun OrderItemEntity.toUiItem() = UiOrderItem(
@@ -528,7 +540,7 @@ class CustomerDetailsViewModel @Inject constructor(
         productType = ProductType.valueOf(productTypeLabel),
         name = productOwnerName,
         formData = UiOrderItem.deserializeFormData(formDataJson),
-        finalTotal = ((unitPrice * quantity) * (1 - discountPercentage / 100.0)).toInt()
+        finalTotal = finalTotal
     )
 
     // --- Helpers ---

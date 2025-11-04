@@ -110,15 +110,17 @@ fun CustomerDetailsScreen(
                             viewModel = viewModel,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        OrderSummaryAccordion(
-                            totalAmount = ui.draft.totalAmount,
-                            adjustedAmount = ui.draft.adjustedAmount,
-                            onAdjustedAmountChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdjustedAmount(it)) },
-                            advanceTotal = ui.draft.advanceTotal,
-                            onAdvanceTotalChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdvanceTotal(it)) },
-                            remainingBalance = ui.draft.remainingBalance,
-                            initiallyExpanded = false
-                        )
+                        if (ui.draft.items.isNotEmpty()) {
+                            OrderSummaryAccordion(
+                                totalAmount = ui.draft.totalAmount,
+                                adjustedAmount = ui.draft.adjustedAmount,
+                                onAdjustedAmountChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdjustedAmount(it)) },
+                                advanceTotal = ui.draft.advanceTotal,
+                                onAdvanceTotalChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdvanceTotal(it)) },
+                                remainingBalance = ui.draft.remainingBalance,
+                                initiallyExpanded = false
+                            )
+                        }
                     }
                 }
             },

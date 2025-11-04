@@ -89,7 +89,8 @@ fun OrderSummaryAccordion(
                         onAdvanceTotalChange = onAdvanceTotalChange,
                         totalAmount = totalAmount,                 // read-only
                         adjustedAmount = adjustedAmount,
-                        onAdjustedAmountChange = onAdjustedAmountChange
+                        onAdjustedAmountChange = onAdjustedAmountChange,
+                        remainingBalance = remainingBalance
                     )
                 }
             }

@@ -435,7 +435,7 @@ fun ContactLensForm(
                     ProductFormData.ContactLensData(
                         power = power,
                         duration = duration,
-                        unitPrice = newPrice.toInt(),
+                        unitPrice = newPrice.toIntOrNull() ?: 0,
                         discountPct = discountPct.toIntOrNull() ?: 0,
                         quantity = quantity.toIntOrNull() ?: 1,
                         total = total.toInt()
@@ -448,7 +448,7 @@ fun ContactLensForm(
                     ProductFormData.ContactLensData(
                         power = power,
                         duration = duration,
-                        unitPrice = unitPrice.toInt(),
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
                         discountPct = newDiscount.toIntOrNull() ?: 0,
                         quantity = quantity.toIntOrNull() ?: 1,
                         total = total.toInt()
@@ -461,7 +461,7 @@ fun ContactLensForm(
                     ProductFormData.ContactLensData(
                         power = power,
                         duration = duration,
-                        unitPrice = unitPrice.toInt(),
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
                         discountPct = discountPct.toIntOrNull() ?: 0,
                         quantity = newQuantity.toIntOrNull() ?: 1,
                         total = total.toInt()
@@ -474,7 +474,7 @@ fun ContactLensForm(
                     ProductFormData.ContactLensData(
                         power = power,
                         duration = duration,
-                        unitPrice = unitPrice.toInt(),
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
                         discountPct = discountPct.toIntOrNull() ?: 0,
                         quantity = quantity.toIntOrNull() ?: 1,
                         total = newTotal.toInt()
