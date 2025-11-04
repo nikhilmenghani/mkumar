@@ -119,7 +119,11 @@ class CustomerDetailsViewModel @Inject constructor(
             is CustomerDetailsIntent.NewSale -> openNewSale()
             is CustomerDetailsIntent.CloseSheet -> closeSheet()
 
+            is CustomerDetailsIntent.UpdateAdjustedAmount -> updateAdjustedAmount(intent.value)
+            is CustomerDetailsIntent.UpdateAdvanceTotal -> updateAdvanceTotal(intent.value)
+
             is CustomerDetailsIntent.OpenOrder -> openExistingOrder(intent.orderId)
+            is CustomerDetailsIntent.UpdateOrder -> updateExistingOrder(intent.orderId)
             is CustomerDetailsIntent.DeleteOrder -> deleteOrder(intent.orderId)
             is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId)
             is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId)
@@ -140,6 +144,20 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
+    private fun updateAdjustedAmount(value: Int) {
+        val s = _ui.value
+        val d = s.draft
+        val newDraft = recomputeTotals(d.items, d.occurredAt, adjustedAmount = value, advanceTotal = d.advanceTotal)
+        _ui.value = s.copy(draft = newDraft)
+    }
+
+    private fun updateAdvanceTotal(value: Int) {
+        val s = _ui.value
+        val d = s.draft
+        val newDraft = recomputeTotals(d.items, d.occurredAt, adjustedAmount = d.adjustedAmount, advanceTotal = value)
+        _ui.value = s.copy(draft = newDraft)
+    }
+
     fun onSaveItem(productId: String, newForm: ProductFormData) {
         viewModelScope.launch {
             val s = _ui.value
@@ -150,14 +168,25 @@ class CustomerDetailsViewModel @Inject constructor(
             // If order doesn't exist yet, keep it local only.
             if (orderId == null) {
                 mutateDraft { d ->
-                    d.copy(items = d.items.map { if (it.id == productId) it.copy(formData = newForm) else it })
-                        .let { recomputeTotals(it.items, d.occurredAt) }
+                    val newItems = d.items.map { if (it.id == productId) it.copy(formData = newForm) else it }
+                    recomputeTotals(
+                        items = newItems,
+                        occurredAt = d.occurredAt,
+                        adjustedAmount = d.adjustedAmount,
+                        advanceTotal = d.advanceTotal
+                    )
                 }
                 emitMessage("Item updated locally. Save the order to persist.")
                 return@launch
             }
 
-            val updated = current.copy(formData = newForm)
+            val updated = current.copy(
+                formData = newForm,
+                unitPrice = newForm.unitPrice,
+                quantity = newForm.quantity,
+                discountPercentage = newForm.discountPct,
+                finalTotal = newForm.total
+            )
             val entity = updated.toEntity(orderId)
             try {
                 // 1) Persist
@@ -165,8 +194,19 @@ class CustomerDetailsViewModel @Inject constructor(
 
                 // 2) Reflect in UI draft
                 mutateDraft { d ->
-                    d.copy(items = d.items.map { if (it.id == productId) updated else it })
-                        .let { recomputeTotals(it.items, d.occurredAt) }
+                    val newItems = d.items.map { if (it.id == productId) it.copy(
+                        formData = newForm,
+                        unitPrice = newForm.unitPrice,
+                        quantity = newForm.quantity,
+                        discountPercentage = newForm.discountPct,
+                        finalTotal = newForm.total
+                    ) else it }
+                    recomputeTotals(
+                        items = newItems,
+                        occurredAt = d.occurredAt,
+                        adjustedAmount = d.adjustedAmount,
+                        advanceTotal = d.advanceTotal
+                    )
                 }
                 emitMessage("Item saved.")
             } catch (t: Throwable) {
@@ -286,6 +326,24 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
+    private fun updateExistingOrder(orderId: String) {
+        viewModelScope.launch {
+            val s = _ui.value
+            val draft = s.draft
+            if (draft.editingOrderId != orderId) {
+                emitMessage("Cannot update: editing a different order.")
+                return@launch
+            }
+            if (!draft.hasUnsavedChanges) {
+                emitMessage("No changes to save.")
+                return@launch
+            }
+
+            // Reuse saveDraft logic
+            saveDraft()
+        }
+    }
+
     private fun deleteOrder(orderId: String) {
         viewModelScope.launch {
             try {
@@ -371,17 +429,25 @@ class CustomerDetailsViewModel @Inject constructor(
             val s = _ui.value
             val draft = s.draft
             val customer = s.customer
-            if (customer == null) { emitMessage("Customer not found."); return@launch }
-            if (draft.items.isEmpty()) { emitMessage("Please add at least one item."); return@launch }
+            if (customer == null) {
+                emitMessage("Customer not found."); return@launch
+            }
+            if (draft.items.isEmpty()) {
+                emitMessage("Please add at least one item."); return@launch
+            }
 
             // We expect this to exist because we created it at New Sale.
             val orderId = draft.editingOrderId ?: UUID.randomUUID().toString()
-
             val orderEntity = OrderEntity(
                 id = orderId,
                 customerId = customer.id,
                 occurredAt = draft.occurredAt.toEpochMilli(),
+                adjustedAmount = draft.adjustedAmount,
+                advanceTotal = draft.advanceTotal,
+                totalAmount = draft.totalAmount,
+                remainingBalance = draft.remainingBalance
             )
+
             val itemEntities = draft.items.map { it.toEntity(orderId) }
 
             try {
@@ -406,18 +472,28 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-    /** Draft pricing uses orderId = "DRAFT", adjusted = 0, advance = 0. */
     private fun recomputeTotals(items: List<UiOrderItem>, occurredAt: Instant): OrderDraft {
+        val d = _ui.value.draft
+        return recomputeTotals(items, occurredAt, d.adjustedAmount, d.advanceTotal)
+    }
+
+    /** Draft pricing uses orderId = "DRAFT", adjusted = 0, advance = 0. */
+    private fun recomputeTotals(
+        items: List<UiOrderItem>,
+        occurredAt: Instant,
+        adjustedAmount: Int,
+        advanceTotal: Int
+    ): OrderDraft {
+        val prev = _ui.value.draft
         val input = PricingInput(
-            orderId = "DRAFT",
-            items = items.map { it.toItemInput() },
-            adjustedAmount = 0,
-            advanceTotal = 0
+            orderId = prev.editingOrderId ?: "DRAFT",
+            items = items.map { it.toItemInput() },  // include qty, unitPrice, discounts, taxes…
+            adjustedAmount = adjustedAmount.coerceAtLeast(0),
+            advanceTotal = advanceTotal.coerceAtLeast(0),
         )
         val result = pricing.price(input)
-        val prev = _ui.value.draft
 
-        return OrderDraft(
+        return prev.copy(
             occurredAt = occurredAt,
             items = items,
             subtotalBeforeAdjust = result.subtotalBeforeAdjust,
@@ -425,8 +501,7 @@ class CustomerDetailsViewModel @Inject constructor(
             totalAmount = result.totalAmount,
             advanceTotal = result.advanceTotal,
             remainingBalance = result.remainingBalance,
-            hasUnsavedChanges = true,
-            editingOrderId = prev.editingOrderId
+            hasUnsavedChanges = true
         )
     }
 

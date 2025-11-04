@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -29,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -49,10 +47,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.mkumar.ui.components.accordions.AccordionItem
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
+import com.mkumar.ui.components.cards.OrderTotalsCard
 import com.mkumar.ui.screens.customer.components.CustomerHeader
-import com.mkumar.ui.screens.customer.components.OrderActionBar
 import com.mkumar.ui.screens.customer.components.OrderList
 import com.mkumar.ui.screens.customer.components.OrderSheet
 import com.mkumar.ui.screens.customer.model.CustomerHeaderUi
@@ -111,6 +108,14 @@ fun CustomerDetailsScreen(
                             onDiscard = { viewModel.onIntent(CustomerDetailsIntent.DiscardDraft) },
                             viewModel = viewModel,
                             modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OrderTotalsCard(
+                            initialAdvanceTotal = ui.draft.advanceTotal,
+                            onAdvanceTotalChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdvanceTotal(it)) },
+                            totalAmount = ui.draft.totalAmount,                   // derived; read-only
+                            adjustedAmount = ui.draft.adjustedAmount,
+                            onAdjustedAmountChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdjustedAmount(it)) }
                         )
                     }
                 }
