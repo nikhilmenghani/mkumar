@@ -1,6 +1,5 @@
 package com.mkumar.ui.screens.customer.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,13 +13,13 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -32,7 +31,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun OrderListItem(
+fun OrderListItem2(
     row: OrderRowUi,
     onAction: (OrderRowAction) -> Unit,
     modifier: Modifier = Modifier,
@@ -42,31 +41,33 @@ fun OrderListItem(
     ElevatedCard(
         modifier = modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable(
-                interactionSource = interaction,
-                indication = ripple(),                 // nice ripple on tap
-                onClick = { onAction(OrderRowAction.Open(row.id)) } // <-- fire Open
-            )
+            .fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(20.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     dateFmt.format(row.occurredAt.atZone(ZoneId.systemDefault())),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
                 StatusBadges(row)
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 row.itemsLabel,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
+            androidx.compose.material3.Divider()
+            Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Total: ₹${row.amount}", style = MaterialTheme.typography.titleSmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Total: ₹${row.amount}", style = MaterialTheme.typography.titleMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (row.hasInvoice) {
                         FilledTonalIconButton(onClick = { onAction(OrderRowAction.ViewInvoice(row.id)) }) {
                             Icon(Icons.Outlined.PictureAsPdf, contentDescription = "Invoice")
@@ -94,8 +95,8 @@ private fun StatusBadges(row: OrderRowUi) {
 
 @Composable
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true)
-fun OrderListItemPreview() {
-    OrderListItem(
+fun OrderListItem2Preview() {
+    OrderListItem2(
         row = OrderRowUi(
             id = "1",
             occurredAt = java.time.Instant.now(),

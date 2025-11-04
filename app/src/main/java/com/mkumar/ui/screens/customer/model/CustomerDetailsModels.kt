@@ -1,7 +1,6 @@
 package com.mkumar.ui.screens.customer.model
 
 import androidx.compose.runtime.Immutable
-import com.mkumar.data.ProductFormData
 import java.time.Instant
 
 @Immutable
@@ -20,6 +19,7 @@ data class OrderRowUi(
     val occurredAt: Instant,
     val itemsLabel: String,
     val amount: Int,
+    val remainingBalance: Int,
     val isQueued: Boolean,     // not yet synced
     val isSynced: Boolean,     // successfully synced
     val hasInvoice: Boolean,

@@ -223,7 +223,8 @@ fun CustomerDetailsScreen(
                             amount = o.totalAmount,
                             isQueued = false,
                             isSynced = true,
-                            hasInvoice = true
+                            hasInvoice = true,
+                            remainingBalance = o.remainingBalance
                         )
                     }
                 }
