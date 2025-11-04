@@ -193,9 +193,10 @@ fun CustomerDetailsScreen(
                     id = ui.customer?.id.orEmpty(),
                     name = ui.customer?.name.orEmpty(),
                     phoneFormatted = ui.customer?.phone.orEmpty(),
-                    joinedAt = null,
+                    joinedAt = ui.customer?.createdAt,
                     totalOrders = ui.orders.size,
-                    totalSpent = ui.orders.sumOf { it.totalAmount }
+                    totalSpent = ui.orders.sumOf { it.totalAmount },
+                    totalRemaining = ui.orders.sumOf { it.remainingBalance }
                 ),
                 modifier = Modifier
                     .fillMaxWidth()

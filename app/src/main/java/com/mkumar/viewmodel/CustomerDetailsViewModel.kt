@@ -82,7 +82,7 @@ class CustomerDetailsViewModel @Inject constructor(
             val customerFlow = customerRepo.observeWithOrders(customerId)
                 .map { it?.customer }
                 .filterNotNull()
-                .map { c -> UiCustomer(c.id, c.name, c.phone) }
+                .map { c -> UiCustomer(c.id, c.name, c.phone, c.createdAt) }
 
             val ordersFlow = orderRepo.observeOrdersForCustomer(customerId)
                 .map { orders ->

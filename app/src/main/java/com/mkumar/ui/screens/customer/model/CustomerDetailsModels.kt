@@ -8,9 +8,10 @@ data class CustomerHeaderUi(
     val id: String,
     val name: String,
     val phoneFormatted: String,
-    val joinedAt: Instant?,
+    val joinedAt: Long?,
     val totalOrders: Int,
-    val totalSpent: Int, // rupees minor units
+    val totalSpent: Int,
+    val totalRemaining: Int,
 )
 
 @Immutable

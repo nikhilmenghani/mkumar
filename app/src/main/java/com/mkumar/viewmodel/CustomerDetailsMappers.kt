@@ -27,7 +27,7 @@ fun CustomerWithOrders.toUi(
     adjustedOf: (order: OrderEntity) -> Int = { 0 },
     advanceOf:  (order: OrderEntity) -> Int = { 0 }
 ): UiBundle {
-    val uiCustomer = UiCustomer(customer.id, customer.name, customer.phone)
+    val uiCustomer = UiCustomer(customer.id, customer.name, customer.phone, customer.createdAt)
 
     val uiOrders: List<UiOrder> = orders.map { order ->
         // Fetch items from caller-supplied source (DAO/repo/cache)
