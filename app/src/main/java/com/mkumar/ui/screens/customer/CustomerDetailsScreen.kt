@@ -104,8 +104,6 @@ fun CustomerDetailsScreen(
                     item {
                         OrderSheet(
                             state = ui,
-                            onSave = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
-                            onDiscard = { viewModel.onIntent(CustomerDetailsIntent.DiscardDraft) },
                             viewModel = viewModel,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -120,8 +118,10 @@ fun CustomerDetailsScreen(
                     }
                 }
             },
-            onDismiss = { showCustomerDialog = false },
-            showDismiss = true
+            onDismiss = { viewModel.closeSheet() },
+            showDismiss = true,
+            onDoneClick = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
+            showDone = true,
         )
     }
 

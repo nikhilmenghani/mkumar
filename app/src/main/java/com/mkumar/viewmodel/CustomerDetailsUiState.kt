@@ -13,7 +13,13 @@ import kotlinx.serialization.json.Json
 import java.time.Instant
 import java.util.UUID
 
-enum class ProductType { LENS, FRAME, CONTACT_LENS }
+enum class ProductType { Lens, Frame, ContactLens }
+
+val productTypeDisplayNames = mapOf(
+    ProductType.ContactLens to "Contact Lens",
+    ProductType.Frame to "Frame",
+    ProductType.Lens to "Lens"
+)
 
 /** Lightweight UI customer model */
 data class UiCustomer(

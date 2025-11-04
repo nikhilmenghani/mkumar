@@ -42,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -211,4 +210,36 @@ fun SettingsDropdownItem(
             }
         }
     }
+}
+
+@Composable
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+fun SettingsDropdownItemPreview() {
+    SettingsDropdownItem(
+        title = "Sort By",
+        description = "Choose how items are sorted",
+        selectedOption = "Title A-Z",
+        options = listOf("Title A-Z", "Title Z-A", "Duration ↑", "Duration ↓"),
+        icon = androidx.compose.material.icons.Icons.Filled.SortByAlpha,
+        onOptionSelected = {}
+    )
+
+//    val productTypeDisplayNames = mapOf(
+//        ProductType.CONTACT_LENS to "Contact Lens",
+//        ProductType.FRAME to "Frame",
+//        ProductType.LENS to "Lens"
+//    )
+//
+//    SettingsDropdownItem(
+//        title = "Product Type",
+//        description = "Product that customer is purchasing",
+//        selectedOption = productTypeDisplayNames[selectedType] ?: "Lens",
+//        options = productTypeDisplayNames.values.toList(),
+//        icon = androidx.compose.material.icons.Icons.Filled.SortByAlpha,
+//        onOptionSelected = { selectedOption ->
+//            selectedType = productTypeDisplayNames.entries
+//                .firstOrNull { it.value == selectedOption }
+//                ?.key ?: ProductType.LENS
+//        }
+//    )
 }

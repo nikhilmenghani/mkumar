@@ -29,7 +29,6 @@ import com.mkumar.ui.components.quickforms.ContactLensQuickForm
 import com.mkumar.ui.components.quickforms.FrameQuickForm
 import com.mkumar.ui.components.quickforms.LensQuickForm
 import com.mkumar.ui.screens.customer.components.ProductTypePicker
-import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsUiState
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.ProductType
@@ -50,17 +49,17 @@ fun OrderDraftSheet(
     modifier: Modifier = Modifier
 ) {
 // --- Local UI state for the product forms ---
-    var selected by remember { mutableStateOf<ProductType?>(ProductType.LENS) }
+    var selected by remember { mutableStateOf<ProductType?>(ProductType.Lens) }
     var lensDesc by remember { mutableStateOf("") }
     var lensQty by remember { mutableStateOf("1") }
     var lensPrice by remember { mutableStateOf("0") }
     var lensOff by remember { mutableStateOf("0") }
 
 
-    var frameModel by remember { mutableStateOf("") }
-    var frameQty by remember { mutableStateOf("1") }
-    var framePrice by remember { mutableStateOf("0") }
-    var frameOff by remember { mutableStateOf("0") }
+    var FrameModel by remember { mutableStateOf("") }
+    var FrameQty by remember { mutableStateOf("1") }
+    var FramePrice by remember { mutableStateOf("0") }
+    var FrameOff by remember { mutableStateOf("0") }
 
 
     var clBrand by remember { mutableStateOf("") }
@@ -87,7 +86,7 @@ fun OrderDraftSheet(
 
 
         when (selected) {
-            ProductType.LENS -> LensQuickForm(
+            ProductType.Lens -> LensQuickForm(
                 description = lensDesc, onDescription = { lensDesc = it },
                 qty = lensQty, onQty = { lensQty = it },
                 price = lensPrice, onPrice = { lensPrice = it },
@@ -98,30 +97,30 @@ fun OrderDraftSheet(
                         qty = lensQty.toIntOrNull() ?: 0,
                         price = lensPrice.toIntOrNull() ?: 0,
                         off = (lensOff.toIntOrNull() ?: 0).coerceIn(0, 100),
-                        type = ProductType.LENS
+                        type = ProductType.Lens
                     )
 //                    viewModel.onIntent(CustomerDetailsIntent.AddItem(item))
                 }
             )
 
-            ProductType.FRAME -> FrameQuickForm(
-                model = frameModel, onModel = { frameModel = it },
-                qty = frameQty, onQty = { frameQty = it },
-                price = framePrice, onPrice = { framePrice = it },
-                off = frameOff, onOff = { frameOff = it },
+            ProductType.Frame -> FrameQuickForm(
+                model = FrameModel, onModel = { FrameModel = it },
+                qty = FrameQty, onQty = { FrameQty = it },
+                price = FramePrice, onPrice = { FramePrice = it },
+                off = FrameOff, onOff = { FrameOff = it },
                 onAdd = {
                     val item = uiItem(
-                        title = if (frameModel.isNotBlank()) "Frame: $frameModel" else "Frame",
-                        qty = frameQty.toIntOrNull() ?: 0,
-                        price = framePrice.toIntOrNull() ?: 0,
-                        off = (frameOff.toIntOrNull() ?: 0).coerceIn(0, 100),
-                        type = ProductType.FRAME
+                        title = if (FrameModel.isNotBlank()) "Frame: $FrameModel" else "Frame",
+                        qty = FrameQty.toIntOrNull() ?: 0,
+                        price = FramePrice.toIntOrNull() ?: 0,
+                        off = (FrameOff.toIntOrNull() ?: 0).coerceIn(0, 100),
+                        type = ProductType.Frame
                     )
 //                    CustomerDetailsIntent.AddItem(item)
                 }
             )
 
-            ProductType.CONTACT_LENS -> ContactLensQuickForm(
+            ProductType.ContactLens -> ContactLensQuickForm(
                 brand = clBrand, onBrand = { clBrand = it },
                 qty = clQty, onQty = { clQty = it },
                 price = clPrice, onPrice = { clPrice = it },
@@ -132,7 +131,7 @@ fun OrderDraftSheet(
                         qty = clQty.toIntOrNull() ?: 0,
                         price = clPrice.toIntOrNull() ?: 0,
                         off = (clOff.toIntOrNull() ?: 0).coerceIn(0, 100),
-                        type = ProductType.CONTACT_LENS
+                        type = ProductType.ContactLens
                     )
 //                    CustomerDetailsIntent.AddItem(item)
                 }

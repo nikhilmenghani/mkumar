@@ -3,11 +3,9 @@ package com.mkumar.ui.screens.customer.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,28 +29,15 @@ import java.time.LocalDate
 @Composable
 fun OrderSheet(
     state: CustomerDetailsUiState,
-    onSave: () -> Unit,
-    onDiscard: () -> Unit,
+//    onSave: () -> Unit,
+//    onDiscard: () -> Unit,
     viewModel: CustomerDetailsViewModel,
     modifier: Modifier = Modifier
 ) {
     val today = remember { LocalDate.now().toString() }
     val safeProducts = state.draft.items.orEmpty()
-    var selectedType by remember { mutableStateOf(ProductType.LENS) }
-    if (safeProducts.isEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        ) {
-            Text(
-                text = "No products added yet.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-            )
-        }
-    }
+    var selectedType by remember { mutableStateOf(ProductType.Lens) }
+
     Surface(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -65,6 +50,21 @@ fun OrderSheet(
                 date = today,
                 mobile = "1234567890",
             )
+
+            if (safeProducts.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                ) {
+                    Text(
+                        text = "No products added yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                    )
+                }
+            }
 
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -88,10 +88,10 @@ fun OrderSheet(
                     onAddClick = { type -> viewModel.onIntent(CustomerDetailsIntent.AddItem(type)) }
                 )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-//                    OutlinedButton(onClick = onDiscard, modifier = Modifier.weight(1f)) { Text("Discard") }
-                    Button(onClick = onSave, enabled = state.draft.items.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Save Order") }
-                }
+//                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+////                    OutlinedButton(onClick = onDiscard, modifier = Modifier.weight(1f)) { Text("Discard") }
+//                    Button(onClick = onSave, enabled = state.draft.items.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Save Order") }
+//                }
             }
         }
     }

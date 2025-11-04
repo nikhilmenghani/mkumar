@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductFormData
-import com.mkumar.data.ProductFormDataSaver
 import com.mkumar.data.validation.ValidationResult
 import com.mkumar.viewmodel.ProductType
 import com.mkumar.viewmodel.UiOrderItem
@@ -94,17 +93,17 @@ private fun RenderProductForm(
     updateProductFormData: (ProductFormData) -> Unit
 ) {
     when (productType) {
-        ProductType.FRAME -> FrameForm(
+        ProductType.Frame -> FrameForm(
             initialData = productFormData as? ProductFormData.FrameData,
             onChange = updateProductFormData,
         )
 
-        ProductType.LENS -> LensForm(
+        ProductType.Lens -> LensForm(
             initialData = productFormData as? ProductFormData.LensData,
             onChange = updateProductFormData,
         )
 
-        ProductType.CONTACT_LENS -> ContactLensForm(
+        ProductType.ContactLens -> ContactLensForm(
             initialData = productFormData as? ProductFormData.ContactLensData,
             onChange = updateProductFormData,
         )
@@ -112,9 +111,9 @@ private fun RenderProductForm(
 }
 
 fun defaultFormFor(type: ProductType): ProductFormData = when (type) {
-    ProductType.FRAME -> ProductFormData.FrameData()
-    ProductType.LENS -> ProductFormData.LensData()
-    ProductType.CONTACT_LENS -> ProductFormData.ContactLensData()
+    ProductType.Frame -> ProductFormData.FrameData()
+    ProductType.Lens -> ProductFormData.LensData()
+    ProductType.ContactLens -> ProductFormData.ContactLensData()
 }
 
 private fun <T : ProductFormData> validateAndSave(

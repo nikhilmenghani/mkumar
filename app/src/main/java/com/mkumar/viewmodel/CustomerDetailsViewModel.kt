@@ -371,7 +371,7 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun closeSheet() {
+    public fun closeSheet() {
         viewModelScope.launch {
             _ui.value = _ui.value.copy(isOrderSheetOpen = false)
             _effects.tryEmit(CustomerDetailsEffect.CloseOrderSheet)

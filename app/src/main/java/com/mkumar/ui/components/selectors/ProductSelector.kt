@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mkumar.viewmodel.ProductType
+import com.mkumar.viewmodel.productTypeDisplayNames
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,11 +55,11 @@ fun ProductSelector(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
-                ProductType.entries.forEach { type ->
+                productTypeDisplayNames.entries.forEach {
                     DropdownMenuItem(
-                        text = { Text(type.toString()) },
+                        text = { Text(it.value) },
                         onClick = {
-                            onTypeSelected(type)
+                            onTypeSelected(it.key)
                             expanded = false
                         }
                     )

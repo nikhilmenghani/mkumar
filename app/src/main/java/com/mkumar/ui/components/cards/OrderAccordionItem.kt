@@ -168,9 +168,9 @@ fun OrderAccordionItem(
 fun PreviewOrderAccordionItem() {
     val sampleProduct = UiOrderItem(
         id = "1",
-        productType = ProductType.LENS,
+        productType = ProductType.Lens,
         productDescription = "Sample Lens",
-        formData = defaultFormFor(ProductType.LENS),
+        formData = defaultFormFor(ProductType.Lens),
         finalTotal = 1200,
         name = "Nikhil",
         quantity = 1,
@@ -179,7 +179,7 @@ fun PreviewOrderAccordionItem() {
     )
     OrderAccordionItem(
         selectedProduct = sampleProduct,
-        selectedType = ProductType.LENS,
+        selectedType = ProductType.Lens,
         onFormSave = { _, _ -> },
         onDelete = {},
         collapsedHeight = 76.dp
