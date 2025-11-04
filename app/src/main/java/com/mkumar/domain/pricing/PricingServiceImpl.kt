@@ -27,9 +27,9 @@ class PricingServiceImpl @Inject constructor() : PricingService {
 
         val subtotal = priced.sumOf { it.lineTotal }
         val adj = min(input.adjustedAmount.coerceAtLeast(0), subtotal)
-        val total = max(0, subtotal - adj)
+        val total = max(0, subtotal)
         val adv = input.advanceTotal.coerceAtLeast(0)
-        val remaining = max(0, total - adv)
+        val remaining = max(0, adj - adv)
 
         return PricingResult(
             orderId = input.orderId,

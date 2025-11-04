@@ -41,13 +41,13 @@ data class OrderEntity(
     val occurredAt: Long = System.currentTimeMillis(),
 
     /** Adjusted Amount applied to subtotal (minor units) */
-    val adjustedAmount: Int? = 0,
+    val adjustedAmount: Int = 0,
 
     /** Sum of item subtotals (minor units) */
-    val totalAmount: Int? = 0,
+    val totalAmount: Int = 0,
 
     /** Absolute amount in minor units (0 if none) */
-    val remainingBalance: Int? = 0,
+    val remainingBalance: Int = 0,
 
     /** advanceTotal amount in minor units (0 if none) */
     val advanceTotal: Int = 0,

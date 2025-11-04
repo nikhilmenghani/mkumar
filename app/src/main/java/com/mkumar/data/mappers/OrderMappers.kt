@@ -6,8 +6,8 @@ import com.mkumar.data.models.OrderSummary
 fun OrderEntity.toSummary() = OrderSummary(
     id = id,
     occurredAt = occurredAt,
-    totalAmount = totalAmount ?: 0,
-    adjustedAmount = adjustedAmount ?: 0,
-    remainingBalance = remainingBalance ?: 0,
+    totalAmount = totalAmount,
+    adjustedAmount = adjustedAmount,
+    remainingBalance = remainingBalance,
     advanceTotal = advanceTotal
 )

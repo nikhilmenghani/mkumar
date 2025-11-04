@@ -12,13 +12,13 @@ import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
 import com.mkumar.repository.ProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -43,8 +43,8 @@ class CustomerDetailsViewModel @Inject constructor(
     private val _ui = MutableStateFlow(CustomerDetailsUiState())
     val ui: StateFlow<CustomerDetailsUiState> = _ui.asStateFlow()
 
-    private val _effects = Channel<CustomerDetailsEffect>(capacity = Channel.BUFFERED)
-    val effects: Flow<CustomerDetailsEffect> = _effects.consumeAsFlow()
+    private val _effects = MutableSharedFlow<CustomerDetailsEffect>(extraBufferCapacity = 64)
+    val effects: Flow<CustomerDetailsEffect> = _effects.asSharedFlow()
 
     init {
         observeViaCustomerWithOrders()
@@ -295,7 +295,7 @@ class CustomerDetailsViewModel @Inject constructor(
                     ),
                     errorMessage = null
                 )
-                _effects.trySend(CustomerDetailsEffect.OpenOrderSheet())
+                _effects.tryEmit(CustomerDetailsEffect.OpenOrderSheet())
             } catch (t: Throwable) {
                 emitMessage("Failed to start new sale: ${t.message ?: "unknown error"}")
             }
@@ -316,13 +316,13 @@ class CustomerDetailsViewModel @Inject constructor(
 
             val occurredAt = Instant.ofEpochMilli(order.occurredAt)
             // Reuse your pricing pipeline to recompute totals for a read-back draft:
-            val draft = recomputeTotals(uiItems, occurredAt).copy(hasUnsavedChanges = false, editingOrderId = order.id)
+            val draft = recomputeTotals(uiItems, occurredAt, order.adjustedAmount, order.advanceTotal).copy(hasUnsavedChanges = false, editingOrderId = order.id)
 
             _ui.value = _ui.value.copy(
                 isOrderSheetOpen = true,
                 draft = draft
             )
-            _effects.trySend(CustomerDetailsEffect.OpenOrderSheet(order.id))
+            _effects.tryEmit(CustomerDetailsEffect.OpenOrderSheet(order.id))
         }
     }
 
@@ -358,7 +358,7 @@ class CustomerDetailsViewModel @Inject constructor(
     private fun shareOrder(orderId: String) {
         viewModelScope.launch {
             // Here you can enqueue a share effect or open a chooser.
-            _effects.trySend(CustomerDetailsEffect.ShowMessage("Share feature coming soon."))
+            _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Share feature coming soon."))
             // later you can create CustomerDetailsEffect.ShareOrder(orderId)
         }
     }
@@ -366,7 +366,7 @@ class CustomerDetailsViewModel @Inject constructor(
     private fun viewInvoice(orderId: String) {
         viewModelScope.launch {
             // If you generate invoices as PDFs, trigger opening the file here
-            _effects.trySend(CustomerDetailsEffect.ShowMessage("Opening invoice for $orderId..."))
+            _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Opening invoice for $orderId..."))
             // Later you can emit CustomerDetailsEffect.ViewInvoice(orderId, fileUri)
         }
     }
@@ -374,7 +374,7 @@ class CustomerDetailsViewModel @Inject constructor(
     private fun closeSheet() {
         viewModelScope.launch {
             _ui.value = _ui.value.copy(isOrderSheetOpen = false)
-            _effects.trySend(CustomerDetailsEffect.CloseOrderSheet)
+            _effects.tryEmit(CustomerDetailsEffect.CloseOrderSheet)
         }
     }
 
@@ -463,7 +463,7 @@ class CustomerDetailsViewModel @Inject constructor(
                     draft = OrderDraft(),
                     errorMessage = null
                 )
-                _effects.trySend(CustomerDetailsEffect.CloseOrderSheet)
+                _effects.tryEmit(CustomerDetailsEffect.CloseOrderSheet)
                 emitMessage("Order saved.")
             } catch (t: Throwable) {
                 _ui.value = s.copy(errorMessage = t.message ?: "Failed to save order")
@@ -544,7 +544,7 @@ class CustomerDetailsViewModel @Inject constructor(
         )
 
     private fun emitMessage(msg: String) {
-        _effects.trySend(CustomerDetailsEffect.ShowMessage(msg))
+        _effects.tryEmit(CustomerDetailsEffect.ShowMessage(msg))
     }
 }
 
