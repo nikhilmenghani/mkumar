@@ -46,10 +46,10 @@ fun CustomerWithOrders.toUi(
             occurredAt = Instant.ofEpochMilli(order.occurredAt),
             items = uiItems,
             subtotalBeforeAdjust = priced.subtotalBeforeAdjust,
-            adjustedAmount       = priced.adjustedAmount,
-            totalAmount          = priced.totalAmount,
-            advanceTotal         = priced.advanceTotal,
-            remainingBalance     = priced.remainingBalance
+            adjustedAmount       = order.adjustedAmount,
+            totalAmount          = order.totalAmount,
+            advanceTotal         = order.advanceTotal,
+            remainingBalance     = order.remainingBalance
         )
     }.sortedByDescending { it.occurredAt }
 
