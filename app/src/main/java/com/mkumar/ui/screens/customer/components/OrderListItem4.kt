@@ -187,7 +187,7 @@ private fun orderContainerColor(isPaid: Boolean): Color {
         MaterialTheme.colorScheme.errorContainer      // “reddish”
 
     // Use a *subtle* tint, then pre-composite over surface to make it opaque.
-    val subtleTint = tint.copy(alpha = 0.5f)
+    val subtleTint = tint.copy(alpha = 0.25f)
     return subtleTint.compositeOver(surface)
 }
 
