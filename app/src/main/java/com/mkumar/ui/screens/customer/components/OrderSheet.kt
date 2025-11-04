@@ -35,7 +35,6 @@ fun OrderSheet(
 ) {
     val today = remember { LocalDate.now().toString() }
     val safeProducts = state.draft.items.orEmpty()
-    var selectedType by remember { mutableStateOf(ProductType.Lens) }
 
     Column(
         modifier = modifier
@@ -78,13 +77,6 @@ fun OrderSheet(
                 }
             }
         }
-
-        // Aligned selector at the end of the section
-        ProductSelector(
-            selectedType = selectedType,
-            onTypeSelected = { selectedType = it },
-            onAddClick = { type -> viewModel.onIntent(CustomerDetailsIntent.AddItem(type)) }
-        )
     }
 }
 

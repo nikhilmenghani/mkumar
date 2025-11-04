@@ -2,11 +2,12 @@ package com.mkumar.ui.components.fabs
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,22 +30,23 @@ fun AddProductSpeedMenuButton(
     onOpenPicker: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-
+    var width by remember { mutableStateOf(180.dp) }
     Box {
-        FloatingActionButton(
+        ExtendedFloatingActionButton(
             onClick = {
                 if (lastUsed != null) onAddClick(lastUsed) else expanded = true
             },
-            modifier = Modifier.size(56.dp),
+            icon = { Icon(Icons.Filled.Add, contentDescription = "Add Product") },
+            text = { Text("Add Product") },
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = "Add Product")
-        }
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(width = width, height = 56.dp)
+        )
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.width(width)
         ) {
             commonTypes.forEach { type ->
                 DropdownMenuItem(
