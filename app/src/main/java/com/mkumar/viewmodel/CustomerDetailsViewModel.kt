@@ -527,7 +527,8 @@ class CustomerDetailsViewModel @Inject constructor(
         discountPercentage = discountPercentage,
         productType = ProductType.valueOf(productTypeLabel),
         name = productOwnerName,
-        formData = UiOrderItem.deserializeFormData(formDataJson)
+        formData = UiOrderItem.deserializeFormData(formDataJson),
+        finalTotal = ((unitPrice * quantity) * (1 - discountPercentage / 100.0)).toInt()
     )
 
     // --- Helpers ---

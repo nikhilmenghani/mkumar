@@ -67,7 +67,6 @@ fun OrderAccordionItem(
 
     var draft by remember { mutableStateOf(draftBeforeState) }
 
-
     Box(
         Modifier
             .fillMaxWidth()

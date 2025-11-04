@@ -44,8 +44,8 @@ fun OrderSheet(
     ) {
         // Header stays aligned with same padding as other rows
         OrderHeaderCardPro(
-            customerName = "Test Customer",
-            mobile = "1234567890",
+            customerName = state.customer?.name ?: "Test Customer",
+            mobile = state.customer?.phone ?: "1234567890",
             displayedDate = today,
             isDateReadOnly = false,               // or true if readonly
             onPickDateTime = { picked ->
