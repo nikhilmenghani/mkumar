@@ -29,8 +29,6 @@ import java.time.LocalDate
 @Composable
 fun OrderSheet(
     state: CustomerDetailsUiState,
-//    onSave: () -> Unit,
-//    onDiscard: () -> Unit,
     viewModel: CustomerDetailsViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -87,11 +85,6 @@ fun OrderSheet(
                     onTypeSelected = { selectedType = it },
                     onAddClick = { type -> viewModel.onIntent(CustomerDetailsIntent.AddItem(type)) }
                 )
-
-//                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-////                    OutlinedButton(onClick = onDiscard, modifier = Modifier.weight(1f)) { Text("Discard") }
-//                    Button(onClick = onSave, enabled = state.draft.items.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Save Order") }
-//                }
             }
         }
     }

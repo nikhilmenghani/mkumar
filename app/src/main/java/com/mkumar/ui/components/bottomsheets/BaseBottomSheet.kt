@@ -3,10 +3,14 @@ package com.mkumar.ui.components.bottomsheets
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,6 +25,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -35,7 +40,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun BaseBottomSheet(
     title: String,
-    sheetContent: @Composable () -> Unit,
+    sheetContent: @Composable (contentPadding: PaddingValues) -> Unit,
     onDismiss: () -> Unit = {},
     showTitle: Boolean = true,
     showNext: Boolean = false,
@@ -55,24 +60,103 @@ fun BaseBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = {
-            scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                onDismiss()
-            }
+            scope.launch { bottomSheetState.hide() }.invokeOnCompletion { onDismiss() }
         },
         sheetState = bottomSheetState
     ) {
-        Box(
+        Scaffold(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
-        ) {
+                .imePadding(),
+            // ✅ Bottom bar without a Surface, same color as sheet background
+            bottomBar = {
+                if (showNext || showPrevious || showDone || showDismiss) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Left: Previous (or spacer)
+                        if (showPrevious) {
+                            FloatingActionButton(
+                                onClick = onPreviousClick,
+                                modifier = Modifier.size(56.dp),
+                                containerColor = MaterialTheme.colorScheme.surface, // match sheet
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Previous"
+                                )
+                            }
+                        } else {
+                            Spacer(Modifier.width(56.dp))
+                        }
+
+                        // Right: Next / Done / Dismiss
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            if (showNext) {
+                                FloatingActionButton(
+                                    onClick = onNextClick,
+                                    modifier = Modifier.size(56.dp),
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = "Next"
+                                    )
+                                }
+                            }
+                            if (showDone) {
+                                FloatingActionButton(
+                                    onClick = {
+                                        scope.launch {
+                                            bottomSheetState.hide()
+                                        }.invokeOnCompletion {
+                                            onDoneClick()
+                                            onDismiss()
+                                        }
+                                    },
+                                    modifier = Modifier.size(56.dp),
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                ) {
+                                    Icon(Icons.Default.Check, contentDescription = "Done")
+                                }
+                            }
+                            if (showDismiss) {
+                                FloatingActionButton(
+                                    onClick = {
+                                        scope.launch {
+                                            bottomSheetState.hide()
+                                        }.invokeOnCompletion {
+                                            onDismissClick()
+                                            onDismiss()
+                                        }
+                                    },
+                                    modifier = Modifier.size(56.dp),
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = "Dismiss")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ) { innerPadding ->
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopStart)
+                    .fillMaxSize()
+                    .padding(innerPadding)
             ) {
                 if (showTitle) {
-                    // Title
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleLarge,
@@ -81,8 +165,6 @@ fun BaseBottomSheet(
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
                     )
-
-                    // Divider
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
                         thickness = 1.dp,
@@ -90,86 +172,13 @@ fun BaseBottomSheet(
                     )
                 }
 
-                // Dynamic Content
-                // Content takes remaining space above FAB row
+                // main content (your LazyColumn, form, etc.)
                 Box(
                     modifier = Modifier
                         .weight(1f, fill = true)
                         .fillMaxWidth()
                 ) {
-                    sheetContent()
-                }
-            }
-
-            // Buttons Row with Left & Right Alignment
-            if (showNext || showPrevious || showDone || showDismiss) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .align(Alignment.BottomCenter),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Left Side (Previous Button)
-                    if (showPrevious) {
-                        FloatingActionButton(
-                            onClick = { onPreviousClick() },
-                            modifier = Modifier.size(56.dp)
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Previous"
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.width(56.dp)) // Ensures alignment consistency
-                    }
-
-                    // Right Side (Next, Done, Dismiss)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        if (showNext) {
-                            FloatingActionButton(
-                                onClick = { onNextClick() },
-                                modifier = Modifier.size(56.dp)
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = "Next"
-                                )
-                            }
-                        }
-
-                        if (showDone) {
-                            FloatingActionButton(
-                                onClick = {
-                                    scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                                        onDoneClick()
-                                        onDismiss()
-                                    }
-                                },
-                                modifier = Modifier.size(56.dp)
-                            ) {
-                                Icon(Icons.Default.Check, contentDescription = "Done")
-                            }
-                        }
-
-                        if (showDismiss) {
-                            FloatingActionButton(
-                                onClick = {
-                                    scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                                        onDismissClick()
-                                        onDismiss()
-                                    }
-                                },
-                                modifier = Modifier.size(56.dp)
-                            ) {
-                                Icon(Icons.Default.Close, contentDescription = "Dismiss")
-                            }
-                        }
-                    }
+                    sheetContent(PaddingValues())
                 }
             }
         }
