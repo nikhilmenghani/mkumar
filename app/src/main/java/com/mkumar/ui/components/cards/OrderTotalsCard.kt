@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -176,6 +175,92 @@ fun OrderTotalsCard(
 //                Text(remainingBalance.toString(), style = MaterialTheme.typography.bodyMedium)
 //            }
         }
+    }
+}
+
+@Composable
+fun OrderTotalsNoCard(
+    initialAdvanceTotal: Int,
+    onAdvanceTotalChange: (Int) -> Unit,
+    totalAmount: Int,
+    adjustedAmount: Int,
+    onAdjustedAmountChange: (Int) -> Unit,
+) {
+    var adjustedAmount by remember { mutableIntStateOf(adjustedAmount) }
+    var advanceTotal by remember { mutableIntStateOf(initialAdvanceTotal) }
+    val remainingBalance by remember (adjustedAmount, advanceTotal) {
+        mutableIntStateOf(adjustedAmount - advanceTotal)
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedTextField(
+            value = totalAmount.toString(),
+            onValueChange = {},
+            label = { Text("Total (₹)") },
+            enabled = false,
+            singleLine = true,
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 8.dp)
+        )
+        OutlinedTextField(
+            value = adjustedAmount.toString(),
+            onValueChange = {
+                adjustedAmount = it.toIntOrNull() ?: 0
+                onAdjustedAmountChange(adjustedAmount)
+            },
+            label = { Text("Adjusted Total") },
+            placeholder = { Text("e.g. 200") },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done
+            ),
+            singleLine = true,
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 8.dp)
+        )
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedTextField(
+            value = advanceTotal.toString(),
+            onValueChange = {
+                advanceTotal = it.toIntOrNull() ?: 0
+                onAdvanceTotalChange(advanceTotal)
+//                        recalculateRemainingBalance()
+            },
+            label = { Text("Advance Total") },
+            placeholder = { Text("e.g. 200") },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done
+            ),
+            singleLine = true,
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 8.dp)
+        )
+        OutlinedTextField(
+            value = remainingBalance.toString(),
+            onValueChange = {
+
+            },
+            label = { Text("Remaining Balance (₹)") },
+            enabled = false,
+            singleLine = true,
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 8.dp)
+        )
     }
 }
 

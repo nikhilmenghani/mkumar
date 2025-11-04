@@ -47,8 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.mkumar.ui.components.accordions.OrderSummaryAccordion
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
-import com.mkumar.ui.components.cards.OrderTotalsCard
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderList
 import com.mkumar.ui.screens.customer.components.OrderSheet
@@ -107,14 +107,24 @@ fun CustomerDetailsScreen(
                             viewModel = viewModel,
                             modifier = Modifier.fillMaxWidth()
                         )
-
-                        OrderTotalsCard(
-                            initialAdvanceTotal = ui.draft.advanceTotal,
-                            onAdvanceTotalChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdvanceTotal(it)) },
-                            totalAmount = ui.draft.totalAmount,                   // derived; read-only
+                        OrderSummaryAccordion(
+                            totalAmount = ui.draft.totalAmount,
                             adjustedAmount = ui.draft.adjustedAmount,
-                            onAdjustedAmountChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdjustedAmount(it)) }
+                            onAdjustedAmountChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdjustedAmount(it)) },
+                            advanceTotal = ui.draft.advanceTotal,
+                            onAdvanceTotalChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdvanceTotal(it)) },
+                            remainingBalance = ui.draft.remainingBalance,
+                            initiallyExpanded = false
                         )
+
+
+//                        OrderTotalsCardPro(
+//                            initialAdvanceTotal = ui.draft.advanceTotal,
+//                            onAdvanceTotalChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdvanceTotal(it)) },
+//                            totalAmount = ui.draft.totalAmount,                   // derived; read-only
+//                            adjustedAmount = ui.draft.adjustedAmount,
+//                            onAdjustedAmountChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdjustedAmount(it)) }
+//                        )
                     }
                 }
             },
