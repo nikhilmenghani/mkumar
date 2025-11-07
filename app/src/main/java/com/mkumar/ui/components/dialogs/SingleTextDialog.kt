@@ -19,14 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mkumar.App.Companion.globalClass
 import com.mkumar.data.SingleText
-import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
+import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.buttons.ClearButton
 
 @Composable
 fun SingleTextDialog() {
     val dialog = globalClass.singleTextDialog
     if (dialog.show) {
-        BaseBottomSheet(
+        ShortBottomSheet(
             title = dialog.title,
             sheetContent = { SingleText(dialog) },
             onDismiss = dialog::dismiss

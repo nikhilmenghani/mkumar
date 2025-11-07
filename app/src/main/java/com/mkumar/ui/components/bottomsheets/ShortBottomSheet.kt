@@ -1,14 +1,15 @@
 package com.mkumar.ui.components.bottomsheets
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -60,39 +61,55 @@ fun ShortBottomSheet(
         },
         sheetState = bottomSheetState
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
         ) {
-            if (showTitle) {
-                // Title
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                if (showTitle) {
+                    // Title
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                    )
+
+                    // Divider
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                        thickness = 1.dp,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                }
+
+                val actionsHeight = 56.dp + 16.dp * 2
+                // Dynamic Content
+                // Content takes remaining space above FAB row
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp)
-                )
-
-                // Divider
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                        .padding(bottom = actionsHeight)
+                ) {
+                    Box(Modifier.fillMaxWidth()) {
+                        sheetContent()
+                    }
+                }
             }
-
-            // Dynamic Content
-            sheetContent()
 
             // Buttons Row with Left & Right Alignment
             if (showNext || showPrevious || showDone || showDismiss) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .navigationBarsPadding(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -102,7 +119,10 @@ fun ShortBottomSheet(
                             onClick = { onPreviousClick() },
                             modifier = Modifier.size(56.dp)
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Previous"
+                            )
                         }
                     } else {
                         Spacer(modifier = Modifier.width(56.dp)) // Ensures alignment consistency
@@ -117,7 +137,10 @@ fun ShortBottomSheet(
                                 onClick = { onNextClick() },
                                 modifier = Modifier.size(56.dp)
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next")
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowForward,
+                                    contentDescription = "Next"
+                                )
                             }
                         }
 

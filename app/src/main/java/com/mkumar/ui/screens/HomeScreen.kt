@@ -58,7 +58,7 @@ import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.data.CustomerFormState
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
-import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
+import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.cards.CustomerInfoCard
 import com.mkumar.ui.components.cards.CustomerListCard2
 import com.mkumar.ui.components.fabs.StandardFab
@@ -193,7 +193,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
         var name by remember { mutableStateOf("") }
         var phone by remember { mutableStateOf("") }
 
-        BaseBottomSheet(
+        ShortBottomSheet(
             title = "Add Customer",
             showTitle = false,
             sheetContent = {

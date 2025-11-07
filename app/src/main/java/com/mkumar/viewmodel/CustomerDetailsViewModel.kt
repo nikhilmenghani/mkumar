@@ -42,7 +42,7 @@ class CustomerDetailsViewModel @Inject constructor(
     private val orderRepo: OrderRepository,
     private val orderItemRepo: ProductRepository,
     private val pricing: PricingService,
-    @dagger.hilt.android.qualifiers.ApplicationContext private val app: android.content.Context, // <-- add this
+    @dagger.hilt.android.qualifiers.ApplicationContext private val app: android.content.Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -454,8 +454,8 @@ class CustomerDetailsViewModel @Inject constructor(
                             discountPercentage = it.discountPercentage
                         )
                     },
-                    adjustedAmount = (order.adjustedAmount ?: 0).coerceAtLeast(0),
-                    advanceTotal  = (order.advanceTotal  ?: 0).coerceAtLeast(0)
+                    adjustedAmount = order.adjustedAmount.coerceAtLeast(0),
+                    advanceTotal  = order.advanceTotal.coerceAtLeast(0)
                 )
 
                 // 4) Price it with your API
