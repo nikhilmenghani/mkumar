@@ -194,7 +194,7 @@ fun CustomerDetailsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        ui.customer?.name ?: "Customer",
+                        "Customer Details",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
