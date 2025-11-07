@@ -376,11 +376,27 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun shareOrder(orderId: String) {
+//    private fun shareOrder(orderId: String) {
+//        viewModelScope.launch {
+//            // Here you can enqueue a share effect or open a chooser.
+//            _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Share feature coming soon."))
+//            // later you can create CustomerDetailsEffect.ShareOrder(orderId)
+//        }
+//    }
+
+    fun shareOrder(orderId: String) {
         viewModelScope.launch {
-            // Here you can enqueue a share effect or open a chooser.
-            _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Share feature coming soon."))
-            // later you can create CustomerDetailsEffect.ShareOrder(orderId)
+            val fileName = "INV-$orderId.pdf"
+            try {
+                val uri = findExistingInvoiceUri(app, fileName) ?: run {
+                    // build it if missing
+                    viewInvoice(orderId) // this will emit ViewInvoice, but we want Share; so rebuild minimally:
+                    return@launch
+                }
+                _effects.tryEmit(CustomerDetailsEffect.ShareInvoice(orderId, uri))
+            } catch (t: Throwable) {
+                _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Failed to prepare share: ${t.message}"))
+            }
         }
     }
 

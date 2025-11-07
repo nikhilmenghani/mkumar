@@ -109,6 +109,20 @@ fun CustomerDetailsScreen(
                             )
                         }
                 }
+                is CustomerDetailsEffect.ShareInvoice -> {
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, effect.uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        clipData = android.content.ClipData.newRawUri("invoice", effect.uri)
+                    }
+                    runCatching { context.startActivity(Intent.createChooser(send, "Share invoice")) }
+                        .onFailure {
+                            snackbarHostState.showSnackbar(
+                                "No app to share PDF. File is in Files > Downloads > Documents > MKumar > Invoices"
+                            )
+                        }
+                }
             }
         }
     }
