@@ -587,6 +587,7 @@ class CustomerDetailsViewModel @Inject constructor(
                 )
                 _effects.tryEmit(CustomerDetailsEffect.CloseOrderSheet)
                 emitMessage("Order saved.")
+                observeViaCustomerWithOrders()
             } catch (t: Throwable) {
                 _ui.value = s.copy(errorMessage = t.message ?: "Failed to save order")
                 emitMessage("Failed to save order.")

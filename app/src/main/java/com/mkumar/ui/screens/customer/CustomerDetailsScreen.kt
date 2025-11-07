@@ -11,7 +11,6 @@
 package com.mkumar.ui.screens.customer
 
 import android.content.Intent
-import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -270,11 +269,7 @@ fun CustomerDetailsScreen(
 
 fun humanReadableInvoiceLocation(orderId: String): String {
     val fileName = "INV-$orderId.pdf"
-    return if (Build.VERSION.SDK_INT >= 29) {
-        "Files > Downloads > Documents > MKumar > Invoices > $fileName"
-    } else {
-        "Internal storage > Documents > MKumar > Invoices > $fileName"
-    }
+    return "Files > Downloads > Documents > MKumar > Invoices > $fileName"
 }
 // Helper for item label rendering without depending on exact UiOrderItem fields
 fun UiOrderItem.labelOrFallback(): String =
