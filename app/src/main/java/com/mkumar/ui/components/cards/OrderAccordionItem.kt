@@ -6,6 +6,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -43,6 +44,7 @@ import com.mkumar.data.ProductFormData
 import com.mkumar.data.ProductFormDataSaver
 import com.mkumar.ui.components.forms.ProductFormItem
 import com.mkumar.ui.components.forms.defaultFormFor
+import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.ProductType
 import com.mkumar.viewmodel.UiOrderItem
 
@@ -79,12 +81,7 @@ fun OrderAccordionItem(
                     expanded = !expanded
                 },
             shape = shape,
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = if (expanded)
-                    MaterialTheme.colorScheme.surfaceContainerHighest
-                else
-                    MaterialTheme.colorScheme.surfaceContainerLow
-            ),
+            colors = AppColors.elevatedCardColors(),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Column {
@@ -92,6 +89,7 @@ fun OrderAccordionItem(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .requiredHeight(collapsedHeight)
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically

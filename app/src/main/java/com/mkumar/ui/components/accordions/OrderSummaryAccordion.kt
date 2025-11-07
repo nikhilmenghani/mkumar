@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -82,7 +82,7 @@ fun OrderSummaryAccordion(
 
             AnimatedVisibility(visible = expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Divider()
+                    HorizontalDivider()
                     // Use your existing totals card here (Option D layout)
                     OrderTotalsNoCard(
                         initialAdvanceTotal = advanceTotal,

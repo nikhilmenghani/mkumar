@@ -10,6 +10,8 @@
 // -----------------------------
 package com.mkumar.ui.screens.customer
 
+import android.content.Intent
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,9 +23,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -43,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,18 +79,37 @@ fun CustomerDetailsScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showCustomerDialog by remember { mutableStateOf(false) }
     var showProductPicker by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     // Snackbar + one-off effects
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
-                is CustomerDetailsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is CustomerDetailsEffect.ShowMessage ->
+                    snackbarHostState.showSnackbar(effect.message)
+
                 is CustomerDetailsEffect.OpenOrderSheet ->
                     runCatching { showCustomerDialog = true }
 
                 CustomerDetailsEffect.CloseOrderSheet ->
-                    runCatching { showCustomerDialog = false}
+                    runCatching { showCustomerDialog = false }
+
+                is CustomerDetailsEffect.ViewInvoice -> {
+                    val uri = effect.uri
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "application/pdf")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    val chooser = Intent.createChooser(intent, "Open invoice")
+                    runCatching { context.startActivity(chooser) }
+                        .onFailure { _ ->
+                            val hint = humanReadableInvoiceLocation(effect.orderId)
+                            snackbarHostState.showSnackbar(
+                                "No PDF app found. Invoice saved at: $hint"
+                            )
+                        }
+                }
             }
         }
     }
@@ -203,7 +225,7 @@ fun CustomerDetailsScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            Divider()
+            HorizontalDivider()
 
             if (ui.orders.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -246,6 +268,14 @@ fun CustomerDetailsScreen(
     }
 }
 
+fun humanReadableInvoiceLocation(orderId: String): String {
+    val fileName = "INV-$orderId.pdf"
+    return if (Build.VERSION.SDK_INT >= 29) {
+        "Files > Downloads > Documents > MKumar > Invoices > $fileName"
+    } else {
+        "Internal storage > Documents > MKumar > Invoices > $fileName"
+    }
+}
 // Helper for item label rendering without depending on exact UiOrderItem fields
 fun UiOrderItem.labelOrFallback(): String =
     buildString {

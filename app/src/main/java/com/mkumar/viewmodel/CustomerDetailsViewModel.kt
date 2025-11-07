@@ -3,9 +3,14 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mkumar.common.files.findExistingInvoiceUri
+import com.mkumar.common.files.saveInvoicePdf
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderItemEntity
+import com.mkumar.domain.invoice.InvoiceData
+import com.mkumar.domain.invoice.InvoiceItemRow
+import com.mkumar.domain.invoice.InvoicePdfBuilderImpl
 import com.mkumar.domain.pricing.PricingInput
 import com.mkumar.domain.pricing.PricingService
 import com.mkumar.repository.CustomerRepository
@@ -24,7 +29,10 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.time.Instant
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -34,9 +42,11 @@ class CustomerDetailsViewModel @Inject constructor(
     private val orderRepo: OrderRepository,
     private val orderItemRepo: ProductRepository,
     private val pricing: PricingService,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val app: android.content.Context, // <-- add this
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    private val dateFmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
     private val customerId: String =
         checkNotNull(savedStateHandle["customerId"]) { "customerId nav-arg is required" }
 
@@ -374,11 +384,112 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun viewInvoice(orderId: String) {
+//    private fun viewInvoice(orderId: String) {
+//        viewModelScope.launch {
+//            // If you generate invoices as PDFs, trigger opening the file here
+//            _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Opening invoice for $orderId..."))
+//            // Later you can emit CustomerDetailsEffect.ViewInvoice(orderId, fileUri)
+//        }
+//    }
+
+    fun viewInvoice(orderId: String) {
         viewModelScope.launch {
-            // If you generate invoices as PDFs, trigger opening the file here
-            _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Opening invoice for $orderId..."))
-            // Later you can emit CustomerDetailsEffect.ViewInvoice(orderId, fileUri)
+            val fileName = "INV-$orderId.pdf"
+
+            try {
+                // 0) If already exists, open it.
+                findExistingInvoiceUri(app, fileName)?.let { uri ->
+                    _effects.tryEmit(CustomerDetailsEffect.ViewInvoice(orderId, uri))
+                    return@launch
+                }
+
+                _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
+
+                // 1) Prefer UI state first
+                val s = _ui.value
+                val uiCustomer = s.customer
+                val isEditingThisOrder = s.draft.editingOrderId == orderId
+                val uiDraftItems = if (isEditingThisOrder) s.draft.items else emptyList()
+
+                // 2) Load persisted data for a guaranteed source of truth
+                val order = orderRepo.getOrder(orderId)
+                    ?: run {
+                        _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Order not found."))
+                        return@launch
+                    }
+
+                // If you keep UI items for non-draft orders, map them here; otherwise hit DB:
+                val itemEntities: List<OrderItemEntity> =
+                    if (uiDraftItems.isNotEmpty()) {
+                        // Convert draft UI items to entities for pricing
+                        uiDraftItems.map { it.toEntity(orderId) }
+                    } else {
+                        orderItemRepo.getItemsForOrder(orderId)
+                    }
+
+                // 3) Build PricingInput (Int rupees, Int quantities, Int discounts)
+                val input = PricingInput(
+                    orderId = order.id,
+                    items = itemEntities.map {
+                        PricingInput.ItemInput(
+                            itemId = it.id,
+                            quantity = it.quantity,
+                            unitPrice = it.unitPrice,
+                            discountPercentage = it.discountPercentage
+                        )
+                    },
+                    adjustedAmount = (order.adjustedAmount ?: 0).coerceAtLeast(0),
+                    advanceTotal  = (order.advanceTotal  ?: 0).coerceAtLeast(0)
+                )
+
+                // 4) Price it with your API
+                val priced: com.mkumar.domain.pricing.PricingResult = pricing.price(input)
+
+                // Quick lookup by itemId to pull line totals
+                val pricedById = priced.items.associateBy { it.itemId }
+
+                // 5) Build InvoiceData (convert Int rupees → Double only at the boundary)
+                val invoiceItems: List<InvoiceItemRow> = itemEntities.map { e ->
+                    val p = pricedById[e.id]
+                    val lineTotal = p?.lineTotal
+                        ?: e.finalTotal
+
+                    InvoiceItemRow(
+                        name = when {
+                            e.productOwnerName.isNotBlank() -> e.productOwnerName
+                            e.productTypeLabel.isNotBlank() -> e.productTypeLabel
+                            else -> "Item"
+                        },
+                        qty = e.quantity,
+                        unitPrice = e.unitPrice.toDouble(),
+                        total = lineTotal.toDouble()
+                    )
+                }
+
+                val invoiceData = InvoiceData(
+                    shopName = "MKumar Opticals",
+                    shopAddress = "Main Street, City",
+                    customerName = uiCustomer?.name ?: "Customer",
+                    customerPhone = uiCustomer?.phone ?: "-",
+                    orderId = order.id,
+                    occurredAtText = dateFmt.format(Date(order.occurredAt)),
+                    items = invoiceItems,
+                    subtotal = priced.subtotalBeforeAdjust.toDouble(),
+                    discount = priced.adjustedAmount.toDouble(), // adjusted is a flat reduction
+                    tax = 0.0, // if you add tax later, compute & fill here
+                    grandTotal = priced.totalAmount.toDouble()
+                )
+
+                // 6) Render + save
+                val bytes = InvoicePdfBuilderImpl().build(invoiceData)
+                val uri = saveInvoicePdf(app, fileName, bytes)
+
+                // 7) Open
+                _effects.tryEmit(CustomerDetailsEffect.ViewInvoice(orderId, uri))
+                _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Invoice ready."))
+            } catch (t: Throwable) {
+                _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Failed to create/open invoice: ${t.message}"))
+            }
         }
     }
 

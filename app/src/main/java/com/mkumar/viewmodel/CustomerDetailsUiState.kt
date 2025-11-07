@@ -8,6 +8,7 @@
 package com.mkumar.viewmodel
 
 
+import android.net.Uri
 import com.mkumar.data.ProductFormData
 import kotlinx.serialization.json.Json
 import java.time.Instant
@@ -93,6 +94,7 @@ data class CustomerDetailsUiState(
 sealed interface CustomerDetailsEffect {
     data class ShowMessage(val message: String) : CustomerDetailsEffect
     data class OpenOrderSheet(val orderId: String? = null) : CustomerDetailsEffect
+    data class ViewInvoice(val orderId: String, val uri: Uri) : CustomerDetailsEffect
     data object CloseOrderSheet : CustomerDetailsEffect
 }
 
