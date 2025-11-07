@@ -63,7 +63,7 @@ fun OrderSheet(
                         .padding(vertical = 8.dp)
                 ) {
                     Text(
-                        text = "No products added yet. \nClick on '+ Add Product' to add items.",
+                        text = "No products added yet. \nClick on '+' to Add a new Product.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier

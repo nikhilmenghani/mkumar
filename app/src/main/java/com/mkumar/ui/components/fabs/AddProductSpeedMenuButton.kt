@@ -7,7 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,16 +32,25 @@ fun AddProductSpeedMenuButton(
     var expanded by remember { mutableStateOf(false) }
     var width by remember { mutableStateOf(180.dp) }
     Box {
-        ExtendedFloatingActionButton(
+//        ExtendedFloatingActionButton(
+//            onClick = {
+//                if (lastUsed != null) onAddClick(lastUsed) else expanded = true
+//            },
+//            icon = { Icon(Icons.Filled.Add, contentDescription = "Add Product") },
+//            text = { Text("Add Product") },
+//            containerColor = MaterialTheme.colorScheme.surface,
+//            contentColor = MaterialTheme.colorScheme.onSurface,
+//            modifier = Modifier.size(width = width, height = 56.dp)
+//        )
+
+        FloatingActionButton(
             onClick = {
                 if (lastUsed != null) onAddClick(lastUsed) else expanded = true
             },
-            icon = { Icon(Icons.Filled.Add, contentDescription = "Add Product") },
-            text = { Text("Add Product") },
+            modifier = Modifier.size(56.dp),
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(width = width, height = 56.dp)
-        )
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ) { Icon(Icons.Filled.Add, contentDescription = "Add Product") }
 
         DropdownMenu(
             expanded = expanded,
