@@ -3,6 +3,7 @@ package com.mkumar.ui.navigation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.EaseInOutQuart
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -12,7 +13,9 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -70,6 +73,7 @@ import androidx.navigation.navArgument
 import com.mkumar.common.extension.navigateWithState
 import com.mkumar.ui.screens.HomeScreen
 import com.mkumar.ui.screens.PreferenceScreen
+import com.mkumar.ui.screens.SearchScreen
 import com.mkumar.ui.screens.customer.CustomerDetailsScreen
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.CustomerViewModel
@@ -92,7 +96,7 @@ enum class Screens {
 
 sealed class Screen(val route: String) {
     object Home : Screen("Home")
-    object Search : Screen("search")
+    object Search : Screen("Search")
     object Settings : Screen("Settings")
     object About : Screen("About")
 }
@@ -417,13 +421,140 @@ fun NavigationHost(
         startDestination = Screens.Home.name,
         modifier = modifier
     ) {
-        composable(route = Screens.Home.name) {
+        composable(route = Screens.Home.name,
+            enterTransition = {
+                when {
+                    initialState.destination.route?.startsWith("Settings") == true -> {
+                        // Horizontal slide animation when coming from Library
+                        fadeIn(animationSpec = tween(300)) +
+                                slideInHorizontally(
+                                    initialOffsetX = { -it },
+                                    animationSpec = tween(350, easing = EaseInOutQuart)
+                                )
+                    }
+
+                    else -> {
+                        // Default animation for other sources
+                        fadeIn(animationSpec = tween(300))
+                    }
+                }
+            },
+            exitTransition = {
+                when {
+                    targetState.destination.route?.startsWith("Settings") == true -> {
+                        // Horizontal slide animation when going to Library
+                        fadeOut(animationSpec = tween(300)) +
+                                slideOutHorizontally(
+                                    targetOffsetX = { -it },
+                                    animationSpec = tween(350, easing = EaseInOutQuart)
+                                )
+                    }
+
+                    else -> {
+                        // Default animation for other destinations
+                        fadeOut(animationSpec = tween(300))
+                    }
+                }
+            },
+            popEnterTransition = {
+                when {
+                    initialState.destination.route?.startsWith("Settings") == true -> {
+                        // Restore horizontal slide animation when popping back from Library
+                        fadeIn(animationSpec = tween(300)) +
+                                slideInHorizontally(
+                                    initialOffsetX = { -it },
+                                    animationSpec = tween(350, easing = EaseInOutQuart)
+                                )
+                    }
+
+                    else -> {
+                        // Simple faster fade animation when popping back from other screens
+                        fadeIn(animationSpec = tween(200))
+                    }
+                }
+            },
+            popExitTransition = {
+                // Simple faster fade animation when being popped from
+                fadeOut(animationSpec = tween(200))
+            }) {
             // Navigate like: navController.navigateWithState(Routes.customerDetail(customerId))
             HomeScreen(navController = navController, vm = customerViewModel)
         }
 
-        composable(route = Screens.Settings.name) {
+        composable(route = Screens.Settings.name,
+            enterTransition = {
+                when (initialState.destination.route) {
+                    Screen.Home.route -> {
+                        // Horizontal slide animation when coming from Home
+                        fadeIn(animationSpec = tween(300)) +
+                                slideInHorizontally(
+                                    initialOffsetX = { it },
+                                    animationSpec = tween(350, easing = EaseInOutQuart)
+                                )
+                    }
+
+                    else -> {
+                        // Default animation for other sources
+                        fadeIn(animationSpec = tween(300))
+                    }
+                }
+            },
+            exitTransition = {
+                when (targetState.destination.route) {
+                    Screen.Home.route -> {
+                        // Horizontal slide animation when going to Home
+                        fadeOut(animationSpec = tween(300)) +
+                                slideOutHorizontally(
+                                    targetOffsetX = { it },
+                                    animationSpec = tween(350, easing = EaseInOutQuart)
+                                )
+                    }
+
+                    else -> {
+                        // Default animation for other destinations
+                        fadeOut(animationSpec = tween(300))
+                    }
+                }
+            },
+            popEnterTransition = {
+                when (initialState.destination.route) {
+                    Screen.Home.route -> {
+                        // Restore horizontal slide animation when popping back from Home
+                        fadeIn(animationSpec = tween(300)) +
+                                slideInHorizontally(
+                                    initialOffsetX = { it },
+                                    animationSpec = tween(350, easing = EaseInOutQuart)
+                                )
+                    }
+
+                    else -> {
+                        // Simple faster fade animation when popping back from other screens
+                        fadeIn(animationSpec = tween(200))
+                    }
+                }
+            },
+            popExitTransition = {
+                when (targetState.destination.route) {
+                    Screen.Home.route -> {
+                        // Restore horizontal slide animation when popping back to Home
+                        fadeOut(animationSpec = tween(300)) +
+                                slideOutHorizontally(
+                                    targetOffsetX = { it },
+                                    animationSpec = tween(350, easing = EaseInOutQuart)
+                                )
+                    }
+
+                    else -> {
+                        // Simple faster fade animation when being popped from for other destinations
+                        fadeOut(animationSpec = tween(200))
+                    }
+                }
+            }) {
             PreferenceScreen(navController = navController)
+        }
+
+        composable(route = Screen.Search.route) {
+            SearchScreen(navController = navController)
         }
 
         composable(
