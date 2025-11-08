@@ -63,7 +63,7 @@ fun OrderListItem2(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(12.dp))
-            androidx.compose.material3.Divider()
+            androidx.compose.material3.HorizontalDivider()
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total: ₹${row.amount}", style = MaterialTheme.typography.titleMedium)
