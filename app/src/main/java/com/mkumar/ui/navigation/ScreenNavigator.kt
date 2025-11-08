@@ -50,7 +50,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,7 +61,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -75,11 +73,10 @@ import androidx.navigation.navArgument
 import com.mkumar.common.extension.navigateWithState
 import com.mkumar.ui.screens.HomeScreen
 import com.mkumar.ui.screens.PreferenceScreen
-import com.mkumar.ui.screens.SearchScreen
 import com.mkumar.ui.screens.customer.CustomerDetailsScreen
+import com.mkumar.ui.screens.search.SearchScreen
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.CustomerViewModel
-import com.mkumar.viewmodel.SearchViewModel
 
 
 data class NavItem(
@@ -557,13 +554,8 @@ fun NavigationHost(
         }
 
         composable(route = Screen.Search.route) {
-            val viewModel: SearchViewModel = viewModel()
-            val searchResults by viewModel.filteredItems.collectAsState()
-
             SearchScreen(
                 navController = navController,
-                onSearchQueryChanged = viewModel::onSearchQueryChange,
-                searchResults = searchResults
             )
         }
 

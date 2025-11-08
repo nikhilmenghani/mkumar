@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
+import com.mkumar.repository.impl.UiCustomerMini
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -41,5 +42,8 @@ interface CustomerDao {
     @Transaction
     @Query("SELECT * FROM customers WHERE id = :customerId LIMIT 1")
     suspend fun getWithOrders(customerId: String): CustomerWithOrders?
+
+    @Query("SELECT id, name, phone FROM customers WHERE id IN (:ids)")
+    suspend fun loadMiniByIds(ids: List<String>): List<UiCustomerMini>
 
 }
