@@ -1,7 +1,7 @@
 package com.mkumar.viewmodel
 
 import com.mkumar.data.db.entities.OrderEntity
-import com.mkumar.data.local.relations.CustomerWithOrders
+import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.domain.pricing.PricingInput
 import com.mkumar.domain.pricing.PricingResult
 import com.mkumar.domain.pricing.PricingService

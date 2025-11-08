@@ -1,7 +1,6 @@
 package com.mkumar.data.utils
 
 import androidx.room.TypeConverter
-import com.mkumar.data.ProductType
 import java.time.Instant
 
 object Converters {

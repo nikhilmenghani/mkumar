@@ -1,10 +1,3 @@
-// ==========================
-// MKumar • Phase 4 Alignment Pack
-// ViewModel + UI State + Mappers (single-source of truth)
-// Consistent with com.mkumar.domain.pricing.Models (discountPercentage, rupees)
-// ==========================
-
-// ---------- FILE: com/mkumar/viewmodel/CustomerDetailsUiState.kt ----------
 package com.mkumar.viewmodel
 
 

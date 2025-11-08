@@ -26,24 +26,3 @@ data class OrderRowUi(
     val hasInvoice: Boolean,
 )
 
-@Immutable
-data class OrderFilterUi(
-    val query: String = "",
-    val sortNewestFirst: Boolean = true,
-)
-
-
-// New Order creation flow (bottom sheet)
-//@Immutable
-//data class NewOrderUi(
-//    val selectedType: ProductType? = null,
-//    val lens: LensFormState = LensFormState(),
-//    val frame: FrameFormState = FrameFormState(),
-//    val contactLens: ContactLensFormState = ContactLensFormState(),
-//    val canSave: Boolean = false,
-//    val saving: Boolean = false,
-//)
-
-
-
-

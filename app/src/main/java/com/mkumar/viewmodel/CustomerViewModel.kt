@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.time.ExperimentalTime
@@ -49,8 +48,8 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
                         id = e.id,
                         name = e.name,
                         phone = e.phone,
-                        products = emptyList(),          // no products from DB here
-                        selectedProductId = null,
+//                        products = emptyList(),          // no products from DB here
+//                        selectedProductId = null,
                     )
                 }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -80,16 +79,16 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
             ?: CustomerFormState()
     }
 
-    fun serializeCustomer(customerId: String, includeUnsavedEdits: Boolean = true): String {
-        val customer = _customers.value.find { it.id == customerId } ?: return ""
-        val mergedProducts = customer.products.map { p ->
-            val eff = if (includeUnsavedEdits)
-                editingBuffer[customer.id]?.get(p.id) ?: p.formData
-            else p.formData
-            p.copy(formData = eff)
-        }
-        val snapshot = customer.copy(products = mergedProducts)
-        val json = Json { encodeDefaults = true; ignoreUnknownKeys = true; classDiscriminator = "type"; prettyPrint = true }
-        return json.encodeToString(CustomerFormState.serializer(), snapshot)
-    }
+//    fun serializeCustomer(customerId: String, includeUnsavedEdits: Boolean = true): String {
+//        val customer = _customers.value.find { it.id == customerId } ?: return ""
+//        val mergedProducts = customer.products.map { p ->
+//            val eff = if (includeUnsavedEdits)
+//                editingBuffer[customer.id]?.get(p.id) ?: p.formData
+//            else p.formData
+//            p.copy(formData = eff)
+//        }
+//        val snapshot = customer.copy(products = mergedProducts)
+//        val json = Json { encodeDefaults = true; ignoreUnknownKeys = true; classDiscriminator = "type"; prettyPrint = true }
+//        return json.encodeToString(CustomerFormState.serializer(), snapshot)
+//    }
 }

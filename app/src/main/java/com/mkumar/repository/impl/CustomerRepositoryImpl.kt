@@ -4,7 +4,7 @@ import com.mkumar.data.db.dao.CustomerDao
 import com.mkumar.data.db.dao.SearchDao
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.entities.SearchFts
-import com.mkumar.data.local.relations.CustomerWithOrders
+import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.repository.CustomerRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject

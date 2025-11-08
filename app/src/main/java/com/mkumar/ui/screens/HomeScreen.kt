@@ -178,7 +178,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     navController.navigate(Routes.customerDetail(customer.id))
                 },
                 onSync = { customer ->
-                    jsonPreview = vm.serializeCustomer(customer.id)
+//                    jsonPreview = vm.serializeCustomer(customer.id)
                     showJsonDialog = true
                 },
                 onDelete = { customer ->

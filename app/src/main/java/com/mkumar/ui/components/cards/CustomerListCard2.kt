@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -40,8 +39,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.CustomerFormState
-import com.mkumar.data.ProductEntry
-import com.mkumar.data.ProductType
 import com.mkumar.ui.theme.AppColors
 
 /** Strongly typed overflow action */
@@ -195,11 +192,6 @@ private fun PreviewContent() {
         id = "12345",
         name = "Courteney White",
         phone = "(123) 456-7890"
-    )
-    val chips = listOf(
-        ProductEntry(productType = ProductType.Lens, isSaved = true),
-        ProductEntry(productType = ProductType.Frame),
-        ProductEntry(productType = ProductType.ContactLens)
     )
 
     Column(Modifier.padding(16.dp)) {

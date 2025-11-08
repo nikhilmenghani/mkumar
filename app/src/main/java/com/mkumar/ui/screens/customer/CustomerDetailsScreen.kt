@@ -1,13 +1,3 @@
-// =============================
-// Phase 5 — UI Layer Components
-// CustomerDetails screen + Order list + BottomSheet with Product accordion & forms
-// Packages assume: com.mkumar.ui.screens.customer + subpackages
-// Compose BOM 2025.02, Material3, Kotlin 2.1.x
-// =============================
-
-// -----------------------------
-// File: ui/screens/customer/CustomerDetailsScreen.kt
-// -----------------------------
 package com.mkumar.ui.screens.customer
 
 import android.content.Intent

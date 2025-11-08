@@ -1,7 +1,7 @@
 package com.mkumar.repository
 
 import com.mkumar.data.db.entities.CustomerEntity
-import com.mkumar.data.local.relations.CustomerWithOrders
+import com.mkumar.data.db.relations.CustomerWithOrders
 import kotlinx.coroutines.flow.Flow
 
 interface CustomerRepository {

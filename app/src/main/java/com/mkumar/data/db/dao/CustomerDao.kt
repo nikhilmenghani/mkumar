@@ -7,7 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
 import com.mkumar.data.db.entities.CustomerEntity
-import com.mkumar.data.local.relations.CustomerWithOrders
+import com.mkumar.data.db.relations.CustomerWithOrders
 import kotlinx.coroutines.flow.Flow
 
 @Dao
