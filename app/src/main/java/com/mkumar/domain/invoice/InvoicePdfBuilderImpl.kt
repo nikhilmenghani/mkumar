@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import com.mkumar.common.constant.CustomerDetailsConstants
 import java.io.ByteArrayOutputStream
 import java.text.NumberFormat
 import java.util.Currency
@@ -177,9 +178,8 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         y += 6f
         c.drawLine(marginL, y, (marginL + contentW), y, linePaint)
         y += 14f
-
         // Meta
-        c.drawText("Invoice: INV-${data.orderId}", marginL, y, textPaint)
+        c.drawText("Invoice: ${CustomerDetailsConstants.getInvoiceFileName(data.orderId)}", marginL, y, textPaint)
         val right = marginL + contentW
         val rightAlign = Paint(textPaint).apply { textAlign = Paint.Align.RIGHT }
         c.drawText("Date: ${data.occurredAtText}", right, y, rightAlign)

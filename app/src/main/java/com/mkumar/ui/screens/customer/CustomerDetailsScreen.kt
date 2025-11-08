@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.mkumar.common.constant.CustomerDetailsConstants
 import com.mkumar.ui.components.accordions.OrderSummaryAccordion
 import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
 import com.mkumar.ui.components.bottomsheets.ProductPickerSheet
@@ -272,7 +273,7 @@ fun CustomerDetailsScreen(
 }
 
 fun humanReadableInvoiceLocation(orderId: String): String {
-    val fileName = "INV-$orderId.pdf"
+    val fileName = CustomerDetailsConstants.getInvoiceFileName(orderId) + ".pdf"
     return "Files > Downloads > Documents > MKumar > Invoices > $fileName"
 }
 // Helper for item label rendering without depending on exact UiOrderItem fields
