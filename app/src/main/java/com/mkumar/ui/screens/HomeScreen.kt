@@ -40,7 +40,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -113,6 +116,9 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
         }
     }
 
+    val density = LocalDensity.current
+    var fabBlockHeight by remember { mutableStateOf(0.dp) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -130,7 +136,11 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
             )
         },
         floatingActionButton = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.onGloballyPositioned { coords ->
+                    fabBlockHeight = with(density) { coords.size.height.toDp() }
+                }) {
                 StandardFab(
                     text = "Add a new Customer",
                     icon = { Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(24.dp)) },
@@ -195,7 +205,8 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     name = customer.name
                     phone = customer.phone
                     showCustomerSheet = true
-                }
+                },
+                extraBottomPadding = fabBlockHeight + 16.dp
             )
         }
     }
@@ -275,11 +286,17 @@ fun CustomerList(
     onClick: (CustomerFormState) -> Unit = {},
     onUpdateCustomer: (id: String, name: String, phone: String) -> Unit = { _, _, _ -> },
     onDelete: (CustomerFormState) -> Unit = {},
-    onEdit: (CustomerFormState) -> Unit = {}
+    onEdit: (CustomerFormState) -> Unit = {},
+    extraBottomPadding: Dp = 0.dp
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(8.dp),
+        contentPadding = PaddingValues(
+            start = 8.dp,
+            top = 8.dp,
+            end = 8.dp,
+            bottom = 8.dp + extraBottomPadding
+        ),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(customers, key = { it.id }) { customer ->
