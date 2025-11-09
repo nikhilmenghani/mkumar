@@ -1,7 +1,10 @@
 package com.mkumar.repository.impl
 
+import com.mkumar.common.search.buildFtsPrefixMatch
+import com.mkumar.common.search.buildFtsTrigramMatch
 import com.mkumar.common.search.digitsOnly
 import com.mkumar.common.search.foldName
+import com.mkumar.common.search.ngrams
 import com.mkumar.data.db.dao.CustomerDao
 import com.mkumar.data.db.dao.SearchDao
 import com.mkumar.data.db.entities.CustomerEntity
@@ -40,11 +43,17 @@ class CustomerRepositoryImpl @Inject constructor(
     override suspend fun getWithOrders(customerId: String): CustomerWithOrders? =
         customerDao.getWithOrders(customerId)
 
-    override suspend fun reindexCustomerForSearch(customer: CustomerEntity) {
+    override suspend fun reindexCustomerForSearch(customer: CustomerEntity) = withContext(Dispatchers.IO) {
+        val folded = foldName(customer.name).replace(" ", "")
+        val digits = digitsOnly(customer.phone)
+        val name3 = ngrams(folded, 3).joinToString(" ").ifBlank { null }
+        val phone3 = digits?.let { d -> ngrams(d, 3).joinToString(" ").ifBlank { null } }
         val entry = SearchFts(
             customerId = customer.id,
-            name = customer.name,
-            phone = customer.phone
+            name = foldName(customer.name),
+            phone = digits,
+            name3 = name3,
+            phone3 = phone3
         )
         searchDao.upsert(entry)
     }
@@ -52,10 +61,16 @@ class CustomerRepositoryImpl @Inject constructor(
     /** Upsert Customer AND its FTS row in one transaction (Room @Transaction on DAO is fine too). */
     suspend fun upsertCustomerWithIndex(c: CustomerEntity) = withContext(Dispatchers.IO) {
         customerDao.upsert(c)
+        val folded = foldName(c.name).replace(" ", "")
+        val digits = digitsOnly(c.phone)
+        val name3 = ngrams(folded, 3).joinToString(" ").ifBlank { null }
+        val phone3 = digits?.let { d -> ngrams(d, 3).joinToString(" ").ifBlank { null } }
         val entry = SearchFts(
             customerId = c.id,
             name = foldName(c.name),
-            phone = digitsOnly(c.phone)
+            phone = digits,
+            name3 = name3,
+            phone3 = phone3
         )
         searchDao.upsert(entry)
     }
@@ -67,17 +82,43 @@ class CustomerRepositoryImpl @Inject constructor(
         searchDao.deleteByCustomerId(customerId)
     }
 
+    override suspend fun searchCustomers(q: String, mode: SearchMode, limit: Int): List<UiCustomerMini> {
+        val query = q.trim()
+        if (query.isEmpty()) return emptyList()
 
-    /** Lightweight projection for search results. */
-    override suspend fun searchCustomers(q: String, limit: Int): List<UiCustomerMini> {
-        val match = com.mkumar.common.search.buildFtsMatch(q)
-        if (match.isBlank()) return emptyList()
-        val ids = searchDao.searchCustomerIds(match, limit)
+
+        val ids: List<String> = when (mode) {
+            SearchMode.QUICK -> {
+                val m = buildFtsPrefixMatch(query)
+                if (m.isBlank()) emptyList() else searchDao.searchCustomerIds(m, limit)
+            }
+            SearchMode.FLEXIBLE -> {
+                val trig = buildFtsTrigramMatch(query)
+                if (trig != null) {
+                    searchDao.searchCustomerIds(trig, limit)
+                } else {
+                    // Short query (<3): prefix + LIKE fallback
+                    val pref = buildFtsPrefixMatch(query)
+                    val idsPrefix = if (pref.isNotBlank()) searchDao.searchCustomerIds(pref, limit) else emptyList()
+                    val idsContains = customerDao.containsCustomerIds(query, query.filter(Char::isDigit), limit)
+                    (idsPrefix + idsContains).distinct().take(limit)
+                }
+            }
+        }
         if (ids.isEmpty()) return emptyList()
-        return customerDao.loadMiniByIds(ids)
-            .orderByIds(ids) // keep FTS order
+        val rows = customerDao.loadMiniByIds(ids)
+        val minis = rows.map { UiCustomerMini(it.id, it.name, it.phone) }
+        return minis.orderByIds(ids)
+    }
+
+    // Preserve FTS/combined order
+    private fun List<UiCustomerMini>.orderByIds(ids: List<String>): List<UiCustomerMini> {
+        val pos = ids.withIndex().associate { it.value to it.index }
+        return this.sortedBy { pos[it.id] ?: Int.MAX_VALUE }
     }
 }
+
+enum class SearchMode { QUICK, FLEXIBLE }
 
 // Minimal UI projection model (place where you keep other UI models)
 data class UiCustomerMini(

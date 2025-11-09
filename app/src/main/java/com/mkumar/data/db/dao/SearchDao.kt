@@ -12,9 +12,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SearchDao {
-
-
-    // Inserts (no REPLACE needed for FTS when we control deletes)
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(entry: SearchFts)
 
@@ -23,7 +20,6 @@ interface SearchDao {
     suspend fun insertAll(entries: List<SearchFts>)
 
 
-    // Deletes
     @Query("DELETE FROM search_fts WHERE customerId = :customerId")
     suspend fun deleteByCustomerId(customerId: String)
 
@@ -36,7 +32,6 @@ interface SearchDao {
     suspend fun clear()
 
 
-    // "Upsert" semantics for FTS: delete then insert
     @Transaction
     suspend fun upsert(entry: SearchFts) {
         deleteByCustomerId(entry.customerId)
@@ -52,13 +47,10 @@ interface SearchDao {
     }
 
 
-// --- SEARCH ---
-
-
+    // Generic MATCH query
     @Query(
         """
-SELECT customerId
-FROM search_fts
+SELECT customerId FROM search_fts
 WHERE search_fts MATCH :match
 LIMIT :limit
 """
@@ -68,8 +60,7 @@ LIMIT :limit
 
     @Query(
         """
-SELECT customerId
-FROM search_fts
+SELECT customerId FROM search_fts
 WHERE search_fts MATCH :match
 LIMIT :limit
 """

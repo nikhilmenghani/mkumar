@@ -11,6 +11,9 @@ import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.repository.impl.UiCustomerMini
 import kotlinx.coroutines.flow.Flow
 
+
+interface UiCustomerMiniDto { val id: String; val name: String; val phone: String? }
+
 @Dao
 interface CustomerDao {
 
@@ -45,5 +48,16 @@ interface CustomerDao {
 
     @Query("SELECT id, name, phone FROM customers WHERE id IN (:ids)")
     suspend fun loadMiniByIds(ids: List<String>): List<UiCustomerMini>
+
+    // Optional fallback for very short queries (<3) in FLEXIBLE mode
+    @Query(
+        """
+SELECT id FROM customers
+WHERE lower(name) LIKE '%' || lower(:q) || '%'
+OR REPLACE(REPLACE(REPLACE(phone,' ',''),'-',''),'(','') LIKE '%' || :digits || '%'
+LIMIT :limit
+"""
+    )
+    suspend fun containsCustomerIds(q: String, digits: String, limit: Int): List<String>
 
 }
