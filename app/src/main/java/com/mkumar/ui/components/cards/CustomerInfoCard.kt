@@ -17,6 +17,7 @@ import com.mkumar.ui.components.inputs.CustomerInfoSection
 
 @Composable
 fun CustomerInfoCard(
+    title: String = "Add Customer Information",
     name: String,
     phone: String,
     onNameChange: (String) -> Unit,
@@ -32,7 +33,7 @@ fun CustomerInfoCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Add Customer Information",
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )

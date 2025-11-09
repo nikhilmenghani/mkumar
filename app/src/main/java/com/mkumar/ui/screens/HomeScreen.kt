@@ -84,7 +84,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     var isDownloading by remember { mutableStateOf(false) }
 
     // UI flags
-    var showAddCustomerSheet by remember { mutableStateOf(false) }
     var showJsonDialog by remember { mutableStateOf(false) }
     var jsonPreview by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -208,6 +207,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
             showTitle = false,
             sheetContent = {
                 CustomerInfoCard(
+                    title = if (sheetMode == CustomerSheetMode.Add) "Add Customer Information" else "Edit Customer Information",
                     name = name,
                     phone = phone,
                     onNameChange = { name = it },
@@ -275,7 +275,7 @@ fun CustomerList(
     onClick: (CustomerFormState) -> Unit = {},
     onUpdateCustomer: (id: String, name: String, phone: String) -> Unit = { _, _, _ -> },
     onDelete: (CustomerFormState) -> Unit = {},
-    onEdit: (CustomerFormState) -> Unit = {}                  // <— new
+    onEdit: (CustomerFormState) -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -286,7 +286,7 @@ fun CustomerList(
             CustomerListCard2(
                 customer = customer,
                 onClick = onClick,
-                onEdit = onEdit,                                // <—
+                onEdit = onEdit,
                 onDelete = onDelete
             )
         }
