@@ -1,9 +1,10 @@
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package com.mkumar.ui.components.cards
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -25,10 +25,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,75 +45,28 @@ import androidx.compose.ui.unit.dp
 import com.mkumar.data.CustomerFormState
 import com.mkumar.ui.theme.AppColors
 
-/** Strongly typed overflow action */
 data class MenuAction(
     val title: String,
     val onClick: (CustomerFormState) -> Unit
 )
 
-/** Lightweight edit dialog (defined below) */
-@Composable
-private fun EditCustomerDialog(
-    initialName: String,
-    initialPhone: String,
-    onDismiss: () -> Unit,
-    onSave: (name: String, phone: String) -> Unit
-) {
-    var name by remember(initialName) { mutableStateOf(initialName) }
-    var phone by remember(initialPhone) { mutableStateOf(initialPhone) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit customer") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = { phone = it },
-                    label = { Text("Phone") },
-                    singleLine = true
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = name.isNotBlank(),
-                onClick = { onSave(name.trim(), phone.trim()) }
-            ) { Text("Save") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CustomerListCard2(
     customer: CustomerFormState,
     modifier: Modifier = Modifier,
     onClick: (CustomerFormState) -> Unit = {},
-    /** Called when user long-presses the card (in addition to built-in edit) */
-    onLongPress: (CustomerFormState) -> Unit = {},
-    /** Persist the edited values (id, name, phone). */
-    onUpdateCustomer: (id: String, name: String, phone: String) -> Unit = { _, _, _ -> },
+    onEdit: (CustomerFormState) -> Unit = {},
     onDelete: (CustomerFormState) -> Unit = {},
-    /** Extra actions (optional). Built-ins: Edit & Delete already included. */
     extraActions: List<MenuAction> = emptyList(),
     showPhoneRow: Boolean = true
 ) {
-    var showEdit by remember { mutableStateOf(false) }
+    var menuExpanded by remember { mutableStateOf(false) }
 
-    val builtInActions = listOf(
-        MenuAction("Edit") { showEdit = true },
-        MenuAction("Delete", onDelete)
-    )
+    val actions = buildList {
+        add(MenuAction("Edit", onEdit))
+        addAll(extraActions)
+        add(MenuAction("Delete", onDelete))
+    }
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -126,25 +77,17 @@ fun CustomerListCard2(
             .semantics { contentDescription = "Customer ${customer.name}" }
             .combinedClickable(
                 onClick = { onClick(customer) },
-                onLongClick = {
-                    onLongPress(customer)
-                    // Also open edit on long-press for quick access:
-                    showEdit = true
-                }
+                onLongClick = { menuExpanded = true }   // <— long-press opens menu
             )
     ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            // Header: avatar + name | Overflow
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 InitialsAvatarCompact(name = customer.name.ifBlank { "Customer" })
                 Spacer(Modifier.width(10.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                Column(Modifier.weight(1f)) {
                     Text(
                         text = customer.name.ifBlank { "Unnamed customer" },
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
@@ -171,45 +114,36 @@ fun CustomerListCard2(
                     }
                 }
                 OverflowMenu(
-                    items = builtInActions + extraActions,
+                    expanded = menuExpanded,
+                    onExpandedChange = { menuExpanded = it },
+                    items = actions,
                     customer = customer
                 )
             }
         }
     }
-
-    if (showEdit) {
-        EditCustomerDialog(
-            initialName = customer.name,
-            initialPhone = customer.phone,
-            onDismiss = { showEdit = false },
-            onSave = { newName, newPhone ->
-                showEdit = false
-                onUpdateCustomer(customer.id, newName, newPhone)
-            }
-        )
-    }
 }
 
 @Composable
 private fun OverflowMenu(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
     items: List<MenuAction>,
     customer: CustomerFormState
 ) {
-    var expanded by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { expanded = true }) {
+        IconButton(onClick = { onExpandedChange(true) }) {
             Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
         }
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { onExpandedChange(false) }
         ) {
             items.forEach { action ->
                 DropdownMenuItem(
                     text = { Text(action.title) },
                     onClick = {
-                        expanded = false
+                        onExpandedChange(false)
                         action.onClick(customer)
                     }
                 )
@@ -269,8 +203,6 @@ private fun PreviewContent() {
         CustomerListCard2(
             customer = customer,
             onClick = {},
-            onLongPress = {},
-            onUpdateCustomer = { _, _, _ -> },
             onDelete = {},
             extraActions = emptyList()
         )

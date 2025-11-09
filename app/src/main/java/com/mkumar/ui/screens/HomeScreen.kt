@@ -71,6 +71,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
+enum class CustomerSheetMode { Add, Edit }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
@@ -92,6 +94,12 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     val customers by vm.customersUi.collectAsStateWithLifecycle()
     val currentCustomerId by vm.currentCustomerId.collectAsStateWithLifecycle()
     val openFormsForCurrentFlow = remember(currentCustomerId) { MutableStateFlow(emptySet<String>()) }
+    var sheetMode by remember { mutableStateOf(CustomerSheetMode.Add) }
+    var showCustomerSheet by remember { mutableStateOf(false) }
+    var editingCustomerId by remember { mutableStateOf<String?>(null) }
+    var name by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+
     LaunchedEffect(currentCustomerId) {
         // Whenever the VM's openForms map changes, push only the current customer's set
         vm.openForms.collect { map ->
@@ -127,7 +135,13 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 StandardFab(
                     text = "Add a new Customer",
                     icon = { Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(24.dp)) },
-                    onClick = { showAddCustomerSheet = true },
+                    onClick = {
+                        sheetMode = CustomerSheetMode.Add
+                        editingCustomerId = null
+                        name = ""
+                        phone = ""
+                        showCustomerSheet = true
+                    },
                 )
                 if (!isLatestVersion) {
                     StandardFab(
@@ -172,23 +186,25 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     vm.selectCustomer(customer.id)
                     navController.navigate(Routes.customerDetail(customer.id))
                 },
-                onUpdateCustomer = { id, name, phone ->
-                    vm.updateCustomer(id, name, phone)
-                },
-                onDelete = { customer ->
-                    vm.removeCustomer(customer.id)
+                // We still keep direct update callback for other entry points if you want:
+                onUpdateCustomer = { id, n, p -> vm.updateCustomer(id, n, p) },
+                onDelete = { customer -> vm.removeCustomer(customer.id) },
+                // NEW: Provide onEdit to open the same ShortBottomSheet prefilled
+                onEdit = { customer ->
+                    sheetMode = CustomerSheetMode.Edit
+                    editingCustomerId = customer.id
+                    name = customer.name
+                    phone = customer.phone
+                    showCustomerSheet = true
                 }
             )
         }
     }
 
     // --- Add Customer Sheet (local inputs; VM is multi-customer now) ---
-    if (showAddCustomerSheet) {
-        var name by remember { mutableStateOf("") }
-        var phone by remember { mutableStateOf("") }
-
+    if (showCustomerSheet) {
         ShortBottomSheet(
-            title = "Add Customer",
+            title = if (sheetMode == CustomerSheetMode.Add) "Add Customer" else "Edit Customer",
             showTitle = false,
             sheetContent = {
                 CustomerInfoCard(
@@ -198,13 +214,17 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     onPhoneChange = { phone = it }
                 )
             },
-            onDismiss = { showAddCustomerSheet = false },
+            onDismiss = { showCustomerSheet = false },
             showDismiss = true,
             showDone = true,
             onDoneClick = {
                 if (name.isNotBlank()) {
-                    vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
-                    showAddCustomerSheet = false
+                    if (sheetMode == CustomerSheetMode.Add) {
+                        vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
+                    } else {
+                        editingCustomerId?.let { vm.updateCustomer(it, name.trim(), phone.trim()) }
+                    }
+                    showCustomerSheet = false
                 }
             }
         )
@@ -254,7 +274,8 @@ fun CustomerList(
     customers: List<CustomerFormState>,
     onClick: (CustomerFormState) -> Unit = {},
     onUpdateCustomer: (id: String, name: String, phone: String) -> Unit = { _, _, _ -> },
-    onDelete: (CustomerFormState) -> Unit = {}
+    onDelete: (CustomerFormState) -> Unit = {},
+    onEdit: (CustomerFormState) -> Unit = {}                  // <— new
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -265,9 +286,8 @@ fun CustomerList(
             CustomerListCard2(
                 customer = customer,
                 onClick = onClick,
-                onLongPress = { /* optional: haptics / selection */ },
-                onUpdateCustomer = onUpdateCustomer,
-                onDelete = onDelete,
+                onEdit = onEdit,                                // <—
+                onDelete = onDelete
             )
         }
     }
