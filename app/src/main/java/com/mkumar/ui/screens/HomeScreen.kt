@@ -83,7 +83,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
 
     // UI flags
     var showAddCustomerSheet by remember { mutableStateOf(false) }
-    var showCustomerDialog by remember { mutableStateOf(false) }
     var showJsonDialog by remember { mutableStateOf(false) }
     var jsonPreview by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -92,9 +91,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     // ViewModel state
     val customers by vm.customersUi.collectAsStateWithLifecycle()
     val currentCustomerId by vm.currentCustomerId.collectAsStateWithLifecycle()
-    val currentCustomer = remember(customers, currentCustomerId) {
-        customers.firstOrNull { it.id == currentCustomerId }
-    }
     val openFormsForCurrentFlow = remember(currentCustomerId) { MutableStateFlow(emptySet<String>()) }
     LaunchedEffect(currentCustomerId) {
         // Whenever the VM's openForms map changes, push only the current customer's set
@@ -174,12 +170,10 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 customers = customers,
                 onClick = { customer ->
                     vm.selectCustomer(customer.id)
-                    showCustomerDialog = true
                     navController.navigate(Routes.customerDetail(customer.id))
                 },
-                onSync = { customer ->
-//                    jsonPreview = vm.serializeCustomer(customer.id)
-                    showJsonDialog = true
+                onUpdateCustomer = { id, name, phone ->
+                    vm.updateCustomer(id, name, phone)
                 },
                 onDelete = { customer ->
                     vm.removeCustomer(customer.id)
@@ -259,7 +253,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
 fun CustomerList(
     customers: List<CustomerFormState>,
     onClick: (CustomerFormState) -> Unit = {},
-    onSync: (CustomerFormState) -> Unit = {},
+    onUpdateCustomer: (id: String, name: String, phone: String) -> Unit = { _, _, _ -> },
     onDelete: (CustomerFormState) -> Unit = {}
 ) {
     LazyColumn(
@@ -271,8 +265,8 @@ fun CustomerList(
             CustomerListCard2(
                 customer = customer,
                 onClick = onClick,
-                onSync = onSync,
-                onEdit = {},
+                onLongPress = { /* optional: haptics / selection */ },
+                onUpdateCustomer = onUpdateCustomer,
                 onDelete = onDelete,
             )
         }

@@ -79,6 +79,25 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
             ?: CustomerFormState()
     }
 
+    fun updateCustomer(id: String, name: String, phone: String) {
+        viewModelScope.launch {
+            repository.upsert(
+                CustomerEntity(
+                    id = id,                // keep same id to update
+                    name = name.trim(),
+                    phone = phone.trim()
+                )
+            )
+            // If you maintain an in-memory cache (uiStateByCustomer), reflect it here if needed:
+            uiStateByCustomer.value = uiStateByCustomer.value.toMutableMap().apply {
+                val current = this[id]
+                if (current != null) {
+                    put(id, current.copy(name = name.trim(), phone = phone.trim()))
+                }
+            }
+        }
+    }
+
 //    fun serializeCustomer(customerId: String, includeUnsavedEdits: Boolean = true): String {
 //        val customer = _customers.value.find { it.id == customerId } ?: return ""
 //        val mergedProducts = customer.products.map { p ->

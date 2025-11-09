@@ -1,6 +1,9 @@
 package com.mkumar.ui.components.cards
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -21,8 +25,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,36 +53,91 @@ data class MenuAction(
     val onClick: (CustomerFormState) -> Unit
 )
 
+/** Lightweight edit dialog (defined below) */
+@Composable
+private fun EditCustomerDialog(
+    initialName: String,
+    initialPhone: String,
+    onDismiss: () -> Unit,
+    onSave: (name: String, phone: String) -> Unit
+) {
+    var name by remember(initialName) { mutableStateOf(initialName) }
+    var phone by remember(initialPhone) { mutableStateOf(initialPhone) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit customer") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text("Phone") },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = name.isNotBlank(),
+                onClick = { onSave(name.trim(), phone.trim()) }
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CustomerListCard2(
     customer: CustomerFormState,
     modifier: Modifier = Modifier,
     onClick: (CustomerFormState) -> Unit = {},
-    onSync: (CustomerFormState) -> Unit = {},
-    onEdit: (CustomerFormState) -> Unit = {},
+    /** Called when user long-presses the card (in addition to built-in edit) */
+    onLongPress: (CustomerFormState) -> Unit = {},
+    /** Persist the edited values (id, name, phone). */
+    onUpdateCustomer: (id: String, name: String, phone: String) -> Unit = { _, _, _ -> },
     onDelete: (CustomerFormState) -> Unit = {},
-    overflowActions: List<MenuAction> = listOf(
-//        MenuAction("Edit", onEdit),
-//        MenuAction("Share") { /* TODO */ },
-//        MenuAction("Duplicate") { /* TODO */ },
-        MenuAction("Delete", onDelete),
-    ),
+    /** Extra actions (optional). Built-ins: Edit & Delete already included. */
+    extraActions: List<MenuAction> = emptyList(),
     showPhoneRow: Boolean = true
 ) {
+    var showEdit by remember { mutableStateOf(false) }
+
+    val builtInActions = listOf(
+        MenuAction("Edit") { showEdit = true },
+        MenuAction("Delete", onDelete)
+    )
+
     Card(
-        onClick = { onClick(customer) },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = AppColors.outlinedCardColors(),
         modifier = modifier
             .fillMaxWidth()
             .semantics { contentDescription = "Customer ${customer.name}" }
+            .combinedClickable(
+                onClick = { onClick(customer) },
+                onLongClick = {
+                    onLongPress(customer)
+                    // Also open edit on long-press for quick access:
+                    showEdit = true
+                }
+            )
     ) {
         Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // Header: avatar + name | Sync + Overflow
+            // Header: avatar + name | Overflow
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -109,12 +170,24 @@ fun CustomerListCard2(
                         }
                     }
                 }
-//                IconButton(onClick = { onSync(customer) }) {
-//                    Icon(Icons.Outlined.Sync, contentDescription = "Sync to GitHub")
-//                }
-                OverflowMenu(items = overflowActions, customer = customer)
+                OverflowMenu(
+                    items = builtInActions + extraActions,
+                    customer = customer
+                )
             }
         }
+    }
+
+    if (showEdit) {
+        EditCustomerDialog(
+            initialName = customer.name,
+            initialPhone = customer.phone,
+            onDismiss = { showEdit = false },
+            onSave = { newName, newPhone ->
+                showEdit = false
+                onUpdateCustomer(customer.id, newName, newPhone)
+            }
+        )
     }
 }
 
@@ -173,9 +246,7 @@ private fun InitialsAvatarCompact(name: String) {
 @Preview(name = "CustomerListCard2 – Light", showBackground = true)
 @Composable
 private fun PreviewCustomerListCard2_Light() {
-    MaterialTheme {
-        Surface { PreviewContent() }
-    }
+    MaterialTheme { Surface { PreviewContent() } }
 }
 
 @Preview(name = "CustomerListCard2 – Dark", showBackground = true)
@@ -198,9 +269,10 @@ private fun PreviewContent() {
         CustomerListCard2(
             customer = customer,
             onClick = {},
-            onSync = {},
-            onEdit = {},
+            onLongPress = {},
+            onUpdateCustomer = { _, _, _ -> },
             onDelete = {},
+            extraActions = emptyList()
         )
     }
 }
