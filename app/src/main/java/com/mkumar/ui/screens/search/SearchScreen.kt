@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CardDefaults
@@ -66,7 +67,6 @@ fun SearchScreen(
         keyboard?.show()
     }
 
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -88,6 +88,7 @@ fun SearchScreen(
                     .focusRequester(focusRequester),
                 singleLine = true,
                 placeholder = { Text("Search name or phone…") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Search,
                     capitalization = KeyboardCapitalization.Words
@@ -99,7 +100,6 @@ fun SearchScreen(
 
 
             if (state.isSearching) LinearProgressIndicator(Modifier.fillMaxWidth())
-
 
             when {
                 state.query.isNotBlank() && state.results.isEmpty() && !state.isSearching -> EmptyState()
@@ -126,7 +126,7 @@ private fun ModeToggle(mode: SearchMode, onChange: (SearchMode) -> Unit) {
             enabled = mode != SearchMode.FLEXIBLE
         )
         Spacer(Modifier.weight(1f))
-        val hint = if (mode == SearchMode.QUICK) "Starts with" else "Contains"
+        val hint = if (mode == SearchMode.QUICK) "Fast -> Starts with" else "Flexible -> Contains"
         Text(hint, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
