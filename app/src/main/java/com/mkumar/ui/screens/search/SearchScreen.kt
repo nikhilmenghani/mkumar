@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -122,26 +123,42 @@ fun SearchScreen(
 
 @Composable
 private fun ModeToggle(mode: SearchMode, onChange: (SearchMode) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         AssistChip(
             onClick = { onChange(SearchMode.QUICK) },
             label = { Text("Fast") },
             leadingIcon = { Text("⚡") },
-            enabled = mode != SearchMode.QUICK
+            colors = if (mode == SearchMode.QUICK)
+                AssistChipDefaults.assistChipColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            else AssistChipDefaults.assistChipColors()
         )
         Spacer(Modifier.width(8.dp))
         AssistChip(
             onClick = { onChange(SearchMode.FLEXIBLE) },
             label = { Text("Flexible") },
             leadingIcon = { Text("🔎") },
-            enabled = mode != SearchMode.FLEXIBLE
+            colors = if (mode == SearchMode.FLEXIBLE)
+                AssistChipDefaults.assistChipColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            else AssistChipDefaults.assistChipColors()
         )
         Spacer(Modifier.weight(1f))
         val hint = if (mode == SearchMode.QUICK) "Fast -> Starts with" else "Flexible -> Contains"
-        Text(hint, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            hint,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
-
 
 @Composable
 private fun EmptyState() {
