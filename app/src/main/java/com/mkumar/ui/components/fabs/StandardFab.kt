@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,10 +27,39 @@ fun StandardFab(
     onClick: () -> Unit
 ) {
     val fabWidth = 180.dp
-    ExtendedFloatingActionButton(
-        modifier = Modifier.then(Modifier.width(fabWidth)),
-        onClick = onClick,
-        icon = {
+    if (text.isNotBlank()) {
+        ExtendedFloatingActionButton(
+            modifier = Modifier.then(Modifier.width(fabWidth)),
+            onClick = onClick,
+            icon = {
+                if (loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .width(24.dp)
+                            .height(24.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    icon()
+                }
+            },
+            text = {
+                if (loading) {
+                    Text("Processing...")
+                } else {
+                    Text(text)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
+    } else {
+        FloatingActionButton(
+            onClick = onClick,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ) {
             if (loading) {
                 CircularProgressIndicator(
                     modifier = Modifier
@@ -41,17 +71,8 @@ fun StandardFab(
             } else {
                 icon()
             }
-        },
-        text = {
-            if (loading) {
-                Text("Processing...")
-            } else {
-                Text(text)
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary
-    )
+        }
+    }
 }
 
 @Preview(showBackground = true, widthDp = 240)
