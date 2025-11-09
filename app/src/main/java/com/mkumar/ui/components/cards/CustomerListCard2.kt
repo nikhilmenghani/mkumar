@@ -86,7 +86,13 @@ fun CustomerListCard2(
             .fillMaxWidth()
             .semantics { contentDescription = "Customer ${customer.name}" }
             .combinedClickable(
-                onClick = { onClick(customer) },
+                onClick = {
+                    if (menuExpanded) {
+                        menuExpanded = false
+                    } else {
+                        onClick(customer)
+                    }
+                },
                 onLongClick = { menuExpanded = true }   // <— long-press opens menu
             )
     ) {
@@ -200,7 +206,7 @@ fun ProOverflowMenu(
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 2.dp,
             shadowElevation = 6.dp,
-            properties = PopupProperties(clippingEnabled = true),
+            properties = PopupProperties(clippingEnabled = true, focusable = true),
             modifier = Modifier
                 .shadow(8.dp, shape = MaterialTheme.shapes.extraLarge)
                 .clip(MaterialTheme.shapes.extraLarge)
