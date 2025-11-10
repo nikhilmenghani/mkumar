@@ -7,10 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.validation.ValidationResult
+import com.mkumar.ui.components.buttons.ProductActionButtons
 import com.mkumar.viewmodel.ProductType
 import com.mkumar.viewmodel.UiOrderItem
 
@@ -72,15 +70,15 @@ fun ProductFormItem(
                     productFormData = draft,
                     updateProductFormData = { onDraftChange(it) },
                 )
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    OutlinedButton(onClick = { onDelete(product.id) }) { Text("Delete") }
-                    Button(onClick = {
-                        onSave(product.id, draft)
-                    }) { Text("Save Item") }
-                }
+
+                ProductActionButtons(
+                    productId = product.id,
+                    draft = draft,
+                    onDelete = onDelete,
+                    onSave = { id, draftData ->
+                        onSave(id, draftData)
+                    }
+                )
             }
         }
     }
