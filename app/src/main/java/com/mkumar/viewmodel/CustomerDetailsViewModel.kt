@@ -416,7 +416,7 @@ class CustomerDetailsViewModel @Inject constructor(
         val invoiceItems: List<InvoiceItemRow> = itemEntities.map { e ->
             val p = pricedById[e.id]
             val lineTotal = p?.lineTotal ?: e.finalTotal
-
+            val description = UiOrderItem.deserializeFormData(e.formDataJson)?.productDescription ?: ""
             InvoiceItemRow(
                 name = when {
                     e.productOwnerName.isNotBlank() -> e.productOwnerName
@@ -425,13 +425,15 @@ class CustomerDetailsViewModel @Inject constructor(
                 },
                 qty = e.quantity,
                 unitPrice = e.unitPrice.toDouble(),
-                total = lineTotal.toDouble()
+                total = lineTotal.toDouble(),
+                discount = e.discountPercentage,
+                description = description
             )
         }
 
         val invoiceData = InvoiceData(
-            shopName = "MKumar Opticals",
-            shopAddress = "Main Street, City",
+            shopName = "M Kumar Luxurious Watch & Optical Store",
+            shopAddress = "7, Shlok Height, Opp. Dev Paradise & Dharti Silver, Nr. Mansarovar Road, Chandkheda, Ahmedabad.",
             customerName = uiCustomer?.name ?: "Customer",
             customerPhone = uiCustomer?.phone ?: "-",
             orderId = order.id,

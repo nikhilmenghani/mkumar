@@ -114,7 +114,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             val maxItemWidth = colQtyX - colItemX - 8f
             val itemName = ellipsize(row.name, tableTextPaint, maxItemWidth)
 
-            c.drawText(itemName, colItemX, y, tableTextPaint)
+            c.drawText(row.description, colItemX, y, tableTextPaint)
             c.drawText(row.qty.toString(), colQtyX, y, rightPaint)
             c.drawText(moneyFmt.format(row.unitPrice), colUnitX, y, rightPaint)
             c.drawText(moneyFmt.format(row.total), colTotalX, y, rightPaint)
