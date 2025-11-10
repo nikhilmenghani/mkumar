@@ -91,7 +91,7 @@ fun OrderAccordionItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = selectedProduct.productDescription.ifBlank { "New ${selectedType?.toString()}" },
+                    text = selectedProduct.formData?.productDescription?.ifBlank { "New ${selectedType?.toString()}" } ?: "New ${selectedType?.toString()}",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     maxLines = 2,

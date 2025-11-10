@@ -623,16 +623,21 @@ class CustomerDetailsViewModel @Inject constructor(
             finalTotal = finalTotal
         )
 
-    private fun OrderItemEntity.toUiItem() = UiOrderItem(
-        id = id,
-        quantity = quantity,
-        unitPrice = unitPrice,
-        discountPercentage = discountPercentage,
-        productType = ProductType.valueOf(productTypeLabel),
-        name = productOwnerName,
-        formData = UiOrderItem.deserializeFormData(formDataJson),
-        finalTotal = finalTotal
-    )
+    private fun OrderItemEntity.toUiItem(): UiOrderItem {
+        val deserializedFormData = UiOrderItem.deserializeFormData(formDataJson)
+        return UiOrderItem(
+            id = id,
+            quantity = quantity,
+            unitPrice = unitPrice,
+            discountPercentage = discountPercentage,
+            productType = ProductType.valueOf(productTypeLabel),
+            name = productOwnerName,
+            formData = deserializedFormData,
+            finalTotal = finalTotal,
+            productDescription = deserializedFormData?.productDescription ?: ""
+        )
+    }
+
 
     // --- Helpers ---
 

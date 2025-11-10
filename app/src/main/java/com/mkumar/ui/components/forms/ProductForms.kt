@@ -22,14 +22,36 @@ fun FrameForm(
     var discountPct by remember { mutableStateOf(initialData?.discountPct?.toString() ?: "0") }
     var quantity by remember { mutableStateOf(initialData?.quantity?.toString() ?: "1") }
     var total by remember { mutableStateOf(initialData?.total?.toString() ?: "0") }
+    var description by remember { mutableStateOf(initialData?.productDescription.orEmpty()) }
 
     Column {
+
+        OLTextField(
+            value = description,
+            label = "Description",
+            onCommit = {
+                onChange(
+                    ProductFormData.FrameData(
+                        productDescription = description,
+                        brand = brand,
+                        color = color,
+                        size = size,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { description = it }
+        )
         OLTextField(
             value = brand,
             label = "Brand",
             onCommit = {
                 onChange(
                     ProductFormData.FrameData(
+                        productDescription = description,
                         brand = brand,
                         color = color,
                         size = size,
@@ -48,6 +70,7 @@ fun FrameForm(
             onCommit = {
                 onChange(
                     ProductFormData.FrameData(
+                        productDescription = description,
                         brand = brand,
                         color = color,
                         size = size,
@@ -66,6 +89,7 @@ fun FrameForm(
             onCommit = {
                 onChange(
                     ProductFormData.FrameData(
+                        productDescription = description,
                         brand = brand,
                         color = color,
                         size = size,
@@ -87,6 +111,7 @@ fun FrameForm(
                 unitPrice = newPrice
                 onChange(
                     ProductFormData.FrameData(
+                        productDescription = description,
                         brand = brand,
                         color = color,
                         size = size,
@@ -101,6 +126,7 @@ fun FrameForm(
                 discountPct = newDiscount
                 onChange(
                     ProductFormData.FrameData(
+                        productDescription = description,
                         brand = brand,
                         color = color,
                         size = size,
@@ -115,6 +141,7 @@ fun FrameForm(
                 quantity = newQuantity
                 onChange(
                     ProductFormData.FrameData(
+                        productDescription = description,
                         brand = brand,
                         color = color,
                         size = size,
@@ -132,6 +159,7 @@ fun FrameForm(
                         brand = brand,
                         color = color,
                         size = size,
+                        productDescription = description,
                         unitPrice = unitPrice.toIntOrNull() ?: 0,
                         discountPct = discountPct.toIntOrNull() ?: 0,
                         quantity = quantity.toIntOrNull() ?: 1,
@@ -156,14 +184,36 @@ fun LensForm(
     var discountPct by remember { mutableStateOf(initialData?.discountPct?.toString() ?: "0") }
     var quantity by remember { mutableStateOf(initialData?.quantity?.toString() ?: "1") }
     var total by remember { mutableStateOf(initialData?.total?.toString() ?: "0") }
+    var description by remember { mutableStateOf(initialData?.productDescription.orEmpty()) }
 
     Column {
+        OLTextField(
+            value = description,
+            label = "Description",
+            onCommit = {
+                onChange(
+                    ProductFormData.LensData(
+                        productDescription = description,
+                        leftSphere = leftSphere,
+                        leftAxis = leftAxis,
+                        rightSphere = rightSphere,
+                        rightAxis = rightAxis,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { description = it }
+        )
         OLTextField(
             value = leftSphere,
             label = "Left Sphere",
             onCommit = {
                 onChange(
                     ProductFormData.LensData(
+                        productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
                         rightSphere = rightSphere,
@@ -183,6 +233,7 @@ fun LensForm(
             onCommit = {
                 onChange(
                     ProductFormData.LensData(
+                        productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
                         rightSphere = rightSphere,
@@ -202,6 +253,7 @@ fun LensForm(
             onCommit = {
                 onChange(
                     ProductFormData.LensData(
+                        productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
                         rightSphere = rightSphere,
@@ -221,6 +273,7 @@ fun LensForm(
             onCommit = {
                 onChange(
                     ProductFormData.LensData(
+                        productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
                         rightSphere = rightSphere,
@@ -243,6 +296,7 @@ fun LensForm(
                 unitPrice = newPrice
                 onChange(
                     ProductFormData.LensData(
+                        productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
                         rightSphere = rightSphere,
@@ -258,6 +312,7 @@ fun LensForm(
                 discountPct = newDiscount
                 onChange(
                     ProductFormData.LensData(
+                        productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
                         rightSphere = rightSphere,
@@ -273,6 +328,7 @@ fun LensForm(
                 quantity = newQuantity
                 onChange(
                     ProductFormData.LensData(
+                        productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
                         rightSphere = rightSphere,
@@ -288,6 +344,7 @@ fun LensForm(
                 total = newTotal
                 onChange(
                     ProductFormData.LensData(
+                        productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
                         rightSphere = rightSphere,
@@ -314,14 +371,34 @@ fun ContactLensForm(
     var discountPct by remember { mutableStateOf(initialData?.discountPct?.toString() ?: "0") }
     var quantity by remember { mutableStateOf(initialData?.quantity?.toString() ?: "1") }
     var total by remember { mutableStateOf(initialData?.total?.toString() ?: "0") }
+    var description by remember { mutableStateOf(initialData?.productDescription.orEmpty()) }
 
     Column {
+        OLTextField(
+            value = description,
+            label = "Description",
+            onCommit = {
+                onChange(
+                    ProductFormData.ContactLensData(
+                        productDescription = description,
+                        power = power,
+                        duration = duration,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { description = it }
+        )
         OLTextField(
             value = power,
             label = "Power",
             onCommit = {
                 onChange(
                     ProductFormData.ContactLensData(
+                        productDescription = description,
                         power = power,
                         duration = duration,
                         unitPrice = unitPrice.toIntOrNull() ?: 0,
@@ -339,6 +416,7 @@ fun ContactLensForm(
             onCommit = {
                 onChange(
                     ProductFormData.ContactLensData(
+                        productDescription = description,
                         power = power,
                         duration = duration,
                         unitPrice = unitPrice.toIntOrNull() ?: 0,
@@ -359,6 +437,7 @@ fun ContactLensForm(
                 unitPrice = newPrice
                 onChange(
                     ProductFormData.ContactLensData(
+                        productDescription = description,
                         power = power,
                         duration = duration,
                         unitPrice = newPrice.toIntOrNull() ?: 0,
@@ -372,6 +451,7 @@ fun ContactLensForm(
                 discountPct = newDiscount
                 onChange(
                     ProductFormData.ContactLensData(
+                        productDescription = description,
                         power = power,
                         duration = duration,
                         unitPrice = unitPrice.toIntOrNull() ?: 0,
@@ -385,6 +465,7 @@ fun ContactLensForm(
                 quantity = newQuantity
                 onChange(
                     ProductFormData.ContactLensData(
+                        productDescription = description,
                         power = power,
                         duration = duration,
                         unitPrice = unitPrice.toIntOrNull() ?: 0,
@@ -398,6 +479,7 @@ fun ContactLensForm(
                 total = newTotal
                 onChange(
                     ProductFormData.ContactLensData(
+                        productDescription = description,
                         power = power,
                         duration = duration,
                         unitPrice = unitPrice.toIntOrNull() ?: 0,

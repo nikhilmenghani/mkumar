@@ -101,10 +101,9 @@ fun OrderSheet(
                         val isFirst = index == 0
                         val isLast = index == safeProducts.lastIndex
 
-                        // Build row shape using only Dp to avoid CornerSize/Dp mix issues.
                         val radius = groupRadius
                         val rowShape = when {
-                            isFirst && isLast -> RoundedCornerShape(radius) // single item case
+                            isFirst && isLast -> RoundedCornerShape(radius)
                             isFirst -> RoundedCornerShape(
                                 topStart = radius, topEnd = radius,
                                 bottomStart = 0.dp, bottomEnd = 0.dp
@@ -126,11 +125,10 @@ fun OrderSheet(
                                 viewModel.onNewOrderIntent(NewOrderIntent.FormDelete(productId))
                             },
                             initiallyExpanded = (product.id == justAddedId),
-                            grouped = true,              // <-- make rows flat inside the group
-                            rowShape = rowShape          // <-- apply per-row corner treatment
+                            grouped = true,
+                            rowShape = rowShape
                         )
 
-                        // Thin seam between rows (not after the last)
                         if (!isLast) {
                             Box(
                                 Modifier
