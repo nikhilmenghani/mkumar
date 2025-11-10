@@ -76,8 +76,9 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
         // --- Table columns (x positions) ---
         val colItemX = marginL + 0f
-        val colQtyX = marginL + contentW * 0.60f
-        val colUnitX = marginL + contentW * 0.72f
+        val colQtyX = marginL + contentW * 0.44f
+        val colUnitX = marginL + contentW * 0.58f
+        val colDiscountX = marginL + contentW * 0.76f
         val colTotalX = marginL + contentW * 0.92f
 
         var pageNum = 1
@@ -95,7 +96,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 // draw header again on new page
                 y = drawHeader(c, data, titlePaint, labelPaint, textPaint, faintLine, marginL, marginR, y, contentW)
                 // draw table header again
-                y = drawTableHeader(c, tableHeaderPaint, faintLine, colItemX, colQtyX, colUnitX, colTotalX, y, marginL, marginR)
+                y = drawTableHeader(c, tableHeaderPaint, faintLine, colItemX, colQtyX, colUnitX, colDiscountX, colTotalX, y, marginL, marginR)
             }
         }
 
@@ -103,7 +104,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         y = drawHeader(c, data, titlePaint, labelPaint, textPaint, faintLine, marginL, marginR, y, contentW)
 
         // Table header
-        y = drawTableHeader(c, tableHeaderPaint, faintLine, colItemX, colQtyX, colUnitX, colTotalX, y, marginL, marginR)
+        y = drawTableHeader(c, tableHeaderPaint, faintLine, colItemX, colQtyX, colUnitX, colDiscountX, colTotalX, y, marginL, marginR)
 
         // Table rows
         val rowHeight = 16f
@@ -117,6 +118,8 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             c.drawText(row.description, colItemX, y, tableTextPaint)
             c.drawText(row.qty.toString(), colQtyX, y, rightPaint)
             c.drawText(moneyFmt.format(row.unitPrice), colUnitX, y, rightPaint)
+            val discountText = if (row.discount > 0.0) "${row.discount}%" else "-"
+            c.drawText(discountText, colDiscountX, y, rightPaint)
             c.drawText(moneyFmt.format(row.total), colTotalX, y, rightPaint)
             y += rowHeight
         }
@@ -204,6 +207,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         colItemX: Float,
         colQtyX: Float,
         colUnitX: Float,
+        colDiscountX: Float,
         colTotalX: Float,
         startY: Float,
         marginL: Float,
@@ -214,11 +218,11 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         c.drawText("Qty", colQtyX, y, headerPaint.apply { textAlign = Paint.Align.RIGHT })
         headerPaint.textAlign = Paint.Align.RIGHT
         c.drawText("Unit", colUnitX, y, headerPaint)
+        c.drawText("Discount %", colDiscountX, y, headerPaint)
         c.drawText("Total", colTotalX, y, headerPaint)
         y += 12f
         c.drawLine(marginL, y, (595 - marginR), y, linePaint)
         y += 10f
-        // Reset textAlign for future calls
         headerPaint.textAlign = Paint.Align.LEFT
         return y
     }
