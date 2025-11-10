@@ -1,11 +1,16 @@
 package com.mkumar.ui.screens.customer.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -16,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.components.cards.OrderAccordionItem
 import com.mkumar.ui.components.cards.OrderHeaderCardPro
+import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsUiState
 import com.mkumar.viewmodel.CustomerDetailsViewModel
@@ -81,20 +87,59 @@ fun OrderSheet(
                 }
             }
         } else {
-            // Plain Column + forEach is fine inside a non-scrollable parent
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                safeProducts.forEach { product ->
-                    OrderAccordionItem(
-                        selectedProduct = product,
-                        selectedType = product.productType,
-                        onFormSave = { productId, updated ->
-                            viewModel.onNewOrderIntent(NewOrderIntent.FormUpdate(productId, updated))
-                        },
-                        onDelete = { productId ->
-                            viewModel.onNewOrderIntent(NewOrderIntent.FormDelete(productId))
-                        },
-                        initiallyExpanded = (product.id == justAddedId)
-                    )
+
+            val groupRadius = 20.dp
+
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(groupRadius),
+                colors = AppColors.elevatedCardColors(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(Modifier.fillMaxWidth()) {
+                    safeProducts.forEachIndexed { index, product ->
+                        val isFirst = index == 0
+                        val isLast = index == safeProducts.lastIndex
+
+                        // Build row shape using only Dp to avoid CornerSize/Dp mix issues.
+                        val radius = groupRadius
+                        val rowShape = when {
+                            isFirst && isLast -> RoundedCornerShape(radius) // single item case
+                            isFirst -> RoundedCornerShape(
+                                topStart = radius, topEnd = radius,
+                                bottomStart = 0.dp, bottomEnd = 0.dp
+                            )
+                            isLast -> RoundedCornerShape(
+                                topStart = 0.dp, topEnd = 0.dp,
+                                bottomStart = radius, bottomEnd = radius
+                            )
+                            else -> RoundedCornerShape(0.dp)
+                        }
+
+                        OrderAccordionItem(
+                            selectedProduct = product,
+                            selectedType = product.productType,
+                            onFormSave = { productId, updated ->
+                                viewModel.onNewOrderIntent(NewOrderIntent.FormUpdate(productId, updated))
+                            },
+                            onDelete = { productId ->
+                                viewModel.onNewOrderIntent(NewOrderIntent.FormDelete(productId))
+                            },
+                            initiallyExpanded = (product.id == justAddedId),
+                            grouped = true,              // <-- make rows flat inside the group
+                            rowShape = rowShape          // <-- apply per-row corner treatment
+                        )
+
+                        // Thin seam between rows (not after the last)
+                        if (!isLast) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .requiredHeight(1.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant)
+                            )
+                        }
+                    }
                 }
             }
         }

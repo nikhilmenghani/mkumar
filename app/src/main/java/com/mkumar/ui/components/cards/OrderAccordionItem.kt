@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
@@ -56,108 +57,103 @@ fun OrderAccordionItem(
     selectedType: ProductType?,
     onFormSave: (String, ProductFormData) -> Unit,
     onDelete: (String) -> Unit,
-    collapsedHeight: Dp = 76.dp
+    collapsedHeight: Dp = 76.dp,
+    // NEW: when true, this row is rendered flat (no card drop shadow/outline)
+    grouped: Boolean = false,
+    // NEW: override the outer shape so first/last rows can be rounded appropriately
+    rowShape: RoundedCornerShape = RoundedCornerShape(12.dp),
 ) {
     if (selectedProduct == null) return
+
     var expanded by remember { mutableStateOf(initiallyExpanded) }
-    val shape = RoundedCornerShape(12.dp)
     val draftBeforeState = rememberSaveable(
         selectedProduct.id,
         saver = ProductFormDataSaver
-    ) {
-        selectedProduct.formData ?: defaultFormFor(selectedProduct.productType)
-    }
-
+    ) { selectedProduct.formData ?: defaultFormFor(selectedProduct.productType) }
     var draft by remember { mutableStateOf(draftBeforeState) }
 
-    Box(
-        Modifier
+    val cardColors = AppColors.elevatedCardColors()
+
+    // Use Card only for easy ripple/pressed behavior; elevation 0 when grouped
+    ElevatedCard(
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
+            .clickable { /* expand/collapse handled by header click below */ },
+        shape = rowShape,
+        colors = cardColors,
+        elevation = if (grouped) CardDefaults.cardElevation(0.dp) else CardDefaults.cardElevation(1.dp)
     ) {
-        ElevatedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    expanded = !expanded
-                },
-            shape = shape,
-            colors = AppColors.elevatedCardColors(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Column {
-                // Collapsed header — fixed height
-                Row(
+        Column {
+            // Collapsed header — fixed height
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .requiredHeight(collapsedHeight)
+                    .padding(horizontal = 16.dp)
+                    .clickable { expanded = !expanded }, // header controls expansion
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = selectedProduct.productDescription.ifBlank { "New ${selectedType?.toString()}" },
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp)
+                )
+                Spacer(Modifier.width(16.dp))
+                Text(
+                    text = "₹${selectedProduct.finalTotal}",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    modifier = Modifier.width(84.dp),
+                    textAlign = TextAlign.End
+                )
+                Spacer(Modifier.width(8.dp))
+                Icon(
+                    imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // Expanded form
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .requiredHeight(collapsedHeight)
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Text(
-                        text = selectedProduct.productDescription.ifBlank { "New ${selectedType?.toString()}" },
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 12.dp)
+                    ProductFormItem(
+                        selectedProduct = selectedProduct,
+                        draft = draft,
+                        onDraftChange = { draft = it },
+                        onSave = { productId, formData ->
+                            onFormSave(productId, formData)
+                            expanded = false
+                        },
+                        onDelete = onDelete
                     )
-                    Spacer(Modifier.width(16.dp))
-                    Text(
-                        text = "₹${selectedProduct.finalTotal}",
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        modifier = Modifier.width(84.dp),
-                        textAlign = TextAlign.End
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Icon(
-                        imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                // Expanded form (column form)
-                AnimatedVisibility(
-                    visible = expanded,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    ) {
-                        ProductFormItem(
-                            selectedProduct = selectedProduct,
-                            draft = draft,
-                            onDraftChange = { updatedDraft ->
-                                draft = updatedDraft
-                            },
-                            onSave = { productId, formData ->
-                                onFormSave(productId, formData)
-                                expanded = false
-                            },
-                            onDelete = onDelete
-                        )
-                    }
                 }
             }
         }
+    }
 
-        // Subtle outline when collapsed to ensure it reads as a separate surface
-        if (!expanded) {
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
-            )
-        }
+    if (!grouped && !expanded) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, rowShape)
+        )
     }
 }
 
