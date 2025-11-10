@@ -151,6 +151,9 @@ class CustomerDetailsViewModel @Inject constructor(
             is NewOrderIntent.FormDelete -> onDeleteItem(intent.productId)
             is NewOrderIntent.Save -> TODO()
             is NewOrderIntent.SelectType -> TODO()
+            is NewOrderIntent.ConsumeJustAdded -> {
+                mutateDraft { d -> d.copy(justAddedItemId = null) }
+            }
         }
     }
 
@@ -488,27 +491,18 @@ class CustomerDetailsViewModel @Inject constructor(
     // --- Draft mutations ---
 
     private fun addItem(product: ProductType) = mutateDraft { draft ->
+        val newId = UUID.randomUUID().toString()
         val item = UiOrderItem(
-            id = "",
+            id = newId,
             quantity = 1,
             unitPrice = 0,
             discountPercentage = 0,
             productType = product,
             name = product.toString()
         )
-        val updated = draft.items + item.ensureId()
-        recomputeTotals(updated, draft.occurredAt)
+        val updated = draft.items + item
+        recomputeTotals(updated, draft.occurredAt).copy(justAddedItemId = newId)
     }
-
-//    private fun updateItem(item: UiOrderItem) = mutateDraft { draft ->
-//        val updated = draft.items.map { if (it.id == item.id) item else it }
-//        recomputeTotals(updated, draft.occurredAt)
-//    }
-
-//    private fun removeItem(itemId: String) = mutateDraft { draft ->
-//        val updated = draft.items.filterNot { it.id == itemId }
-//        recomputeTotals(updated, draft.occurredAt)
-//    }
 
     private fun updateOccurredAt(instant: Instant) = mutateDraft { draft ->
         recomputeTotals(draft.items, instant)
@@ -643,7 +637,7 @@ class CustomerDetailsViewModel @Inject constructor(
     // --- Helpers ---
 
     private fun UiOrderItem.ensureId(): UiOrderItem =
-        if (id.isBlank()) copy(id = java.util.UUID.randomUUID().toString()) else this
+        if (id.isBlank()) copy(id = UUID.randomUUID().toString()) else this
 
     private fun UiOrderItem.toItemInput(): PricingInput.ItemInput =
         PricingInput.ItemInput(

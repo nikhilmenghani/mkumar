@@ -51,6 +51,7 @@ import com.mkumar.viewmodel.UiOrderItem
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun OrderAccordionItem(
+    initiallyExpanded: Boolean = false,
     selectedProduct: UiOrderItem?,
     selectedType: ProductType?,
     onFormSave: (String, ProductFormData) -> Unit,
@@ -58,7 +59,7 @@ fun OrderAccordionItem(
     collapsedHeight: Dp = 76.dp
 ) {
     if (selectedProduct == null) return
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(initiallyExpanded) }
     val shape = RoundedCornerShape(12.dp)
     val draftBeforeState = rememberSaveable(
         selectedProduct.id,

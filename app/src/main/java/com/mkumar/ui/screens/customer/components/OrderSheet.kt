@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -29,6 +30,13 @@ fun OrderSheet(
 ) {
     val today = remember { LocalDate.now().toString() }
     val safeProducts = state.draft.items.orEmpty()
+    val justAddedId = state.draft.justAddedItemId
+
+    LaunchedEffect(justAddedId) {
+        if (justAddedId != null) {
+            viewModel.onNewOrderIntent(NewOrderIntent.ConsumeJustAdded)
+        }
+    }
 
     Column(
         modifier = modifier
@@ -72,7 +80,6 @@ fun OrderSheet(
                     )
                 }
             }
-
         } else {
             // Plain Column + forEach is fine inside a non-scrollable parent
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -85,7 +92,8 @@ fun OrderSheet(
                         },
                         onDelete = { productId ->
                             viewModel.onNewOrderIntent(NewOrderIntent.FormDelete(productId))
-                        }
+                        },
+                        initiallyExpanded = (product.id == justAddedId)
                     )
                 }
             }

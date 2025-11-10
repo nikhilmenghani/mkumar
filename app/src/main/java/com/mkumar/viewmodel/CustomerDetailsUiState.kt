@@ -70,7 +70,8 @@ data class OrderDraft(
     val advanceTotal: Int = 0,
     val remainingBalance: Int = 0,
     val hasUnsavedChanges: Boolean = false,
-    val editingOrderId: String? = null
+    val editingOrderId: String? = null,
+    val justAddedItemId: String? = null
 )
 
 /** Screen state */
@@ -123,6 +124,7 @@ sealed interface OrderRowAction {
 }
 
 sealed interface NewOrderIntent {
+    data object ConsumeJustAdded : NewOrderIntent
     data object Save : NewOrderIntent
     data class SelectType(val type: ProductType) : NewOrderIntent
     data class FormUpdate(val productId: String, val newData: ProductFormData) : NewOrderIntent
