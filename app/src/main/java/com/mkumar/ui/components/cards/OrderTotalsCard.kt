@@ -74,6 +74,25 @@ fun OrderTotalsCard(
                         .padding(bottom = 8.dp)
                 )
                 OutlinedTextField(
+                    value = remainingBalance.toString(),
+                    onValueChange = {
+
+                    },
+                    label = { Text("Remaining Balance (₹)") },
+                    enabled = false,
+                    singleLine = true,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(bottom = 8.dp)
+                )
+            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
                     value = adjustedAmount.toString(),
                     onValueChange = {
                         adjustedAmount = it.toIntOrNull() ?: 0
@@ -90,13 +109,6 @@ fun OrderTotalsCard(
                         .weight(1f)
                         .padding(bottom = 8.dp)
                 )
-            }
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
                 OutlinedTextField(
                     value = advanceTotal.toString(),
                     onValueChange = {
@@ -115,18 +127,7 @@ fun OrderTotalsCard(
                         .weight(1f)
                         .padding(bottom = 8.dp)
                 )
-                OutlinedTextField(
-                    value = remainingBalance.toString(),
-                    onValueChange = {
 
-                    },
-                    label = { Text("Remaining Balance (₹)") },
-                    enabled = false,
-                    singleLine = true,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(bottom = 8.dp)
-                )
             }
 
 //            Row(
@@ -207,6 +208,25 @@ fun OrderTotalsNoCard(
                 .padding(bottom = 8.dp)
         )
         OutlinedTextField(
+            value = remainingBalance.toString(),
+            onValueChange = {
+
+            },
+            label = { Text("Remaining Balance (₹)") },
+            enabled = false,
+            singleLine = true,
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 8.dp)
+        )
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedTextField(
             value = adjustedAmount.toString(),
             onValueChange = {
                 adjustedAmount = it.toIntOrNull() ?: 0
@@ -223,13 +243,6 @@ fun OrderTotalsNoCard(
                 .weight(1f)
                 .padding(bottom = 8.dp)
         )
-    }
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
         OutlinedTextField(
             value = advanceTotal.toString(),
             onValueChange = {
@@ -247,18 +260,7 @@ fun OrderTotalsNoCard(
                 .weight(1f)
                 .padding(bottom = 8.dp)
         )
-        OutlinedTextField(
-            value = remainingBalance.toString(),
-            onValueChange = {
 
-            },
-            label = { Text("Remaining Balance (₹)") },
-            enabled = false,
-            singleLine = true,
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 8.dp)
-        )
     }
 }
 

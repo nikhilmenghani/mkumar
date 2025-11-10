@@ -45,63 +45,63 @@ fun FrameForm(
             },
             onValueChange = { description = it }
         )
-        OLTextField(
-            value = brand,
-            label = "Brand",
-            onCommit = {
-                onChange(
-                    ProductFormData.FrameData(
-                        productDescription = description,
-                        brand = brand,
-                        color = color,
-                        size = size,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { brand = it }
-        )
-        OLTextField(
-            value = color,
-            label = "Color",
-            onCommit = {
-                onChange(
-                    ProductFormData.FrameData(
-                        productDescription = description,
-                        brand = brand,
-                        color = color,
-                        size = size,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { color = it }
-        )
-        OLTextField(
-            value = size,
-            label = "Size",
-            onCommit = {
-                onChange(
-                    ProductFormData.FrameData(
-                        productDescription = description,
-                        brand = brand,
-                        color = color,
-                        size = size,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { size = it }
-        )
+//        OLTextField(
+//            value = brand,
+//            label = "Brand",
+//            onCommit = {
+//                onChange(
+//                    ProductFormData.FrameData(
+//                        productDescription = description,
+//                        brand = brand,
+//                        color = color,
+//                        size = size,
+//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+//                        discountPct = discountPct.toIntOrNull() ?: 0,
+//                        quantity = quantity.toIntOrNull() ?: 1,
+//                        total = total.toInt()
+//                    )
+//                )
+//            },
+//            onValueChange = { brand = it }
+//        )
+//        OLTextField(
+//            value = color,
+//            label = "Color",
+//            onCommit = {
+//                onChange(
+//                    ProductFormData.FrameData(
+//                        productDescription = description,
+//                        brand = brand,
+//                        color = color,
+//                        size = size,
+//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+//                        discountPct = discountPct.toIntOrNull() ?: 0,
+//                        quantity = quantity.toIntOrNull() ?: 1,
+//                        total = total.toInt()
+//                    )
+//                )
+//            },
+//            onValueChange = { color = it }
+//        )
+//        OLTextField(
+//            value = size,
+//            label = "Size",
+//            onCommit = {
+//                onChange(
+//                    ProductFormData.FrameData(
+//                        productDescription = description,
+//                        brand = brand,
+//                        color = color,
+//                        size = size,
+//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+//                        discountPct = discountPct.toIntOrNull() ?: 0,
+//                        quantity = quantity.toIntOrNull() ?: 1,
+//                        total = total.toInt()
+//                    )
+//                )
+//            },
+//            onValueChange = { size = it }
+//        )
 
         ItemPriceEditor(
             initialUnitPrice = unitPrice,
@@ -207,86 +207,86 @@ fun LensForm(
             },
             onValueChange = { description = it }
         )
-        OLTextField(
-            value = leftSphere,
-            label = "Left Sphere",
-            onCommit = {
-                onChange(
-                    ProductFormData.LensData(
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { leftSphere = it }
-        )
-        OLTextField(
-            value = leftAxis,
-            label = "Left Axis",
-            onCommit = {
-                onChange(
-                    ProductFormData.LensData(
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { leftAxis = it }
-        )
-        OLTextField(
-            value = rightSphere,
-            label = "Right Sphere",
-            onCommit = {
-                onChange(
-                    ProductFormData.LensData(
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { rightSphere = it }
-        )
-        OLTextField(
-            value = rightAxis,
-            label = "Right Axis",
-            onCommit = {
-                onChange(
-                    ProductFormData.LensData(
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { rightAxis = it }
-        )
+//        OLTextField(
+//            value = leftSphere,
+//            label = "Left Sphere",
+//            onCommit = {
+//                onChange(
+//                    ProductFormData.LensData(
+//                        productDescription = description,
+//                        leftSphere = leftSphere,
+//                        leftAxis = leftAxis,
+//                        rightSphere = rightSphere,
+//                        rightAxis = rightAxis,
+//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+//                        discountPct = discountPct.toIntOrNull() ?: 0,
+//                        quantity = quantity.toIntOrNull() ?: 1,
+//                        total = total.toInt()
+//                    )
+//                )
+//            },
+//            onValueChange = { leftSphere = it }
+//        )
+//        OLTextField(
+//            value = leftAxis,
+//            label = "Left Axis",
+//            onCommit = {
+//                onChange(
+//                    ProductFormData.LensData(
+//                        productDescription = description,
+//                        leftSphere = leftSphere,
+//                        leftAxis = leftAxis,
+//                        rightSphere = rightSphere,
+//                        rightAxis = rightAxis,
+//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+//                        discountPct = discountPct.toIntOrNull() ?: 0,
+//                        quantity = quantity.toIntOrNull() ?: 1,
+//                        total = total.toInt()
+//                    )
+//                )
+//            },
+//            onValueChange = { leftAxis = it }
+//        )
+//        OLTextField(
+//            value = rightSphere,
+//            label = "Right Sphere",
+//            onCommit = {
+//                onChange(
+//                    ProductFormData.LensData(
+//                        productDescription = description,
+//                        leftSphere = leftSphere,
+//                        leftAxis = leftAxis,
+//                        rightSphere = rightSphere,
+//                        rightAxis = rightAxis,
+//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+//                        discountPct = discountPct.toIntOrNull() ?: 0,
+//                        quantity = quantity.toIntOrNull() ?: 1,
+//                        total = total.toInt()
+//                    )
+//                )
+//            },
+//            onValueChange = { rightSphere = it }
+//        )
+//        OLTextField(
+//            value = rightAxis,
+//            label = "Right Axis",
+//            onCommit = {
+//                onChange(
+//                    ProductFormData.LensData(
+//                        productDescription = description,
+//                        leftSphere = leftSphere,
+//                        leftAxis = leftAxis,
+//                        rightSphere = rightSphere,
+//                        rightAxis = rightAxis,
+//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+//                        discountPct = discountPct.toIntOrNull() ?: 0,
+//                        quantity = quantity.toIntOrNull() ?: 1,
+//                        total = total.toInt()
+//                    )
+//                )
+//            },
+//            onValueChange = { rightAxis = it }
+//        )
 
         ItemPriceEditor(
             initialUnitPrice = unitPrice,
@@ -392,42 +392,42 @@ fun ContactLensForm(
             },
             onValueChange = { description = it }
         )
-        OLTextField(
-            value = power,
-            label = "Power",
-            onCommit = {
-                onChange(
-                    ProductFormData.ContactLensData(
-                        productDescription = description,
-                        power = power,
-                        duration = duration,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { power = it }
-        )
-        OLTextField(
-            value = duration,
-            label = "Duration",
-            onCommit = {
-                onChange(
-                    ProductFormData.ContactLensData(
-                        productDescription = description,
-                        power = power,
-                        duration = duration,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { duration = it }
-        )
+//        OLTextField(
+//            value = power,
+//            label = "Power",
+//            onCommit = {
+//                onChange(
+//                    ProductFormData.ContactLensData(
+//                        productDescription = description,
+//                        power = power,
+//                        duration = duration,
+//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+//                        discountPct = discountPct.toIntOrNull() ?: 0,
+//                        quantity = quantity.toIntOrNull() ?: 1,
+//                        total = total.toInt()
+//                    )
+//                )
+//            },
+//            onValueChange = { power = it }
+//        )
+//        OLTextField(
+//            value = duration,
+//            label = "Duration",
+//            onCommit = {
+//                onChange(
+//                    ProductFormData.ContactLensData(
+//                        productDescription = description,
+//                        power = power,
+//                        duration = duration,
+//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+//                        discountPct = discountPct.toIntOrNull() ?: 0,
+//                        quantity = quantity.toIntOrNull() ?: 1,
+//                        total = total.toInt()
+//                    )
+//                )
+//            },
+//            onValueChange = { duration = it }
+//        )
 
         ItemPriceEditor(
             initialUnitPrice = unitPrice,

@@ -83,7 +83,6 @@ fun OrderSummaryAccordion(
             AnimatedVisibility(visible = expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HorizontalDivider()
-                    // Use your existing totals card here (Option D layout)
                     OrderTotalsNoCard(
                         initialAdvanceTotal = advanceTotal,
                         onAdvanceTotalChange = onAdvanceTotalChange,
