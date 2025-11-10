@@ -58,9 +58,7 @@ fun OrderAccordionItem(
     onFormSave: (String, ProductFormData) -> Unit,
     onDelete: (String) -> Unit,
     collapsedHeight: Dp = 76.dp,
-    // NEW: when true, this row is rendered flat (no card drop shadow/outline)
     grouped: Boolean = false,
-    // NEW: override the outer shape so first/last rows can be rounded appropriately
     rowShape: RoundedCornerShape = RoundedCornerShape(12.dp),
 ) {
     if (selectedProduct == null) return
@@ -74,7 +72,6 @@ fun OrderAccordionItem(
 
     val cardColors = AppColors.elevatedCardColors()
 
-    // Use Card only for easy ripple/pressed behavior; elevation 0 when grouped
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -84,7 +81,6 @@ fun OrderAccordionItem(
         elevation = if (grouped) CardDefaults.cardElevation(0.dp) else CardDefaults.cardElevation(1.dp)
     ) {
         Column {
-            // Collapsed header — fixed height
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

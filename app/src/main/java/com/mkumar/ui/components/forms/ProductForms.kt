@@ -1,20 +1,14 @@
 package com.mkumar.ui.components.forms
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductFormData
 import com.mkumar.ui.components.inputs.ItemPriceEditor
+import com.mkumar.ui.components.inputs.OLTextField
 
 @Composable
 fun FrameForm(
@@ -30,81 +24,59 @@ fun FrameForm(
     var total by remember { mutableStateOf(initialData?.total?.toString() ?: "0") }
 
     Column {
-        var isBrandFocused by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OLTextField(
             value = brand,
-            onValueChange = { brand = it },
-            label = { Text("Brand") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged {
-                    if (isBrandFocused && !it.isFocused) {
-                        onChange(
-                            ProductFormData.FrameData(
-                                brand = brand,
-                                color = color,
-                                size = size,
-                                unitPrice = unitPrice.toIntOrNull() ?: 0,
-                                discountPct = discountPct.toIntOrNull() ?: 0,
-                                quantity = quantity.toIntOrNull() ?: 1,
-                                total = total.toInt()
-                            )
-                        )
-                    }
-                    isBrandFocused = it.isFocused
-                }
+            label = "Brand",
+            onCommit = {
+                onChange(
+                    ProductFormData.FrameData(
+                        brand = brand,
+                        color = color,
+                        size = size,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { brand = it }
         )
-
-        var isColorFocused by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OLTextField(
             value = color,
-            onValueChange = { color = it },
-            label = { Text("Color") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .onFocusChanged {
-                    if (isColorFocused && !it.isFocused) {
-                        onChange(
-                            ProductFormData.FrameData(
-                                brand = brand,
-                                color = color,
-                                size = size,
-                                unitPrice = unitPrice.toIntOrNull() ?: 0,
-                                discountPct = discountPct.toIntOrNull() ?: 0,
-                                quantity = quantity.toIntOrNull() ?: 1,
-                                total = total.toInt()
-                            )
-                        )
-                    }
-                    isColorFocused = it.isFocused
-                }
+            label = "Color",
+            onCommit = {
+                onChange(
+                    ProductFormData.FrameData(
+                        brand = brand,
+                        color = color,
+                        size = size,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { color = it }
         )
-
-        var isSizeFocused by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OLTextField(
             value = size,
-            onValueChange = { size = it },
-            label = { Text("Size") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .onFocusChanged {
-                    if (isSizeFocused && !it.isFocused) {
-                        onChange(
-                            ProductFormData.FrameData(
-                                brand = brand,
-                                color = color,
-                                size = size,
-                                unitPrice = unitPrice.toIntOrNull() ?: 0,
-                                discountPct = discountPct.toIntOrNull() ?: 0,
-                                quantity = quantity.toIntOrNull() ?: 1,
-                                total = total.toInt()
-                            )
-                        )
-                    }
-                    isSizeFocused = it.isFocused
-                }
+            label = "Size",
+            onCommit = {
+                onChange(
+                    ProductFormData.FrameData(
+                        brand = brand,
+                        color = color,
+                        size = size,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { size = it }
         )
 
         ItemPriceEditor(
@@ -186,112 +158,81 @@ fun LensForm(
     var total by remember { mutableStateOf(initialData?.total?.toString() ?: "0") }
 
     Column {
-        var leftSphereFocused by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OLTextField(
             value = leftSphere,
-            onValueChange = { leftSphere = it },
-            label = { Text("Left Sphere") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .onFocusChanged {
-                    if (leftSphereFocused && !it.isFocused) {
-                        onChange(
-                            ProductFormData.LensData(
-                                leftSphere = leftSphere,
-                                leftAxis = leftAxis,
-                                rightSphere = rightSphere,
-                                rightAxis = rightAxis,
-                                unitPrice = unitPrice.toIntOrNull() ?: 0,
-                                discountPct = discountPct.toIntOrNull() ?: 0,
-                                quantity = quantity.toIntOrNull() ?: 1,
-                                total = total.toInt()
-                            )
-                        )
-                    }
-                    leftSphereFocused = it.isFocused
-                }
+            label = "Left Sphere",
+            onCommit = {
+                onChange(
+                    ProductFormData.LensData(
+                        leftSphere = leftSphere,
+                        leftAxis = leftAxis,
+                        rightSphere = rightSphere,
+                        rightAxis = rightAxis,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { leftSphere = it }
         )
-
-        var leftAxisFocused by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OLTextField(
             value = leftAxis,
-            onValueChange = { leftAxis = it },
-            label = { Text("Left Axis") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .onFocusChanged {
-                    if (leftAxisFocused && !it.isFocused) {
-                        onChange(
-                            ProductFormData.LensData(
-                                leftSphere = leftSphere,
-                                leftAxis = leftAxis,
-                                rightSphere = rightSphere,
-                                rightAxis = rightAxis,
-                                unitPrice = unitPrice.toIntOrNull() ?: 0,
-                                discountPct = discountPct.toIntOrNull() ?: 0,
-                                quantity = quantity.toIntOrNull() ?: 1,
-                                total = total.toInt()
-                            )
-                        )
-                    }
-                    leftAxisFocused = it.isFocused
-                }
+            label = "Left Axis",
+            onCommit = {
+                onChange(
+                    ProductFormData.LensData(
+                        leftSphere = leftSphere,
+                        leftAxis = leftAxis,
+                        rightSphere = rightSphere,
+                        rightAxis = rightAxis,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { leftAxis = it }
         )
-
-        var rightSphereFocused by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OLTextField(
             value = rightSphere,
-            onValueChange = { rightSphere = it },
-            label = { Text("Right Sphere") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .onFocusChanged {
-                    if (rightSphereFocused && !it.isFocused) {
-                        onChange(
-                            ProductFormData.LensData(
-                                leftSphere = leftSphere,
-                                leftAxis = leftAxis,
-                                rightSphere = rightSphere,
-                                rightAxis = rightAxis,
-                                unitPrice = unitPrice.toIntOrNull() ?: 0,
-                                discountPct = discountPct.toIntOrNull() ?: 0,
-                                quantity = quantity.toIntOrNull() ?: 1,
-                                total = total.toInt()
-                            )
-                        )
-                    }
-                    rightSphereFocused = it.isFocused
-                }
+            label = "Right Sphere",
+            onCommit = {
+                onChange(
+                    ProductFormData.LensData(
+                        leftSphere = leftSphere,
+                        leftAxis = leftAxis,
+                        rightSphere = rightSphere,
+                        rightAxis = rightAxis,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { rightSphere = it }
         )
-
-        var rightAxisFocused by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OLTextField(
             value = rightAxis,
-            onValueChange = { rightAxis = it },
-            label = { Text("Right Axis") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .onFocusChanged {
-                    if (rightAxisFocused && !it.isFocused) {
-                        onChange(
-                            ProductFormData.LensData(
-                                leftSphere = leftSphere,
-                                leftAxis = leftAxis,
-                                rightSphere = rightSphere,
-                                rightAxis = rightAxis,
-                                unitPrice = unitPrice.toIntOrNull() ?: 0,
-                                discountPct = discountPct.toIntOrNull() ?: 0,
-                                quantity = quantity.toIntOrNull() ?: 1,
-                                total = total.toInt()
-                            )
-                        )
-                    }
-                    rightAxisFocused = it.isFocused
-                }
+            label = "Right Axis",
+            onCommit = {
+                onChange(
+                    ProductFormData.LensData(
+                        leftSphere = leftSphere,
+                        leftAxis = leftAxis,
+                        rightSphere = rightSphere,
+                        rightAxis = rightAxis,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { rightAxis = it }
         )
 
         ItemPriceEditor(
@@ -375,54 +316,39 @@ fun ContactLensForm(
     var total by remember { mutableStateOf(initialData?.total?.toString() ?: "0") }
 
     Column {
-        var isPowerFocused by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OLTextField(
             value = power,
-            onValueChange = { power = it },
-            label = { Text("Power") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .onFocusChanged {
-                    if (isPowerFocused && !it.isFocused) {
-                        onChange(
-                            ProductFormData.ContactLensData(
-                                power = power,
-                                duration = duration,
-                                unitPrice = unitPrice.toIntOrNull() ?: 0,
-                                discountPct = discountPct.toIntOrNull() ?: 0,
-                                quantity = quantity.toIntOrNull() ?: 1,
-                                total = total.toInt()
-                            )
-                        )
-                    }
-                    isPowerFocused = it.isFocused
-                }
+            label = "Power",
+            onCommit = {
+                onChange(
+                    ProductFormData.ContactLensData(
+                        power = power,
+                        duration = duration,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { power = it }
         )
-
-        var isDurationFocused by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OLTextField(
             value = duration,
-            onValueChange = { duration = it },
-            label = { Text("Duration") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .onFocusChanged {
-                    if (isDurationFocused && !it.isFocused) {
-                        onChange(
-                            ProductFormData.ContactLensData(
-                                power = power,
-                                duration = duration,
-                                unitPrice = unitPrice.toIntOrNull() ?: 0,
-                                discountPct = discountPct.toIntOrNull() ?: 0,
-                                quantity = quantity.toIntOrNull() ?: 1,
-                                total = total.toInt()
-                            )
-                        )
-                    }
-                    isDurationFocused = it.isFocused
-                }
+            label = "Duration",
+            onCommit = {
+                onChange(
+                    ProductFormData.ContactLensData(
+                        power = power,
+                        duration = duration,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { duration = it }
         )
 
         ItemPriceEditor(
