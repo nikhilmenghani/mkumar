@@ -1,10 +1,9 @@
 package com.mkumar.ui.components.buttons
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -26,33 +25,36 @@ fun ProductActionButtons(
     onSave: (String, ProductFormData) -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.End
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         val buttonShape = RoundedCornerShape(8.dp)
 
-        OutlinedButton(
-            onClick = { onDelete(productId) },
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error,
-                containerColor = Color.Transparent
-            ),
-            border = ButtonDefaults.outlinedButtonBorder.copy(
-                brush = SolidColor(MaterialTheme.colorScheme.error)
-            ),
-            shape = buttonShape
-        ) {
-            Text("Delete")
+        Box(modifier = Modifier.weight(1f)) {
+            OutlinedButton(
+                onClick = { onDelete(productId) },
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                    containerColor = Color.Transparent
+                ),
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    brush = SolidColor(MaterialTheme.colorScheme.error)
+                ),
+                shape = buttonShape,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Delete")
+            }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Button(
-            onClick = { onSave(productId, draft) },
-            shape = buttonShape
-        ) {
-            Text("Save Item")
+        Box(modifier = Modifier.weight(1f)) {
+            Button(
+                onClick = { onSave(productId, draft) },
+                shape = buttonShape,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Save Item")
+            }
         }
     }
 }
