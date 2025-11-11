@@ -15,6 +15,7 @@ fun FrameForm(
     initialData: ProductFormData.FrameData? = null,
     onChange: (ProductFormData.FrameData) -> Unit,
 ) {
+    var owner by remember { mutableStateOf(initialData?.productOwner.orEmpty()) }
     var brand by remember { mutableStateOf(initialData?.brand.orEmpty()) }
     var color by remember { mutableStateOf(initialData?.color.orEmpty()) }
     var size by remember { mutableStateOf(initialData?.size.orEmpty()) }
@@ -25,6 +26,26 @@ fun FrameForm(
     var description by remember { mutableStateOf(initialData?.productDescription.orEmpty()) }
 
     Column {
+        OLTextField(
+            value = owner,
+            label = "Product Owner",
+            onCommit = {
+                onChange(
+                    ProductFormData.FrameData(
+                        productOwner = owner,
+                        productDescription = description,
+                        brand = brand,
+                        color = color,
+                        size = size,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { owner = it }
+        )
 
         OLTextField(
             value = description,
@@ -124,6 +145,7 @@ fun LensForm(
     initialData: ProductFormData.LensData? = null,
     onChange: (ProductFormData.LensData) -> Unit,
 ) {
+    var owner by remember { mutableStateOf(initialData?.productOwner.orEmpty()) }
     var leftSphere by remember { mutableStateOf(initialData?.leftSphere.orEmpty()) }
     var leftAxis by remember { mutableStateOf(initialData?.leftAxis.orEmpty()) }
     var rightSphere by remember { mutableStateOf(initialData?.rightSphere.orEmpty()) }
@@ -135,6 +157,28 @@ fun LensForm(
     var description by remember { mutableStateOf(initialData?.productDescription.orEmpty()) }
 
     Column {
+        OLTextField(
+            value = owner,
+            label = "Product Owner",
+            onCommit = {
+                onChange(
+                    ProductFormData.LensData(
+                        productOwner = owner,
+                        productDescription = description,
+                        leftSphere = leftSphere,
+                        leftAxis = leftAxis,
+                        rightSphere = rightSphere,
+                        rightAxis = rightAxis,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { owner = it }
+        )
+
         OLTextField(
             value = description,
             label = "Description",
@@ -238,6 +282,7 @@ fun ContactLensForm(
     initialData: ProductFormData.ContactLensData? = null,
     onChange: (ProductFormData.ContactLensData) -> Unit,
 ) {
+    var owner by remember { mutableStateOf(initialData?.productOwner.orEmpty()) }
     var power by remember { mutableStateOf(initialData?.power.orEmpty()) }
     var duration by remember { mutableStateOf(initialData?.duration.orEmpty()) }
     var unitPrice by remember { mutableStateOf(initialData?.unitPrice?.toString() ?: "0") }
@@ -247,6 +292,26 @@ fun ContactLensForm(
     var description by remember { mutableStateOf(initialData?.productDescription.orEmpty()) }
 
     Column {
+        OLTextField(
+            value = owner,
+            label = "Product Owner",
+            onCommit = {
+                onChange(
+                    ProductFormData.ContactLensData(
+                        productOwner = owner,
+                        productDescription = description,
+                        power = power,
+                        duration = duration,
+                        unitPrice = unitPrice.toIntOrNull() ?: 0,
+                        discountPct = discountPct.toIntOrNull() ?: 0,
+                        quantity = quantity.toIntOrNull() ?: 1,
+                        total = total.toInt()
+                    )
+                )
+            },
+            onValueChange = { owner = it }
+        )
+
         OLTextField(
             value = description,
             label = "Description",

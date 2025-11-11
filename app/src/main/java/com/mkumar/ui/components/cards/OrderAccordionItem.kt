@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -102,7 +103,7 @@ fun OrderAccordionItem(
                     .heightIn(min = collapsedHeight) // lets header grow if title + subtitle need space
                     .padding(horizontal = 16.dp, vertical = 10.dp)
                     .clickable { expanded = !expanded },
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 // Left: Title + Owner chip
                 Column(
@@ -132,7 +133,9 @@ fun OrderAccordionItem(
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Outlined.Person,
-                                        contentDescription = null
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(16.dp)
                                     )
                                 },
                                 label = {
@@ -155,7 +158,8 @@ fun OrderAccordionItem(
                 }
 
                 // Right: Price + Chevron
-                Column(
+                Column (
+                    modifier = Modifier.width(84.dp),
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
@@ -169,7 +173,10 @@ fun OrderAccordionItem(
                     Icon(
                         imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
                         contentDescription = if (expanded) "Collapse item" else "Expand item",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .size(32.dp)
                     )
                 }
             }
@@ -185,16 +192,6 @@ fun OrderAccordionItem(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    // Optionally show full description at the top when expanded (untruncated)
-                    // if (titleText.isNotBlank()) {
-                    //     Text(
-                    //         text = titleText,
-                    //         style = MaterialTheme.typography.titleMedium,
-                    //         fontWeight = FontWeight.SemiBold,
-                    //         modifier = Modifier.padding(bottom = 8.dp)
-                    //     )
-                    // }
-
                     ProductFormItem(
                         selectedProduct = selectedProduct,
                         draft = draft,
