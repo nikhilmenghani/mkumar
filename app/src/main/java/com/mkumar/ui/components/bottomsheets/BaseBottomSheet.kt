@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -32,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -65,6 +68,8 @@ fun BaseBottomSheet(
         skipPartiallyExpanded = true,
         confirmValueChange = { it != SheetValue.Hidden }
     )
+    val density = LocalDensity.current
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
 
     ModalBottomSheet(
         onDismissRequest = {
@@ -75,10 +80,9 @@ fun BaseBottomSheet(
         Scaffold(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight()
-                .imePadding(),
+                .fillMaxHeight(),
             bottomBar = {
-                if (showNext || showPrevious || showDone || showDismiss || showAddProduct) {
+                if (!imeVisible && (showNext || showPrevious || showDone || showDismiss || showAddProduct)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -160,6 +164,7 @@ fun BaseBottomSheet(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
+                    .imePadding()
             ) {
                 if (showTitle) {
                     Text(
