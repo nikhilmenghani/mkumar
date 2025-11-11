@@ -128,6 +128,7 @@ fun LensForm(
     }
 }
 
+@OptIn(FlowPreview::class)
 @Composable
 fun ContactLensForm(
     initialData: ProductFormData.ContactLensData? = null,
@@ -146,6 +147,13 @@ fun ContactLensForm(
                 total = 0
             )
         )
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { contactLens }
+            .debounce(200)
+            .distinctUntilChanged()
+            .collect { onChange(it) }
     }
 
     Column {
