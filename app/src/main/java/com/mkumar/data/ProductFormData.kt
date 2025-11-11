@@ -20,9 +20,6 @@ sealed class ProductFormData {
     @Serializable
     @SerialName("FrameData")
     data class FrameData(
-        val brand: String = "",
-        val color: String = "",
-        val size: String = "",
         override val productDescription: String = "",
         override val productOwner: String = "",
         override val unitPrice: Int = 0,
@@ -34,10 +31,6 @@ sealed class ProductFormData {
     @Serializable
     @SerialName("LensData")
     data class LensData(
-        val leftSphere: String = "",
-        val leftAxis: String = "",
-        val rightSphere: String = "",
-        val rightAxis: String = "",
         override val productDescription: String = "",
         override val productOwner: String = "",
         override val unitPrice: Int = 0,
@@ -49,8 +42,14 @@ sealed class ProductFormData {
     @Serializable
     @SerialName("ContactLensData")
     data class ContactLensData(
-        val power: String = "",
-        val duration: String = "",
+        val rightSph: String = "",
+        val rightCyl: String = "",
+        val rightAxis: String = "",
+        val rightAdd: String = "",
+        val leftSph: String = "",
+        val leftCyl: String = "",
+        val leftAxis: String = "",
+        val leftAdd: String = "",
         override val productDescription: String = "",
         override val productOwner: String = "",
         override val unitPrice: Int = 0,

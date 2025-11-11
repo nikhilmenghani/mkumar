@@ -12,7 +12,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 
@@ -23,26 +25,61 @@ fun OLTextField(
     modifier: Modifier = Modifier,
     onValueChange: (String) -> Unit,
     onCommit: (() -> Unit)? = null,
-    imeAction: ImeAction = ImeAction.Next,
+    mode: FieldMode = FieldMode.PlainText,
+    placeholder: String? = null,
+    onNext: (() -> Unit)? = null,
+    onDone: (() -> Unit)? = null,
+    imeActionOverride: ImeAction? = null,
     singleLine: Boolean = true,
 ) {
+    val focusManager = LocalFocusManager.current
     var hadFocus by remember { mutableStateOf(false) }
+
+    // Compose the actual actions
+    val imeAction = imeActionOverride ?: mode.defaultIme
+    val actions = KeyboardActions(
+        onNext = {
+            // 1) write back any formatting
+            val formatted = mode.formatOnCommit(value)
+            if (formatted != value) onValueChange(formatted)
+            onCommit?.invoke()
+            // 2) move focus or call custom
+            when {
+                onNext != null -> onNext()
+                else -> focusManager.moveFocus(FocusDirection.Next)
+            }
+        },
+        onDone = {
+            val formatted = mode.formatOnCommit(value)
+            if (formatted != value) onValueChange(formatted)
+            onCommit?.invoke()
+            when {
+                onDone != null -> onDone()
+                else -> focusManager.clearFocus()
+            }
+        }
+    )
 
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange, // live updates
+        onValueChange = { onValueChange(mode.sanitizeOnChange(it)) },
         label = { Text(label) },
+        placeholder = { if (placeholder != null) Text(placeholder) },
         singleLine = singleLine,
-        keyboardOptions = KeyboardOptions(imeAction = imeAction),
-        keyboardActions = KeyboardActions(
-            onNext = { onCommit?.invoke() },
-            onDone = { onCommit?.invoke() }
+        keyboardOptions = KeyboardOptions(
+            keyboardType = mode.keyboardType,
+            imeAction = imeAction
         ),
+        keyboardActions = actions,
         modifier = modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp)
             .onFocusChanged { fs ->
-                if (hadFocus && !fs.isFocused) onCommit?.invoke()
+                if (hadFocus && !fs.isFocused) {
+                    val formatted = mode.formatOnCommit(value)
+                    if (formatted != value) onValueChange(formatted)
+                    onCommit?.invoke()
+                }
                 hadFocus = fs.isFocused
             }
     )
