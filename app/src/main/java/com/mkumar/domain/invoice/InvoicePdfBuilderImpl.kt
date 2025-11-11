@@ -241,22 +241,44 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
     // --------------------------
 
     private object HeaderSection {
+        // In HeaderSection
         fun draw(pager: Pager, data: InvoiceData, typo: Typography, rules: Rules) {
             val left = pager.contentLeft
             val right = left + pager.contentWidth
+            val mid = left + pager.contentWidth * 0.5f
+            val colGap = 16f
+            val colWidth = (pager.contentWidth - colGap) / 2
 
-            // Title
-            pager.canvas.drawText(data.shopName, left, pager.y, typo.title)
-            pager.space(20f)
+            // Split shop name
+            val shopNameLines = listOf(
+                "M Kumar",
+                "Luxurious Watch & Optical Store"
+            )
 
-            // Address (wrapped)
-            if (data.shopAddress.isNotBlank()) {
-                pager.y = TextUtil.wrapText(
-                    pager.canvas, data.shopAddress, typo.text,
-                    xLeft = left, xRight = right, startY = pager.y
-                )
-                pager.space(2f)
+            // Prepare left column lines
+            val leftLines = mutableListOf<String>()
+            leftLines.addAll(shopNameLines)
+            if (data.customerPhone.isNotBlank()) leftLines.add("Phone: ${data.customerPhone}")
+            if (data.customerEmail.isNotBlank()) leftLines.add("Email: ${data.customerEmail}")
+
+            // Calculate max lines for alignment
+            val addressLines = wrapTextLines(data.shopAddress, typo.text, colWidth)
+            val maxLines = maxOf(leftLines.size, addressLines.size)
+
+            // Draw both columns line by line
+            var y = pager.y
+            for (i in 0 until maxLines) {
+                // Left column
+                leftLines.getOrNull(i)?.let { line ->
+                    pager.canvas.drawText(line, left, y, typo.title)
+                }
+                // Right column
+                addressLines.getOrNull(i)?.let { line ->
+                    pager.canvas.drawText(line, mid + colGap, y, typo.text)
+                }
+                y += 18f // line height
             }
+            pager.y = y
 
             // Divider
             pager.space(6f)
@@ -281,6 +303,28 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             // Divider
             pager.lineAcross(rules.faintLine)
             pager.space(14f)
+        }
+
+        fun wrapTextLines(
+            text: String,
+            paint: Paint,
+            maxWidth: Float
+        ): List<String> {
+            if (text.isBlank()) return emptyList()
+            val words = text.split(' ')
+            val lines = mutableListOf<String>()
+            var line = StringBuilder()
+            for (w in words) {
+                val trial = if (line.isEmpty()) w else line.toString() + " " + w
+                if (paint.measureText(trial) <= maxWidth) {
+                    line.clear(); line.append(trial)
+                } else {
+                    if (line.isNotEmpty()) lines.add(line.toString())
+                    line = StringBuilder(w)
+                }
+            }
+            if (line.isNotEmpty()) lines.add(line.toString())
+            return lines
         }
     }
 

@@ -436,6 +436,7 @@ class CustomerDetailsViewModel @Inject constructor(
             shopAddress = "7, Shlok Height, Opp. Dev Paradise & Dharti Silver, Nr. Mansarovar Road, Chandkheda, Ahmedabad.",
             customerName = uiCustomer?.name ?: "Customer",
             customerPhone = uiCustomer?.phone ?: "-",
+            customerEmail = "mahendramenghani@gmail.com",
             orderId = order.id,
             occurredAtText = dateFmt.format(Date(order.occurredAt)),
             items = invoiceItems,

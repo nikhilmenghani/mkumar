@@ -6,6 +6,7 @@ data class InvoiceData(
     val shopAddress: String,
     val customerName: String,
     val customerPhone: String,
+    val customerEmail: String,
     val orderId: String,
     val occurredAtText: String,
     val items: List<InvoiceItemRow>,
