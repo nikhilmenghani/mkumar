@@ -101,8 +101,8 @@ fun BaseBottomSheet(
                             ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous") }
                         }
 //                        else {
-                            // Empty space to balance the layout
-                            // enable this when Show Previous button is in picture
+                        // Empty space to balance the layout
+                        // enable this when Show Previous button is in picture
 //                            Spacer(Modifier.width(56.dp))
 //                        }
 
