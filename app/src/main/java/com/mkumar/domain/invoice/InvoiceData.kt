@@ -4,9 +4,11 @@ package com.mkumar.domain.invoice
 data class InvoiceData(
     val shopName: String,
     val shopAddress: String,
+    val ownerName: String,
     val customerName: String,
     val customerPhone: String,
-    val customerEmail: String,
+    val ownerPhone: String,
+    val ownerEmail: String,
     val orderId: String,
     val occurredAtText: String,
     val items: List<InvoiceItemRow>,

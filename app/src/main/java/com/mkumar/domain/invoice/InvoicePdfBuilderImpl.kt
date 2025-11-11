@@ -242,63 +242,83 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
     private object HeaderSection {
         // In HeaderSection
+        // In HeaderSection
         fun draw(pager: Pager, data: InvoiceData, typo: Typography, rules: Rules) {
             val left = pager.contentLeft
             val right = left + pager.contentWidth
-            val mid = left + pager.contentWidth * 0.5f
             val colGap = 16f
             val colWidth = (pager.contentWidth - colGap) / 2
 
-            // Split shop name
+            // Shop name: first line big bold, second line small bold bold
             val shopNameLines = listOf(
-                "M Kumar",
-                "Luxurious Watch & Optical Store"
+                "M Kumar", // big bold
+                "Luxurious Watch & Optical Store" // small bold
             )
 
+            // Address lines with heading
             val addressLines = listOf(
+                "Address:", // heading, bold
                 "7, Shlok Height,",
                 "Opp. Dev Paradise & Dharti Silver,",
-                "Nr. Mansarovar Road,",
-                "Chandkheda, Ahmedabad."
+                "Nr. Mansarovar Road, Chandkheda,",
+                "Ahmedabad, Gujarat - 382424"
             )
 
             // Prepare left column lines
             val leftLines = mutableListOf<Pair<String, Paint>>()
-            leftLines.add(shopNameLines[0] to typo.title) // bold
-            leftLines.add(shopNameLines[1] to typo.text)  // normal
-            if (data.customerPhone.isNotBlank()) {
-                leftLines.add("Phone:" to typo.label)
-                leftLines.add(data.customerPhone to typo.text)
-            }
-            if (data.customerEmail.isNotBlank()) {
-                leftLines.add("Email:" to typo.label)
-                leftLines.add(data.customerEmail to typo.text)
-            }
+            leftLines.add(shopNameLines[0] to typo.title) // big bold
+            leftLines.add(shopNameLines[1] to Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD }) // small bold
 
-            // Calculate max lines for alignment
+            // Phone and email: label bold, value regular, both on same line
+            val phoneLabel = "Phone: "
+            val emailLabel = "Email: "
+            if (data.ownerPhone.isNotBlank()) leftLines.add("" to typo.text)
+            if (data.ownerEmail.isNotBlank()) leftLines.add("" to typo.text)
+
             val maxLines = maxOf(leftLines.size, addressLines.size)
-
-            // Draw both columns line by line
             var y = pager.y
+            var leftLineIdx = 0
+            var addressLineIdx = 0
+
             for (i in 0 until maxLines) {
                 // Left column
-                leftLines.getOrNull(i)?.let { (line, paint) ->
+                if (leftLineIdx == 0) {
+                    val (line, paint) = leftLines[leftLineIdx]
                     pager.canvas.drawText(line, left, y, paint)
+                    leftLineIdx++
+                } else if (leftLineIdx == 1) {
+                    val (line, paint) = leftLines[leftLineIdx]
+                    pager.canvas.drawText(line, left, y, paint)
+                    leftLineIdx++
+                } else if (leftLineIdx == 2 && data.ownerPhone.isNotBlank()) {
+                    pager.canvas.drawText(phoneLabel, left, y, Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD })
+                    pager.canvas.drawText(" ${data.ownerPhone}", left + typo.label.measureText(phoneLabel), y, typo.text)
+                    leftLineIdx++
+                } else if (leftLineIdx == 3 && data.ownerEmail.isNotBlank()) {
+                    pager.canvas.drawText(emailLabel, left, y, Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD })
+                    pager.canvas.drawText(" ${data.ownerEmail}", left + typo.label.measureText(emailLabel), y, typo.text)
+                    leftLineIdx++
                 }
-                // Right column
-                addressLines.getOrNull(i)?.let { line ->
-                    pager.canvas.drawText(line, mid + colGap, y, typo.text)
+
+                // Right column (fully right-aligned)
+                if (addressLineIdx < addressLines.size) {
+                    val line = addressLines[addressLineIdx]
+                    val paint = if (addressLineIdx == 0)
+                        Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.RIGHT }
+                    else
+                        Paint(typo.text).apply { textAlign = Paint.Align.RIGHT }
+                    pager.canvas.drawText(line, right, y, paint)
+                    addressLineIdx++
                 }
-                y += 18f // line height
+                y += 18f
             }
             pager.y = y
 
-            // Divider
+            // Divider and rest as before...
             pager.space(6f)
             pager.lineAcross(rules.faintLine)
             pager.space(14f)
 
-            // Meta row
             pager.canvas.drawText(
                 "Invoice: ${CustomerDetailsConstants.getInvoiceFileName(data.orderId)}",
                 left, pager.y, typo.text
@@ -307,37 +327,13 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             pager.canvas.drawText("Date: ${data.occurredAtText}", right, pager.y, rightAlign)
             pager.space(16f)
 
-            // Customer info
             pager.canvas.drawText("Customer: ${data.customerName}", left, pager.y, typo.text)
             pager.space(16f)
             pager.canvas.drawText("Phone: ${data.customerPhone}", left, pager.y, typo.text)
             pager.space(12f)
 
-            // Divider
             pager.lineAcross(rules.faintLine)
             pager.space(14f)
-        }
-
-        fun wrapTextLines(
-            text: String,
-            paint: Paint,
-            maxWidth: Float
-        ): List<String> {
-            if (text.isBlank()) return emptyList()
-            val words = text.split(' ')
-            val lines = mutableListOf<String>()
-            var line = StringBuilder()
-            for (w in words) {
-                val trial = if (line.isEmpty()) w else line.toString() + " " + w
-                if (paint.measureText(trial) <= maxWidth) {
-                    line.clear(); line.append(trial)
-                } else {
-                    if (line.isNotEmpty()) lines.add(line.toString())
-                    line = StringBuilder(w)
-                }
-            }
-            if (line.isNotEmpty()) lines.add(line.toString())
-            return lines
         }
     }
 
