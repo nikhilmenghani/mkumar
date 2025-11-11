@@ -251,7 +251,8 @@ fun CustomerDetailsScreen(
                             isQueued = false,
                             isSynced = true,
                             hasInvoice = true,
-                            remainingBalance = o.remainingBalance
+                            remainingBalance = o.remainingBalance,
+                            adjustedTotal = o.adjustedAmount
                         )
                     }
                 }

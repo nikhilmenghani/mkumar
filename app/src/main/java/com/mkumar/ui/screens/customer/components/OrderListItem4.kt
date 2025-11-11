@@ -5,15 +5,21 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
@@ -46,21 +52,18 @@ import com.mkumar.viewmodel.OrderRowAction
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OrderListItem4(
     row: OrderRowUi,
     onAction: (OrderRowAction) -> Unit,
     modifier: Modifier = Modifier,
-
-    // New optional inputs (non-breaking for your current model)
-    adjustedTotal: Int? = null,        // show when != 0; else fall back to row.amount as Total
-    invoiceNumber: String? = null,     // e.g., "INV-1024"
-    updatedAt: Instant? = null,        // shown on the right of the header row
-    productTypesCount: Int? = null     // "n × product types"
+    productTypeCounts: List<Pair<String, Int>> = emptyList() // e.g. [("Lens",2),("Frame",1)]
 ) {
-    val createdFmt = remember { DateTimeFormatter.ofPattern("EEE, MMM d • h:mm a") }
-    val updatedFmt = remember { DateTimeFormatter.ofPattern("MMM d, h:mm a") }
+    val createdFmtTimeFirst = remember { DateTimeFormatter.ofPattern("MMM d, h:mm a") }
+//    val updatedFmtTimeFirst = remember { DateTimeFormatter.ofPattern("MMM d, h:mm a") }
 
     var menuExpanded by remember { mutableStateOf(false) }
     var menuOffsetPx by remember { mutableStateOf(Offset.Zero) }
@@ -68,9 +71,12 @@ fun OrderListItem4(
     val interaction = remember { MutableInteractionSource() }
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
+    val invoiceNumber = "INV-" + row.id.takeLast(6).uppercase(Locale.getDefault())
 
     val isPaid = row.remainingBalance == 0
-    val containerColor = orderLedgerContainerColor(isPaid)
+    val containerColor = ledgerContainerColor(isPaid)
+
+    val totalToShow = if ((row.adjustedTotal ?: 0) != 0) row.adjustedTotal!! else row.amount
 
     ElevatedCard(
         modifier = modifier
@@ -82,12 +88,7 @@ fun OrderListItem4(
         ProOverflowMenu(
             expanded = menuExpanded,
             onExpandedChange = { menuExpanded = it },
-            menuOffset = with(density) {
-                DpOffset(
-                    x = menuOffsetPx.x.toDp() + 8.dp,
-                    y = menuOffsetPx.y.toDp() + 8.dp
-                )
-            },
+            menuOffset = with(density) { DpOffset(menuOffsetPx.x.toDp() + 8.dp, menuOffsetPx.y.toDp() + 8.dp) },
             items = buildList {
                 add(
                     ProMenuItem(
@@ -121,97 +122,98 @@ fun OrderListItem4(
                 Column(
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .clickable(
-                            interactionSource = interaction,
-                            role = Role.Button
-                        ) {
-                            if (menuExpanded) menuExpanded = false
-                            else onAction(OrderRowAction.Open(row.id))
+                        .clickable(interactionSource = interaction, role = Role.Button) {
+                            if (menuExpanded) menuExpanded = false else onAction(OrderRowAction.Open(row.id))
                         }
                         .onGloballyPositioned { coords -> anchorHeightPx = coords.size.height }
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onTap = {
-                                    if (menuExpanded) menuExpanded = false
-                                    else onAction(OrderRowAction.Open(row.id))
+                                    if (menuExpanded) menuExpanded = false else onAction(OrderRowAction.Open(row.id))
                                 },
                                 onLongPress = { offset ->
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuOffsetPx = Offset(
-                                        x = offset.x,
-                                        y = offset.y - anchorHeightPx
-                                    )
+                                    menuOffsetPx = Offset(x = offset.x, y = offset.y - anchorHeightPx)
                                     menuExpanded = true
                                 }
                             )
                         }
                 ) {
-                    // ── Header: Created (left) · Updated (right)
+                    // ── Top: a responsive two-column grid using a Row with weights
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Text(
-                            text = createdFmt.format(row.occurredAt.atZone(ZoneId.systemDefault())),
-                            style = MaterialTheme.typography.titleSmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        // Left column — Created, Updated, Invoice (stacked)
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            if (invoiceNumber.isNotBlank()) {
+                                Text(
+                                    text = "#$invoiceNumber",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Text(
+                                text = "Created • " + createdFmtTimeFirst.format(row.occurredAt.atZone(ZoneId.systemDefault())),
+                                style = MaterialTheme.typography.titleSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+//                            if (updatedAt != null) {
+//                                Text(
+//                                    text = "Updated • " + updatedFmtTimeFirst.format(updatedAt.atZone(ZoneId.systemDefault())),
+//                                    style = MaterialTheme.typography.labelLarge.copy(
+//                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+//                                    ),
+//                                    maxLines = 1,
+//                                    overflow = TextOverflow.Ellipsis
+//                                )
+//                            }
+                        }
+
+                        // Right column — Ledger (labels right-aligned, values right-aligned)
+                        Column(
+                            modifier = Modifier.wrapContentWidth(Alignment.End),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            LedgerRowCompact(label = "Total", value = "₹$totalToShow", emphasize = (row.adjustedTotal ?: 0) != 0)
+                            if (row.remainingBalance > 0) {
+                                LedgerRowCompact(
+                                    label = "Remaining",
+                                    value = "₹${row.remainingBalance}",
+                                    valueColor = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
 
-                    // Invoice number (bigger font)
-                    if (!invoiceNumber.isNullOrBlank()) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "#$invoiceNumber",
-                            // bigger than default titleSmall
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                    Spacer(Modifier.height(10.dp))
 
-                    // Product types count line
-                    val typesLine = productTypesCount?.let { "$it × product types" }
-                        ?: row.itemsLabel.takeIf { it.isNotBlank() } // fallback to your existing label
-                    if (!typesLine.isNullOrBlank()) {
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            text = typesLine,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    // ── Two-column ledger
-                    LedgerRow(
-                        label = if ((adjustedTotal ?: 0) != 0) "Total" else "Total",
-                        // show base total (row.amount)
-                        value = "₹${row.amount}"
-                    )
-
-                    if ((adjustedTotal ?: 0) != 0) {
-                        LedgerRow(
-                            label = "Adjusted Total",
-                            value = "₹${adjustedTotal!!}",
-                            emphasize = true // make adjusted stand out slightly
-                        )
-                    }
-
-                    // Remaining: show ONLY when > 0, colored red
-                    if (row.remainingBalance > 0) {
-                        LedgerRow(
-                            label = "Remaining",
-                            value = "₹${row.remainingBalance}",
-                            valueColor = MaterialTheme.colorScheme.error
-                        )
+                    // ── Product-type chips: "2 × Lens", "1 × Frame"
+                    if (productTypeCounts.isNotEmpty()) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            productTypeCounts.forEach { (type, count) ->
+                                AssistChip(
+                                    onClick = { /* no-op; could filter or open items */ },
+                                    label = {
+                                        Text(text = "${count} × $type")
+                                    },
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
+                                            .compositeOver(MaterialTheme.colorScheme.surface),
+                                        labelColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -220,30 +222,19 @@ fun OrderListItem4(
 }
 
 @Composable
-private fun LedgerRow(
+private fun LedgerRowCompact(
     label: String,
     value: String,
     emphasize: Boolean = false,
     valueColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = label,
-            style = if (emphasize) {
-                MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium)
-            } else {
-                MaterialTheme.typography.bodyMedium
-            },
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.size(12.dp))
         Text(
             text = value,
             style = if (emphasize) {
@@ -251,31 +242,27 @@ private fun LedgerRow(
             } else {
                 MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium)
             },
-            color = valueColor,
-            maxLines = 1
+            color = valueColor
         )
     }
 }
 
 @Composable
-private fun orderLedgerContainerColor(isPaid: Boolean): Color {
-    // Stronger tint so the card clearly reads "green for paid / red for due"
+private fun ledgerContainerColor(isPaid: Boolean): Color {
     val surface = MaterialTheme.colorScheme.surface
     val tint = if (isPaid) {
-        // success-ish
-        MaterialTheme.colorScheme.tertiaryContainer
+        MaterialTheme.colorScheme.tertiaryContainer // greenish
     } else {
-        // due
-        MaterialTheme.colorScheme.errorContainer
+        MaterialTheme.colorScheme.errorContainer    // reddish
     }
-    // Make it opaque via pre-composite to avoid underlay blending inconsistencies
-    val subtleTint = tint.copy(alpha = 0.28f)
-    return subtleTint.compositeOver(surface)
+    // Strong enough to clearly read status, but not screaming
+    val alpha = if (isPaid) 0.26f else 0.28f
+    return tint.copy(alpha = alpha).compositeOver(surface)
 }
 
 @Preview(showBackground = true)
 @Composable
-fun OrderListItem4Preview() {
+private fun OrderListItem4Preview() {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OrderListItem4(
             row = OrderRowUi(
@@ -288,9 +275,7 @@ fun OrderListItem4Preview() {
                 isSynced = false,
                 remainingBalance = 0 // ✅ green card
             ),
-            invoiceNumber = "INV-1024",
-            updatedAt = Instant.now(),
-            productTypesCount = 3,
+            productTypeCounts = listOf("Lens" to 2, "Frame" to 1),
             onAction = {}
         )
         OrderListItem4(
@@ -304,10 +289,7 @@ fun OrderListItem4Preview() {
                 isSynced = true,
                 remainingBalance = 200 // 🔴 red card
             ),
-            adjustedTotal = 1100,
-            invoiceNumber = "INV-2042",
-            updatedAt = Instant.now(),
-            productTypesCount = 2,
+            productTypeCounts = listOf("Lens" to 1, "Frame" to 1, "Accessories" to 2),
             onAction = {}
         )
     }

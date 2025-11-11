@@ -24,5 +24,6 @@ data class OrderRowUi(
     val isQueued: Boolean,     // not yet synced
     val isSynced: Boolean,     // successfully synced
     val hasInvoice: Boolean,
+    val adjustedTotal: Int? = null,               // if != 0 -> use as Total
 )
 
