@@ -154,9 +154,9 @@ fun CustomerListCard2(
                         )
                     },
                     anchor = {
-                        IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
-                        }
+//                        IconButton(onClick = { menuExpanded = true }) {
+//                            Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
+//                        }
                     }
                 )
             }
