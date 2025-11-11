@@ -1,5 +1,6 @@
 package com.mkumar.ui.screens.customer.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -76,7 +77,8 @@ fun OrderListItem4(
     ElevatedCard(
         modifier = modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .border(width = 1.dp, color = MaterialTheme.colorScheme.outline, shape = CardDefaults.elevatedShape),
         colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
