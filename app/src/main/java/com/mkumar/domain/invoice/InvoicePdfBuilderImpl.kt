@@ -381,9 +381,12 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             pager.lineAcross(rules.faintLine)
             pager.space(12f)
 
-            // Anchor columns (use same relative feel as items table)
+            // Use the same column fractions as ItemsSection
+            val colFractions = listOf(0.40f, 0.12f, 0.16f, 0.16f, 0.16f)
+            val discountColIndex = 3 // 0-based index for Discount %
+            val anchorFraction = colFractions.take(discountColIndex).sum()
+            val labelAnchorX = pager.contentLeft + pager.contentWidth * anchorFraction
             val rightX = pager.contentLeft + pager.contentWidth
-            val labelAnchorX = pager.contentLeft + pager.contentWidth * 0.76f
 
             fun totalRow(label: String, value: Double, bold: Boolean = false) {
                 val labelPaint = Paint(typo.text).apply { textAlign = Paint.Align.RIGHT }
