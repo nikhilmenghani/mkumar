@@ -341,11 +341,11 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         // Edit columns here to add/remove/resize
         private val spec = TableSpec(
             listOf(
-                ColumnSpec(title = "Item",       widthFraction = 0.44f, align = Align.LEFT,  padRight = 8f),
-                ColumnSpec(title = "Qty",        widthFraction = 0.14f, align = Align.RIGHT),
-                ColumnSpec(title = "Unit",       widthFraction = 0.18f, align = Align.RIGHT),
-                ColumnSpec(title = "Discount %", widthFraction = 0.12f, align = Align.RIGHT),
-                ColumnSpec(title = "Total",      widthFraction = 0.12f, align = Align.RIGHT),
+                ColumnSpec(title = "Item",       widthFraction = 0.40f, align = Align.LEFT,  padRight = 8f),
+                ColumnSpec(title = "Qty",        widthFraction = 0.12f, align = Align.RIGHT),
+                ColumnSpec(title = "Unit",       widthFraction = 0.16f, align = Align.RIGHT),
+                ColumnSpec(title = "Discount %", widthFraction = 0.16f, align = Align.RIGHT),
+                ColumnSpec(title = "Total",      widthFraction = 0.16f, align = Align.RIGHT),
             )
         )
 
