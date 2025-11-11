@@ -255,22 +255,35 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 "Luxurious Watch & Optical Store"
             )
 
+            val addressLines = listOf(
+                "7, Shlok Height,",
+                "Opp. Dev Paradise & Dharti Silver,",
+                "Nr. Mansarovar Road,",
+                "Chandkheda, Ahmedabad."
+            )
+
             // Prepare left column lines
-            val leftLines = mutableListOf<String>()
-            leftLines.addAll(shopNameLines)
-            if (data.customerPhone.isNotBlank()) leftLines.add("Phone: ${data.customerPhone}")
-            if (data.customerEmail.isNotBlank()) leftLines.add("Email: ${data.customerEmail}")
+            val leftLines = mutableListOf<Pair<String, Paint>>()
+            leftLines.add(shopNameLines[0] to typo.title) // bold
+            leftLines.add(shopNameLines[1] to typo.text)  // normal
+            if (data.customerPhone.isNotBlank()) {
+                leftLines.add("Phone:" to typo.label)
+                leftLines.add(data.customerPhone to typo.text)
+            }
+            if (data.customerEmail.isNotBlank()) {
+                leftLines.add("Email:" to typo.label)
+                leftLines.add(data.customerEmail to typo.text)
+            }
 
             // Calculate max lines for alignment
-            val addressLines = wrapTextLines(data.shopAddress, typo.text, colWidth)
             val maxLines = maxOf(leftLines.size, addressLines.size)
 
             // Draw both columns line by line
             var y = pager.y
             for (i in 0 until maxLines) {
                 // Left column
-                leftLines.getOrNull(i)?.let { line ->
-                    pager.canvas.drawText(line, left, y, typo.title)
+                leftLines.getOrNull(i)?.let { (line, paint) ->
+                    pager.canvas.drawText(line, left, y, paint)
                 }
                 // Right column
                 addressLines.getOrNull(i)?.let { line ->
