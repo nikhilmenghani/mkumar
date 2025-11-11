@@ -440,9 +440,9 @@ class CustomerDetailsViewModel @Inject constructor(
             occurredAtText = dateFmt.format(Date(order.occurredAt)),
             items = invoiceItems,
             subtotal = priced.subtotalBeforeAdjust.toDouble(),
-            discount = priced.adjustedAmount.toDouble(),
-            tax = 0.0,
-            grandTotal = priced.totalAmount.toDouble()
+            adjustedTotal = priced.adjustedAmount.toDouble(),
+            advanceTotal = priced.advanceTotal.toDouble(),
+            remainingBalance = priced.remainingBalance.toDouble()
         )
 
         val bytes = InvoicePdfBuilderImpl().build(invoiceData)

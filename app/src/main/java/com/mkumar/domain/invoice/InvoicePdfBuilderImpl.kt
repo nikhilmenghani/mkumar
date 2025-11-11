@@ -139,9 +139,9 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         }
 
         totalRow("Subtotal", data.subtotal)
-        if (data.discount != 0.0) totalRow("Discount", -kotlin.math.abs(data.discount))
-        if (data.tax != 0.0) totalRow("Tax", data.tax)
-        totalRow("Grand Total", data.grandTotal, bold = true)
+        if (data.adjustedTotal != 0.0) totalRow("Adjusted Total", -kotlin.math.abs(data.adjustedTotal))
+        if (data.advanceTotal != 0.0) totalRow("Advance Total", data.advanceTotal)
+        totalRow("Remaining Balance", data.remainingBalance, bold = true)
 
         // Footer line
         y += 8f
@@ -278,9 +278,6 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
     private fun hasCents(data: InvoiceData): Boolean {
         if (data.subtotal % 1.0 != 0.0) return true
-        if (data.discount % 1.0 != 0.0) return true
-        if (data.tax % 1.0 != 0.0) return true
-        if (data.grandTotal % 1.0 != 0.0) return true
         return data.items.any { (it.unitPrice % 1.0 != 0.0) || (it.total % 1.0 != 0.0) }
     }
 }

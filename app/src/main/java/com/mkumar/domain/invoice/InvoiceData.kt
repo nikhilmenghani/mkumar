@@ -10,9 +10,9 @@ data class InvoiceData(
     val occurredAtText: String,
     val items: List<InvoiceItemRow>,
     val subtotal: Double,
-    val discount: Double,
-    val tax: Double,
-    val grandTotal: Double
+    val adjustedTotal: Double,
+    val advanceTotal: Double,
+    val remainingBalance: Double
 )
 
 data class InvoiceItemRow(
