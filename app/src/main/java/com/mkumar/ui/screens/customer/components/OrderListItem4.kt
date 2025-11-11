@@ -6,7 +6,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,8 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
@@ -60,10 +57,8 @@ fun OrderListItem4(
     row: OrderRowUi,
     onAction: (OrderRowAction) -> Unit,
     modifier: Modifier = Modifier,
-    productTypeCounts: List<Pair<String, Int>> = emptyList() // e.g. [("Lens",2),("Frame",1)]
 ) {
     val createdFmtTimeFirst = remember { DateTimeFormatter.ofPattern("MMM d, h:mm a") }
-//    val updatedFmtTimeFirst = remember { DateTimeFormatter.ofPattern("MMM d, h:mm a") }
 
     var menuExpanded by remember { mutableStateOf(false) }
     var menuOffsetPx by remember { mutableStateOf(Offset.Zero) }
@@ -139,12 +134,10 @@ fun OrderListItem4(
                             )
                         }
                 ) {
-                    // ── Top: a responsive two-column grid using a Row with weights
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.Top
                     ) {
-                        // Left column — Created, Updated, Invoice (stacked)
                         Column(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -163,19 +156,8 @@ fun OrderListItem4(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-//                            if (updatedAt != null) {
-//                                Text(
-//                                    text = "Updated • " + updatedFmtTimeFirst.format(updatedAt.atZone(ZoneId.systemDefault())),
-//                                    style = MaterialTheme.typography.labelLarge.copy(
-//                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-//                                    ),
-//                                    maxLines = 1,
-//                                    overflow = TextOverflow.Ellipsis
-//                                )
-//                            }
                         }
 
-                        // Right column — Ledger (labels right-aligned, values right-aligned)
                         Column(
                             modifier = Modifier.wrapContentWidth(Alignment.End),
                             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -193,28 +175,6 @@ fun OrderListItem4(
                     }
 
                     Spacer(Modifier.height(10.dp))
-
-                    // ── Product-type chips: "2 × Lens", "1 × Frame"
-                    if (productTypeCounts.isNotEmpty()) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            productTypeCounts.forEach { (type, count) ->
-                                AssistChip(
-                                    onClick = { /* no-op; could filter or open items */ },
-                                    label = {
-                                        Text(text = "${count} × $type")
-                                    },
-                                    colors = AssistChipDefaults.assistChipColors(
-                                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
-                                            .compositeOver(MaterialTheme.colorScheme.surface),
-                                        labelColor = MaterialTheme.colorScheme.onSurface
-                                    )
-                                )
-                            }
-                        }
-                    }
                 }
             }
         )
@@ -268,28 +228,28 @@ private fun OrderListItem4Preview() {
             row = OrderRowUi(
                 id = "1",
                 occurredAt = Instant.now(),
-                itemsLabel = "",
+//                items = emptyList(),
                 amount = 1250,
                 hasInvoice = true,
                 isQueued = true,
                 isSynced = false,
                 remainingBalance = 0 // ✅ green card
             ),
-            productTypeCounts = listOf("Lens" to 2, "Frame" to 1),
+//            productTypeCounts = listOf("Lens" to 2, "Frame" to 1),
             onAction = {}
         )
         OrderListItem4(
             row = OrderRowUi(
                 id = "2",
                 occurredAt = Instant.now(),
-                itemsLabel = "",
+//                items = emptyList(),
                 amount = 950,
                 hasInvoice = true,
                 isQueued = false,
                 isSynced = true,
                 remainingBalance = 200 // 🔴 red card
             ),
-            productTypeCounts = listOf("Lens" to 1, "Frame" to 1, "Accessories" to 2),
+//            productTypeCounts = listOf("Lens" to 1, "Frame" to 1, "Accessories" to 2),
             onAction = {}
         )
     }
