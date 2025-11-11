@@ -2,140 +2,79 @@ package com.mkumar.ui.components.forms
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import com.mkumar.data.ProductFormData
 import com.mkumar.ui.components.inputs.ItemPriceEditor
 import com.mkumar.ui.components.inputs.OLTextField
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 
+@OptIn(FlowPreview::class)
 @Composable
 fun FrameForm(
     initialData: ProductFormData.FrameData? = null,
     onChange: (ProductFormData.FrameData) -> Unit,
 ) {
-    var owner by remember { mutableStateOf(initialData?.productOwner.orEmpty()) }
-    var brand by remember { mutableStateOf(initialData?.brand.orEmpty()) }
-    var color by remember { mutableStateOf(initialData?.color.orEmpty()) }
-    var size by remember { mutableStateOf(initialData?.size.orEmpty()) }
-    var unitPrice by remember { mutableStateOf(initialData?.unitPrice?.toString() ?: "") }
-    var discountPct by remember { mutableStateOf(initialData?.discountPct?.toString() ?: "0") }
-    var quantity by remember { mutableStateOf(initialData?.quantity?.toString() ?: "1") }
-    var total by remember { mutableStateOf(initialData?.total?.toString() ?: "0") }
-    var description by remember { mutableStateOf(initialData?.productDescription.orEmpty()) }
+    var frame by remember {
+        mutableStateOf(
+            initialData ?: ProductFormData.FrameData(
+                productOwner = "",
+                productDescription = "",
+                brand = "",
+                color = "",
+                size = "",
+                unitPrice = 0,
+                discountPct = 0,
+                quantity = 1,
+                total = 0
+            )
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { frame }
+            .debounce(200)
+            .distinctUntilChanged()
+            .collect { onChange(it) }
+    }
+
+    // Throttle expensive upstream updates
+    LaunchedEffect(Unit) {
+        snapshotFlow { frame }
+            .debounce(200)
+            .distinctUntilChanged()
+            .collect { onChange(it) }
+    }
 
     Column {
         OLTextField(
-            value = owner,
+            value = frame.productOwner,
             label = "Product Owner",
-            onCommit = {
-                onChange(
-                    ProductFormData.FrameData(
-                        productOwner = owner,
-                        productDescription = description,
-                        brand = brand,
-                        color = color,
-                        size = size,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { owner = it }
+            onValueChange = { frame = frame.copy(productOwner = it) },
+            onCommit = { onChange(frame) }
         )
 
         OLTextField(
-            value = description,
+            value = frame.productDescription,
             label = "Description",
-            onCommit = {
-                onChange(
-                    ProductFormData.FrameData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        brand = brand,
-                        color = color,
-                        size = size,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { description = it }
+            onValueChange = { frame = frame.copy(productDescription = it) },
+            onCommit = { onChange(frame) }
         )
 
         ItemPriceEditor(
-            initialUnitPrice = unitPrice,
-            initialDiscountPct = discountPct,
-            initialQuantity = quantity,
-            onUnitPriceChange = { newPrice ->
-                unitPrice = newPrice
-                onChange(
-                    ProductFormData.FrameData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        brand = brand,
-                        color = color,
-                        size = size,
-                        unitPrice = newPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onDiscountChange = { newDiscount ->
-                discountPct = newDiscount
-                onChange(
-                    ProductFormData.FrameData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        brand = brand,
-                        color = color,
-                        size = size,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = newDiscount.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onQuantityChange = { newQuantity ->
-                quantity = newQuantity
-                onChange(
-                    ProductFormData.FrameData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        brand = brand,
-                        color = color,
-                        size = size,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = newQuantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onTotalChange = { newTotal ->
-                total = newTotal
-                onChange(
-                    ProductFormData.FrameData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        brand = brand,
-                        color = color,
-                        size = size,
-                        productDescription = description,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = newTotal.toInt()
-                    )
-                )
-            }
+            initialUnitPrice = frame.unitPrice.toString(),
+            initialDiscountPct = frame.discountPct.toString(),
+            initialQuantity = frame.quantity.toString(),
+            onUnitPriceChange = { frame = frame.copy(unitPrice = it.toIntOrNull() ?: 0) },
+            onDiscountChange = { frame = frame.copy(discountPct = it.toIntOrNull() ?: 0) },
+            onQuantityChange = { frame = frame.copy(quantity = it.toIntOrNull() ?: 1) },
+            onTotalChange = { frame = frame.copy(total = it.toIntOrNull() ?: 0) }
         )
     }
 }
