@@ -22,6 +22,7 @@ import com.mkumar.viewmodel.UiOrderItem
 
 @Composable
 fun GroupedOrderAccordion(
+    productOwner: String,
     items: List<UiOrderItem>,
     selectedTypeResolver: (UiOrderItem) -> ProductType?, // or pass a constant if list is homogeneous
     onFormSave: (String, ProductFormData) -> Unit,
@@ -54,6 +55,7 @@ fun GroupedOrderAccordion(
 
                 // Row
                 OrderAccordionItem(
+                    productOwner = productOwner,
                     initiallyExpanded = false,
                     selectedProduct = item,
                     selectedType = selectedTypeResolver(item),
@@ -81,12 +83,18 @@ fun GroupedOrderAccordion(
 @Composable
 fun PreviewGroupedOrderAccordion() {
     val items = listOf(
-        UiOrderItem(id = "1", productType = ProductType.Lens, productDescription = "Single Vision Lens", formData = defaultFormFor(ProductType.Lens), finalTotal = 1200, name = "Nikhil", quantity = 1, unitPrice = 25, discountPercentage = 10),
-        UiOrderItem(id = "2", productType = ProductType.Frame, productDescription = "Acetate Frame", formData = defaultFormFor(ProductType.Frame), finalTotal = 2200, name = "Nikhil", quantity = 1, unitPrice = 50, discountPercentage = 0),
-        UiOrderItem(id = "3", productType = ProductType.ContactLens, productDescription = "Monthly Contacts", formData = defaultFormFor(ProductType.ContactLens), finalTotal = 1500, name = "Nikhil", quantity = 1, unitPrice = 35, discountPercentage = 5),
+        UiOrderItem(id = "1", productType = ProductType.Lens, productDescription = "Single Vision Lens", formData = defaultFormFor(ProductType.Lens, "Nikhil"), finalTotal = 1200, name = "Nikhil",
+            quantity =
+            1, unitPrice = 25, discountPercentage = 10),
+        UiOrderItem(id = "2", productType = ProductType.Frame, productDescription = "Acetate Frame", formData = defaultFormFor(ProductType.Frame, "Nikhil"), finalTotal = 2200, name = "Nikhil",
+            quantity = 1,
+            unitPrice = 50, discountPercentage = 0),
+        UiOrderItem(id = "3", productType = ProductType.ContactLens, productDescription = "Monthly Contacts", formData = defaultFormFor(ProductType.ContactLens, "Nikhil"), finalTotal = 1500, name =
+            "Nikhil", quantity = 1, unitPrice = 35, discountPercentage = 5),
     )
     MaterialTheme {
         GroupedOrderAccordion(
+            productOwner = "Nikhil",
             items = items,
             selectedTypeResolver = { it.productType },
             onFormSave = { _, _ -> },

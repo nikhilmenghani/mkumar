@@ -116,6 +116,7 @@ fun OrderSheet(
                         }
 
                         OrderAccordionItem(
+                            productOwner = state.customer?.name ?: "",
                             selectedProduct = product,
                             selectedType = product.productType,
                             onFormSave = { productId, updated ->

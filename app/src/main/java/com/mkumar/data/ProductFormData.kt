@@ -15,6 +15,7 @@ sealed class ProductFormData {
     abstract val discountPct: Int
     abstract val total: Int
     abstract val productDescription: String
+    abstract val productOwner: String
 
     @Serializable
     @SerialName("FrameData")
@@ -23,6 +24,7 @@ sealed class ProductFormData {
         val color: String = "",
         val size: String = "",
         override val productDescription: String = "",
+        override val productOwner: String = "",
         override val unitPrice: Int = 0,
         override val quantity: Int = 1,
         override val discountPct: Int = 0,
@@ -37,6 +39,7 @@ sealed class ProductFormData {
         val rightSphere: String = "",
         val rightAxis: String = "",
         override val productDescription: String = "",
+        override val productOwner: String = "",
         override val unitPrice: Int = 0,
         override val quantity: Int = 1,
         override val discountPct: Int = 0,
@@ -49,6 +52,7 @@ sealed class ProductFormData {
         val power: String = "",
         val duration: String = "",
         override val productDescription: String = "",
+        override val productOwner: String = "",
         override val unitPrice: Int = 0,
         override val quantity: Int = 1,
         override val discountPct: Int = 0,

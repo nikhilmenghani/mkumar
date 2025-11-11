@@ -32,6 +32,7 @@ fun FrameForm(
             onCommit = {
                 onChange(
                     ProductFormData.FrameData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         brand = brand,
                         color = color,
@@ -45,63 +46,6 @@ fun FrameForm(
             },
             onValueChange = { description = it }
         )
-//        OLTextField(
-//            value = brand,
-//            label = "Brand",
-//            onCommit = {
-//                onChange(
-//                    ProductFormData.FrameData(
-//                        productDescription = description,
-//                        brand = brand,
-//                        color = color,
-//                        size = size,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()
-//                    )
-//                )
-//            },
-//            onValueChange = { brand = it }
-//        )
-//        OLTextField(
-//            value = color,
-//            label = "Color",
-//            onCommit = {
-//                onChange(
-//                    ProductFormData.FrameData(
-//                        productDescription = description,
-//                        brand = brand,
-//                        color = color,
-//                        size = size,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()
-//                    )
-//                )
-//            },
-//            onValueChange = { color = it }
-//        )
-//        OLTextField(
-//            value = size,
-//            label = "Size",
-//            onCommit = {
-//                onChange(
-//                    ProductFormData.FrameData(
-//                        productDescription = description,
-//                        brand = brand,
-//                        color = color,
-//                        size = size,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()
-//                    )
-//                )
-//            },
-//            onValueChange = { size = it }
-//        )
 
         ItemPriceEditor(
             initialUnitPrice = unitPrice,
@@ -111,6 +55,7 @@ fun FrameForm(
                 unitPrice = newPrice
                 onChange(
                     ProductFormData.FrameData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         brand = brand,
                         color = color,
@@ -126,6 +71,7 @@ fun FrameForm(
                 discountPct = newDiscount
                 onChange(
                     ProductFormData.FrameData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         brand = brand,
                         color = color,
@@ -141,6 +87,7 @@ fun FrameForm(
                 quantity = newQuantity
                 onChange(
                     ProductFormData.FrameData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         brand = brand,
                         color = color,
@@ -156,6 +103,7 @@ fun FrameForm(
                 total = newTotal
                 onChange(
                     ProductFormData.FrameData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         brand = brand,
                         color = color,
                         size = size,
@@ -193,6 +141,7 @@ fun LensForm(
             onCommit = {
                 onChange(
                     ProductFormData.LensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
@@ -207,86 +156,6 @@ fun LensForm(
             },
             onValueChange = { description = it }
         )
-//        OLTextField(
-//            value = leftSphere,
-//            label = "Left Sphere",
-//            onCommit = {
-//                onChange(
-//                    ProductFormData.LensData(
-//                        productDescription = description,
-//                        leftSphere = leftSphere,
-//                        leftAxis = leftAxis,
-//                        rightSphere = rightSphere,
-//                        rightAxis = rightAxis,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()
-//                    )
-//                )
-//            },
-//            onValueChange = { leftSphere = it }
-//        )
-//        OLTextField(
-//            value = leftAxis,
-//            label = "Left Axis",
-//            onCommit = {
-//                onChange(
-//                    ProductFormData.LensData(
-//                        productDescription = description,
-//                        leftSphere = leftSphere,
-//                        leftAxis = leftAxis,
-//                        rightSphere = rightSphere,
-//                        rightAxis = rightAxis,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()
-//                    )
-//                )
-//            },
-//            onValueChange = { leftAxis = it }
-//        )
-//        OLTextField(
-//            value = rightSphere,
-//            label = "Right Sphere",
-//            onCommit = {
-//                onChange(
-//                    ProductFormData.LensData(
-//                        productDescription = description,
-//                        leftSphere = leftSphere,
-//                        leftAxis = leftAxis,
-//                        rightSphere = rightSphere,
-//                        rightAxis = rightAxis,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()
-//                    )
-//                )
-//            },
-//            onValueChange = { rightSphere = it }
-//        )
-//        OLTextField(
-//            value = rightAxis,
-//            label = "Right Axis",
-//            onCommit = {
-//                onChange(
-//                    ProductFormData.LensData(
-//                        productDescription = description,
-//                        leftSphere = leftSphere,
-//                        leftAxis = leftAxis,
-//                        rightSphere = rightSphere,
-//                        rightAxis = rightAxis,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()
-//                    )
-//                )
-//            },
-//            onValueChange = { rightAxis = it }
-//        )
 
         ItemPriceEditor(
             initialUnitPrice = unitPrice,
@@ -296,6 +165,7 @@ fun LensForm(
                 unitPrice = newPrice
                 onChange(
                     ProductFormData.LensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
@@ -312,6 +182,7 @@ fun LensForm(
                 discountPct = newDiscount
                 onChange(
                     ProductFormData.LensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
@@ -328,6 +199,7 @@ fun LensForm(
                 quantity = newQuantity
                 onChange(
                     ProductFormData.LensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
@@ -344,6 +216,7 @@ fun LensForm(
                 total = newTotal
                 onChange(
                     ProductFormData.LensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         leftSphere = leftSphere,
                         leftAxis = leftAxis,
@@ -380,6 +253,7 @@ fun ContactLensForm(
             onCommit = {
                 onChange(
                     ProductFormData.ContactLensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         power = power,
                         duration = duration,
@@ -392,42 +266,6 @@ fun ContactLensForm(
             },
             onValueChange = { description = it }
         )
-//        OLTextField(
-//            value = power,
-//            label = "Power",
-//            onCommit = {
-//                onChange(
-//                    ProductFormData.ContactLensData(
-//                        productDescription = description,
-//                        power = power,
-//                        duration = duration,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()
-//                    )
-//                )
-//            },
-//            onValueChange = { power = it }
-//        )
-//        OLTextField(
-//            value = duration,
-//            label = "Duration",
-//            onCommit = {
-//                onChange(
-//                    ProductFormData.ContactLensData(
-//                        productDescription = description,
-//                        power = power,
-//                        duration = duration,
-//                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-//                        discountPct = discountPct.toIntOrNull() ?: 0,
-//                        quantity = quantity.toIntOrNull() ?: 1,
-//                        total = total.toInt()
-//                    )
-//                )
-//            },
-//            onValueChange = { duration = it }
-//        )
 
         ItemPriceEditor(
             initialUnitPrice = unitPrice,
@@ -437,6 +275,7 @@ fun ContactLensForm(
                 unitPrice = newPrice
                 onChange(
                     ProductFormData.ContactLensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         power = power,
                         duration = duration,
@@ -451,6 +290,7 @@ fun ContactLensForm(
                 discountPct = newDiscount
                 onChange(
                     ProductFormData.ContactLensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         power = power,
                         duration = duration,
@@ -465,6 +305,7 @@ fun ContactLensForm(
                 quantity = newQuantity
                 onChange(
                     ProductFormData.ContactLensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         power = power,
                         duration = duration,
@@ -479,6 +320,7 @@ fun ContactLensForm(
                 total = newTotal
                 onChange(
                     ProductFormData.ContactLensData(
+                        productOwner = initialData?.productOwner.orEmpty(),
                         productDescription = description,
                         power = power,
                         duration = duration,

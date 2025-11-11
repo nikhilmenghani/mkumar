@@ -15,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,19 +42,18 @@ fun ProductFormItem(
     ) { product ->
         key(product.id) {
 
-            val isDirty = remember(product.id, draft) { draft != product.formData }
-
-            var ownerName by rememberSaveable(product.id) {
-                mutableStateOf("Nikhil")
-            }
             var validationError by remember(product.id) {
                 mutableStateOf<String?>(null)
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
-                    value = ownerName,
-                    onValueChange = { ownerName = it },
+                    value = draft.productOwner,
+                    onValueChange = {
+                        onDraftChange(
+                            defaultFormFor(product.productType, it)
+                        )
+                    },
                     label = { Text("Product Owner") },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -108,10 +106,10 @@ private fun RenderProductForm(
     }
 }
 
-fun defaultFormFor(type: ProductType): ProductFormData = when (type) {
-    ProductType.Frame -> ProductFormData.FrameData()
-    ProductType.Lens -> ProductFormData.LensData()
-    ProductType.ContactLens -> ProductFormData.ContactLensData()
+fun defaultFormFor(type: ProductType, productOwner: String): ProductFormData = when (type) {
+    ProductType.Frame -> ProductFormData.FrameData().copy(productOwner = productOwner)
+    ProductType.Lens -> ProductFormData.LensData().copy(productOwner = productOwner)
+    ProductType.ContactLens -> ProductFormData.ContactLensData().copy(productOwner = productOwner)
 }
 
 private fun <T : ProductFormData> validateAndSave(

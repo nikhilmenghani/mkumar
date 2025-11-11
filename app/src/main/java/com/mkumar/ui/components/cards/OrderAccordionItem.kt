@@ -15,13 +15,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
@@ -52,6 +54,7 @@ import com.mkumar.viewmodel.UiOrderItem
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun OrderAccordionItem(
+    productOwner: String,
     initiallyExpanded: Boolean = false,
     selectedProduct: UiOrderItem?,
     selectedType: ProductType?,
@@ -67,10 +70,18 @@ fun OrderAccordionItem(
     val draftBeforeState = rememberSaveable(
         selectedProduct.id,
         saver = ProductFormDataSaver
-    ) { selectedProduct.formData ?: defaultFormFor(selectedProduct.productType) }
+    ) { selectedProduct.formData ?: defaultFormFor(selectedProduct.productType, productOwner) }
     var draft by remember { mutableStateOf(draftBeforeState) }
 
     val cardColors = AppColors.elevatedCardColors()
+
+    // Title fallback text
+    val titleText = selectedProduct.formData?.productDescription
+        ?.ifBlank { "New ${selectedType ?: ""}" }
+        ?: "New ${selectedType ?: ""}"
+
+    // Optional owner (subtitle)
+    val owner = draft.productOwner
 
     ElevatedCard(
         modifier = Modifier
@@ -81,40 +92,86 @@ fun OrderAccordionItem(
         elevation = if (grouped) CardDefaults.cardElevation(0.dp) else CardDefaults.cardElevation(1.dp)
     ) {
         Column {
+            // Header (collapsible area)
+            var shrinkTitle by remember { mutableStateOf(false) }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .requiredHeight(collapsedHeight)
-                    .padding(horizontal = 16.dp)
-                    .clickable { expanded = !expanded }, // header controls expansion
+                    .heightIn(min = collapsedHeight) // lets header grow if title + subtitle need space
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .clickable { expanded = !expanded },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = selectedProduct.formData?.productDescription?.ifBlank { "New ${selectedType?.toString()}" } ?: "New ${selectedType?.toString()}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                // Left: Title + Owner chip
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .padding(end = 12.dp)
-                )
-                Spacer(Modifier.width(16.dp))
-                Text(
-                    text = "₹${selectedProduct.finalTotal}",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    modifier = Modifier.width(84.dp),
-                    textAlign = TextAlign.End
-                )
-                Spacer(Modifier.width(8.dp))
-                Icon(
-                    imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                ) {
+                    Text(
+                        text = titleText,
+                        style = (if (shrinkTitle) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge)
+                            .copy(fontWeight = FontWeight.Medium),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        onTextLayout = { layoutResult ->
+                            // If it still overflows on two lines, shrink once
+                            if (layoutResult.hasVisualOverflow && !shrinkTitle) {
+                                shrinkTitle = true
+                            }
+                        }
+                    )
+
+                    if (owner.isNotBlank()) {
+                        Spacer(modifier = Modifier.padding(top = 4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AssistChip(
+                                onClick = { /* no-op; header handles main click */ },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Person,
+                                        contentDescription = null
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        owner,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            )
+//                             If you also want to show product type alongside owner as a chip:
+                            if (selectedType != null) {
+                                Spacer(Modifier.width(6.dp))
+                                AssistChip(
+                                    onClick = { },
+                                    label = { Text(selectedType.name, style = MaterialTheme.typography.labelSmall) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Right: Price + Chevron
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = "₹${selectedProduct.finalTotal}",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        modifier = Modifier.width(84.dp),
+                        textAlign = TextAlign.End
+                    )
+                    Icon(
+                        imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                        contentDescription = if (expanded) "Collapse item" else "Expand item",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
             // Expanded form
@@ -128,6 +185,16 @@ fun OrderAccordionItem(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
+                    // Optionally show full description at the top when expanded (untruncated)
+                    // if (titleText.isNotBlank()) {
+                    //     Text(
+                    //         text = titleText,
+                    //         style = MaterialTheme.typography.titleMedium,
+                    //         fontWeight = FontWeight.SemiBold,
+                    //         modifier = Modifier.padding(bottom = 8.dp)
+                    //     )
+                    // }
+
                     ProductFormItem(
                         selectedProduct = selectedProduct,
                         draft = draft,
@@ -143,6 +210,7 @@ fun OrderAccordionItem(
         }
     }
 
+    // Subtle outline when not grouped and collapsed
     if (!grouped && !expanded) {
         Box(
             Modifier
@@ -153,6 +221,7 @@ fun OrderAccordionItem(
     }
 }
 
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewOrderAccordionItem() {
@@ -160,7 +229,7 @@ fun PreviewOrderAccordionItem() {
         id = "1",
         productType = ProductType.Lens,
         productDescription = "Sample Lens",
-        formData = defaultFormFor(ProductType.Lens),
+        formData = defaultFormFor(ProductType.Lens, "Nikhil"),
         finalTotal = 1200,
         name = "Nikhil",
         quantity = 1,
@@ -168,6 +237,7 @@ fun PreviewOrderAccordionItem() {
         discountPercentage = 10
     )
     OrderAccordionItem(
+        productOwner = "Nikhil",
         selectedProduct = sampleProduct,
         selectedType = ProductType.Lens,
         onFormSave = { _, _ -> },
