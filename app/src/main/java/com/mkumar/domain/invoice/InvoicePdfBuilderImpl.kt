@@ -250,8 +250,6 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
     // --------------------------
 
     private object HeaderSection {
-        // In HeaderSection
-        // In HeaderSection
         fun draw(pager: Pager, data: InvoiceData, typo: Typography, rules: Rules) {
             val left = pager.contentLeft
             val right = left + pager.contentWidth
@@ -323,22 +321,44 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             }
             pager.y = y
 
-            // Divider and rest as before...
             pager.space(6f)
             pager.lineAcross(rules.faintLine)
             pager.space(14f)
 
+            val boldLabel = Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD }
+
+            val invoiceLabel = "Invoice: "
+            pager.canvas.drawText(invoiceLabel, left, pager.y, boldLabel)
             pager.canvas.drawText(
-                "Invoice: ${CustomerDetailsConstants.getInvoiceFileName(data.orderId)}",
-                left, pager.y, typo.text
+                CustomerDetailsConstants.getInvoiceFileName(data.orderId),
+                left + boldLabel.measureText(invoiceLabel), pager.y, typo.text
             )
+
+            val dateLabel = "Date Invoice Generated: "
+            val dateValue = data.occurredAtText
+            val rightAlignBold = Paint(typo.label).apply {
+                typeface = Typeface.DEFAULT_BOLD
+                textAlign = Paint.Align.RIGHT
+            }
             val rightAlign = Paint(typo.text).apply { textAlign = Paint.Align.RIGHT }
-            pager.canvas.drawText("Date Invoice Generated: ${data.occurredAtText}", right, pager.y, rightAlign)
+            val dateValueWidth = rightAlign.measureText(dateValue)
+            pager.canvas.drawText(dateLabel, right - dateValueWidth, pager.y, rightAlignBold)
+            pager.canvas.drawText(dateValue, right, pager.y, rightAlign)
             pager.space(16f)
 
-            pager.canvas.drawText("Customer: ${data.customerName}", left, pager.y, typo.text)
+            val customerLabel = "Customer: "
+            pager.canvas.drawText(customerLabel, left, pager.y, boldLabel)
+            pager.canvas.drawText(
+                data.customerName,
+                left + boldLabel.measureText(customerLabel), pager.y, typo.text
+            )
             pager.space(16f)
-            pager.canvas.drawText("Phone: ${data.customerPhone}", left, pager.y, typo.text)
+
+            pager.canvas.drawText(phoneLabel, left, pager.y, boldLabel)
+            pager.canvas.drawText(
+                data.customerPhone,
+                left + boldLabel.measureText(phoneLabel), pager.y, typo.text
+            )
             pager.space(12f)
         }
     }
@@ -375,7 +395,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 val total = money.format(item.total)
 
                 // Ellipsize long names
-                table.ellipsizedRow(listOf(item.name, item.qty.toString(), unit, disc, total), rowHeight)
+                table.ellipsizedRow(listOf(item.description, item.qty.toString(), unit, disc, total), rowHeight)
             }
         }
     }

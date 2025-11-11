@@ -427,7 +427,7 @@ class CustomerDetailsViewModel @Inject constructor(
                 unitPrice = e.unitPrice.toDouble(),
                 total = lineTotal.toDouble(),
                 discount = e.discountPercentage,
-                description = description
+                description = "[" + e.productOwnerName + "] -> " + description
             )
         }
 
@@ -615,18 +615,20 @@ class CustomerDetailsViewModel @Inject constructor(
     // --- Persist order ---
 
     // In your ViewModel
-    private fun UiOrderItem.toEntity(orderId: String): OrderItemEntity =
-        OrderItemEntity(
+    private fun UiOrderItem.toEntity(orderId: String): OrderItemEntity {
+        val serializedFormData = serializeFormData()
+        return OrderItemEntity(
             id = id.ifBlank { UUID.randomUUID().toString() },
             orderId = orderId,
             quantity = quantity,
             unitPrice = unitPrice,
             discountPercentage = discountPercentage.coerceIn(0, 100),
             productTypeLabel = productType.toString(),
-            productOwnerName = name,
-            formDataJson = serializeFormData(),
+            productOwnerName = formData?.productOwner ?: "Error",
+            formDataJson = serializedFormData,
             finalTotal = finalTotal
         )
+    }
 
     private fun OrderItemEntity.toUiItem(): UiOrderItem {
         val deserializedFormData = UiOrderItem.deserializeFormData(formDataJson)
@@ -636,7 +638,7 @@ class CustomerDetailsViewModel @Inject constructor(
             unitPrice = unitPrice,
             discountPercentage = discountPercentage,
             productType = ProductType.valueOf(productTypeLabel),
-            name = productOwnerName,
+            name = deserializedFormData?.productOwner ?: productOwnerName,
             formData = deserializedFormData,
             finalTotal = finalTotal,
             productDescription = deserializedFormData?.productDescription ?: ""
