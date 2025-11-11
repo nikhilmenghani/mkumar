@@ -18,262 +18,427 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         val doc = PdfDocument()
         val out = ByteArrayOutputStream()
 
-        // --- Page metrics (A4 points) ---
         val pageWidth = 595
         val pageHeight = 842
-        val marginL = 36f
-        val marginR = 36f
-        val marginT = 36f
-        val marginB = 36f
-        val contentW = pageWidth - marginL - marginR
+        val insets = Insets(36f, 36f, 36f, 36f)
 
-        // --- Typography ---
-        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val typo = Typography()
+        val rules = Rules()
+        val money = MoneyFormatter.inr(hasCents(data))
+
+        val pager = Pager(doc, pageWidth, pageHeight, insets)
+
+        // Page 1
+        pager.startPage()
+        HeaderSection.draw(pager, data, typo, rules)
+
+        // Items header
+        ItemsSection.drawHeader(pager, typo, rules)
+
+        // Items rows (auto page-break; re-draws headers on new pages)
+        ItemsSection.drawRows(pager, data, money, typo, rules)
+
+        // Totals
+        TotalsSection.draw(pager, data, money, typo, rules)
+
+        // Footer rule
+        pager.space(8f)
+        pager.lineAcross(rules.faintLine)
+
+        pager.finishAndWrite(out)
+        doc.close()
+        return out.toByteArray()
+    }
+
+    // --------------------------
+    // Primitives & styling
+    // --------------------------
+
+    private data class Insets(val left: Float, val right: Float, val top: Float, val bottom: Float)
+
+    private class Typography {
+        val title = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = 18f
             typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
             color = Color.BLACK
         }
-        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val label = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = 11.5f
             color = Color.DKGRAY
         }
-        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = 12f
             color = Color.BLACK
         }
-        val tableHeaderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val tableHeader = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = 11.5f
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
             color = Color.BLACK
+            textAlign = Paint.Align.LEFT
         }
-        val tableTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val tableText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = 11.5f
             typeface = Typeface.MONOSPACE
             color = Color.BLACK
+            textAlign = Paint.Align.LEFT
         }
-        val boldRightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val right = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 12f
+            color = Color.BLACK
+            textAlign = Paint.Align.RIGHT
+        }
+        val rightBold = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = 12.5f
             typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
             color = Color.BLACK
             textAlign = Paint.Align.RIGHT
         }
-        val rightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = 12f
-            color = Color.BLACK
-            textAlign = Paint.Align.RIGHT
-        }
+    }
+
+    private class Rules {
         val faintLine = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             strokeWidth = 1f
             color = Color.LTGRAY
         }
+    }
 
-        // --- Currency formatter (INR) ---
-        val moneyFmt = NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
-            currency = Currency.getInstance("INR")
-            maximumFractionDigits = if (hasCents(data)) 2 else 0
-            minimumFractionDigits = maximumFractionDigits
+    // --------------------------
+    // Pager (pagination + cursor)
+    // --------------------------
+
+    private class Pager(
+        private val doc: PdfDocument,
+        private val pageWidth: Int,
+        private val pageHeight: Int,
+        private val insets: Insets
+    ) {
+        lateinit var canvas: Canvas
+        private var pageNum = 0
+        private lateinit var page: PdfDocument.Page
+
+        private val contentRight get() = pageWidth - insets.right
+        val contentLeft get() = insets.left
+        val contentWidth get() = pageWidth - insets.left - insets.right
+        private val bottomLimit get() = pageHeight - insets.bottom
+
+        var y: Float = insets.top
+
+        fun startPage() {
+            pageNum += 1
+            page = doc.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create())
+            canvas = page.canvas
+            y = insets.top
         }
 
-        // --- Table columns (x positions) ---
-        val colItemX = marginL + 0f
-        val colQtyX = marginL + contentW * 0.44f
-        val colUnitX = marginL + contentW * 0.58f
-        val colDiscountX = marginL + contentW * 0.76f
-        val colTotalX = marginL + contentW * 0.92f
-
-        var pageNum = 1
-        var page = doc.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create())
-        var c = page.canvas
-        var y = marginT
-
-        fun newPageIfNeeded(nextBlockHeight: Float) {
-            if (y + nextBlockHeight > pageHeight - marginB) {
-                doc.finishPage(page)
-                pageNum += 1
-                page = doc.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNum).create())
-                c = page.canvas
-                y = marginT
-                // draw header again on new page
-                y = drawHeader(c, data, titlePaint, labelPaint, textPaint, faintLine, marginL, marginR, y, contentW)
-                // draw table header again
-                y = drawTableHeader(c, tableHeaderPaint, faintLine, colItemX, colQtyX, colUnitX, colDiscountX, colTotalX, y, marginL, marginR)
+        fun ensure(nextBlockHeight: Float, onNewPage: (() -> Unit)? = null) {
+            if (y + nextBlockHeight > bottomLimit) {
+                finishPage()
+                startPage()
+                onNewPage?.invoke()
             }
         }
 
-        // Header
-        y = drawHeader(c, data, titlePaint, labelPaint, textPaint, faintLine, marginL, marginR, y, contentW)
+        fun space(dy: Float) { y += dy }
 
-        // Table header
-        y = drawTableHeader(c, tableHeaderPaint, faintLine, colItemX, colQtyX, colUnitX, colDiscountX, colTotalX, y, marginL, marginR)
-
-        // Table rows
-        val rowHeight = 16f
-        data.items.forEach { row ->
-            newPageIfNeeded(rowHeight + 8f)
-
-            // Item name (trim if too long)
-            val maxItemWidth = colQtyX - colItemX - 8f
-            val itemName = ellipsize(row.name, tableTextPaint, maxItemWidth)
-
-            c.drawText(row.description, colItemX, y, tableTextPaint)
-            c.drawText(row.qty.toString(), colQtyX, y, rightPaint)
-            c.drawText(moneyFmt.format(row.unitPrice), colUnitX, y, rightPaint)
-            val discountText = if (row.discount > 0.0) "${row.discount}%" else "-"
-            c.drawText(discountText, colDiscountX, y, rightPaint)
-            c.drawText(moneyFmt.format(row.total), colTotalX, y, rightPaint)
-            y += rowHeight
+        fun lineAcross(paint: Paint) {
+            canvas.drawLine(contentLeft, y, contentRight, y, paint)
         }
 
-        // Divider before totals
-        newPageIfNeeded(28f)
-        c.drawLine(marginL, y, pageWidth - marginR, y, faintLine)
-        y += 12f
-
-        // Totals block (right-aligned)
-        fun totalRow(label: String, value: Double, bold: Boolean = false) {
-            val paint = if (bold) boldRightPaint else rightPaint
-            val labelPaintR = Paint(textPaint).apply { textAlign = Paint.Align.RIGHT }
-            c.drawText(label, colUnitX, y, labelPaintR)
-            c.drawText(moneyFmt.format(value), colTotalX, y, paint)
-            y += 16f
+        fun finishPage() {
+            doc.finishPage(page)
         }
 
-        totalRow("Subtotal", data.subtotal)
-        if (data.adjustedTotal != 0.0) totalRow("Adjusted Total", -kotlin.math.abs(data.adjustedTotal))
-        if (data.advanceTotal != 0.0) totalRow("Advance Total", data.advanceTotal)
-        totalRow("Remaining Balance", data.remainingBalance, bold = true)
-
-        // Footer line
-        y += 8f
-        c.drawLine(marginL, y, pageWidth - marginR, y, faintLine)
-
-        doc.finishPage(page)
-        doc.writeTo(out)
-        doc.close()
-        return out.toByteArray()
-    }
-
-    // --- Helpers ---
-
-    private fun drawHeader(
-        c: Canvas,
-        data: InvoiceData,
-        titlePaint: Paint,
-        labelPaint: Paint,
-        textPaint: Paint,
-        linePaint: Paint,
-        marginL: Float,
-        marginR: Float,
-        startY: Float,
-        contentW: Float
-    ): Float {
-        var y = startY
-
-        // Shop title & address
-        c.drawText(data.shopName, marginL, y, titlePaint)
-        y += 20f
-        if (data.shopAddress.isNotBlank()) {
-            wrapText(c, data.shopAddress, textPaint, marginL, (marginL + contentW), y).also { y = it }
-            y += 2f
+        fun finishAndWrite(out: ByteArrayOutputStream) {
+            // finish current page
+            finishPage()
+            doc.writeTo(out)
         }
-
-        // Divider
-        y += 6f
-        c.drawLine(marginL, y, (marginL + contentW), y, linePaint)
-        y += 14f
-        // Meta
-        c.drawText("Invoice: ${CustomerDetailsConstants.getInvoiceFileName(data.orderId)}", marginL, y, textPaint)
-        val right = marginL + contentW
-        val rightAlign = Paint(textPaint).apply { textAlign = Paint.Align.RIGHT }
-        c.drawText("Date: ${data.occurredAtText}", right, y, rightAlign)
-        y += 16f
-
-        c.drawText("Customer: ${data.customerName}", marginL, y, textPaint)
-        y += 16f
-        c.drawText("Phone: ${data.customerPhone}", marginL, y, textPaint)
-        y += 12f
-
-        // Divider
-        c.drawLine(marginL, y, (marginL + contentW), y, linePaint)
-        y += 14f
-
-        return y
     }
 
-    private fun drawTableHeader(
-        c: Canvas,
-        headerPaint: Paint,
-        linePaint: Paint,
-        colItemX: Float,
-        colQtyX: Float,
-        colUnitX: Float,
-        colDiscountX: Float,
-        colTotalX: Float,
-        startY: Float,
-        marginL: Float,
-        marginR: Float
-    ): Float {
-        var y = startY
-        c.drawText("Item", colItemX, y, headerPaint)
-        c.drawText("Qty", colQtyX, y, headerPaint.apply { textAlign = Paint.Align.RIGHT })
-        headerPaint.textAlign = Paint.Align.RIGHT
-        c.drawText("Unit", colUnitX, y, headerPaint)
-        c.drawText("Discount %", colDiscountX, y, headerPaint)
-        c.drawText("Total", colTotalX, y, headerPaint)
-        y += 12f
-        c.drawLine(marginL, y, (595 - marginR), y, linePaint)
-        y += 10f
-        headerPaint.textAlign = Paint.Align.LEFT
-        return y
+    // --------------------------
+    // Table DSL
+    // --------------------------
+
+    private enum class Align { LEFT, RIGHT }
+
+    private data class ColumnSpec(
+        val title: String,
+        val widthFraction: Float,
+        val align: Align = Align.LEFT,
+        val padLeft: Float = 0f,
+        val padRight: Float = 0f
+    )
+
+    private data class TableSpec(val columns: List<ColumnSpec>) {
+        val totalFractions = columns.sumOf { it.widthFraction.toDouble() }.toFloat()
     }
 
-    private fun ellipsize(text: String, paint: Paint, maxWidth: Float): String {
-        if (paint.measureText(text) <= maxWidth) return text
-        var low = 0
-        var high = text.length
-        var best = "…"
-        while (low <= high) {
-            val mid = (low + high) / 2
-            val candidate = text.take(mid) + "…"
-            if (paint.measureText(candidate) <= maxWidth) {
-                best = candidate
-                low = mid + 1
-            } else {
-                high = mid - 1
+    private class TableDrawer(
+        private val pager: Pager,
+        private val spec: TableSpec,
+        private val headerPaint: Paint,
+        private val bodyPaint: Paint,
+        private val rules: Rules
+    ) {
+        private val colBounds: List<Pair<Float, Float>> by lazy {
+            val w = pager.contentWidth
+            var x = pager.contentLeft
+            spec.columns.map { col ->
+                val colW = (col.widthFraction / spec.totalFractions) * w
+                val left = x + col.padLeft
+                val right = x + colW - col.padRight
+                x += colW
+                left to right
             }
         }
-        return best
+
+        fun header(rowHeight: Float = 14f, gapBelow: Float = 10f) {
+            pager.ensure(rowHeight + 2 + gapBelow)
+            spec.columns.forEachIndexed { i, col ->
+                val (l, r) = colBounds[i]
+                val x = if (col.align == Align.RIGHT) r else l
+                val p = Paint(headerPaint).apply {
+                    textAlign = if (col.align == Align.RIGHT) Paint.Align.RIGHT else Paint.Align.LEFT
+                }
+                pager.canvas.drawText(col.title, x, pager.y, p)
+            }
+            pager.space(rowHeight)
+            pager.lineAcross(rules.faintLine)
+            pager.space(gapBelow)
+        }
+
+        fun row(cells: List<String>, rowHeight: Float = 16f) {
+            pager.ensure(rowHeight)
+            spec.columns.forEachIndexed { i, col ->
+                val (l, r) = colBounds[i]
+                val p = Paint(bodyPaint).apply {
+                    textAlign = if (col.align == Align.RIGHT) Paint.Align.RIGHT else Paint.Align.LEFT
+                }
+                val x = if (col.align == Align.RIGHT) r else l
+                pager.canvas.drawText(cells.getOrElse(i) { "" }, x, pager.y, p)
+            }
+            pager.space(rowHeight)
+        }
+
+        fun ellipsizedRow(cells: List<String>, rowHeight: Float = 16f) {
+            pager.ensure(rowHeight)
+            spec.columns.forEachIndexed { i, col ->
+                val (l, r) = colBounds[i]
+                val p = Paint(bodyPaint).apply {
+                    textAlign = if (col.align == Align.RIGHT) Paint.Align.RIGHT else Paint.Align.LEFT
+                }
+                val x = if (col.align == Align.RIGHT) r else l
+                val maxW = (r - l)
+                val txt = TextUtil.ellipsize(cells.getOrElse(i) { "" }, p, maxW)
+                pager.canvas.drawText(txt, x, pager.y, p)
+            }
+            pager.space(rowHeight)
+        }
     }
 
-    private fun wrapText(
-        c: Canvas,
-        text: String,
-        paint: Paint,
-        xLeft: Float,
-        xRight: Float,
-        startY: Float,
-        lineSpacing: Float = 14f
-    ): Float {
-        val words = text.split(' ')
-        val maxWidth = xRight - xLeft
-        var line = StringBuilder()
-        var y = startY
+    // --------------------------
+    // Sections
+    // --------------------------
 
-        for (w in words) {
-            val trial = if (line.isEmpty()) w else line.toString() + " " + w
-            if (paint.measureText(trial) <= maxWidth) {
-                line.clear(); line.append(trial)
-            } else {
+    private object HeaderSection {
+        fun draw(pager: Pager, data: InvoiceData, typo: Typography, rules: Rules) {
+            val left = pager.contentLeft
+            val right = left + pager.contentWidth
+
+            // Title
+            pager.canvas.drawText(data.shopName, left, pager.y, typo.title)
+            pager.space(20f)
+
+            // Address (wrapped)
+            if (data.shopAddress.isNotBlank()) {
+                pager.y = TextUtil.wrapText(
+                    pager.canvas, data.shopAddress, typo.text,
+                    xLeft = left, xRight = right, startY = pager.y
+                )
+                pager.space(2f)
+            }
+
+            // Divider
+            pager.space(6f)
+            pager.lineAcross(rules.faintLine)
+            pager.space(14f)
+
+            // Meta row
+            pager.canvas.drawText(
+                "Invoice: ${CustomerDetailsConstants.getInvoiceFileName(data.orderId)}",
+                left, pager.y, typo.text
+            )
+            val rightAlign = Paint(typo.text).apply { textAlign = Paint.Align.RIGHT }
+            pager.canvas.drawText("Date: ${data.occurredAtText}", right, pager.y, rightAlign)
+            pager.space(16f)
+
+            // Customer info
+            pager.canvas.drawText("Customer: ${data.customerName}", left, pager.y, typo.text)
+            pager.space(16f)
+            pager.canvas.drawText("Phone: ${data.customerPhone}", left, pager.y, typo.text)
+            pager.space(12f)
+
+            // Divider
+            pager.lineAcross(rules.faintLine)
+            pager.space(14f)
+        }
+    }
+
+    private object ItemsSection {
+        // Edit columns here to add/remove/resize
+        private val spec = TableSpec(
+            listOf(
+                ColumnSpec(title = "Item",       widthFraction = 0.44f, align = Align.LEFT,  padRight = 8f),
+                ColumnSpec(title = "Qty",        widthFraction = 0.14f, align = Align.RIGHT),
+                ColumnSpec(title = "Unit",       widthFraction = 0.18f, align = Align.RIGHT),
+                ColumnSpec(title = "Discount %", widthFraction = 0.12f, align = Align.RIGHT),
+                ColumnSpec(title = "Total",      widthFraction = 0.12f, align = Align.RIGHT),
+            )
+        )
+
+        fun drawHeader(pager: Pager, typo: Typography, rules: Rules) {
+            TableDrawer(pager, spec, typo.tableHeader, typo.tableText, rules).header()
+        }
+
+        fun drawRows(pager: Pager, data: InvoiceData, money: NumberFormat, typo: Typography, rules: Rules) {
+            val table = TableDrawer(pager, spec, typo.tableHeader, typo.tableText, rules)
+            val rowHeight = 16f
+
+            data.items.forEachIndexed { index, item ->
+                // If we need a new page, we also redraw the header & table header
+                pager.ensure(rowHeight + 8f) {
+                    HeaderSection.draw(pager, data, typo, rules)
+                    drawHeader(pager, typo, rules)
+                }
+
+                val unit = money.format(item.unitPrice)
+                val disc = if (item.discount > 0.0) "${item.discount}%" else "-"
+                val total = money.format(item.total)
+
+                // Ellipsize long names
+                table.ellipsizedRow(listOf(item.name, item.qty.toString(), unit, disc, total), rowHeight)
+            }
+        }
+    }
+
+    private object TotalsSection {
+        fun draw(pager: Pager, data: InvoiceData, money: NumberFormat, typo: Typography, rules: Rules) {
+            // Divider before totals
+            pager.ensure(28f)
+            pager.lineAcross(rules.faintLine)
+            pager.space(12f)
+
+            // Anchor columns (use same relative feel as items table)
+            val rightX = pager.contentLeft + pager.contentWidth
+            val labelAnchorX = pager.contentLeft + pager.contentWidth * 0.76f
+
+            fun totalRow(label: String, value: Double, bold: Boolean = false) {
+                val labelPaint = Paint(typo.text).apply { textAlign = Paint.Align.RIGHT }
+                val valuePaint = if (bold) typo.rightBold else typo.right
+                pager.canvas.drawText(label, labelAnchorX, pager.y, labelPaint)
+                pager.canvas.drawText(money.format(value), rightX, pager.y, valuePaint)
+                pager.space(16f)
+            }
+
+            totalRow("Subtotal", data.subtotal)
+            if (data.adjustedTotal != 0.0) totalRow("Adjusted Total", -kotlin.math.abs(data.adjustedTotal))
+            if (data.advanceTotal != 0.0) totalRow("Advance Total", data.advanceTotal)
+            totalRow("Remaining Balance", data.remainingBalance, bold = true)
+        }
+    }
+
+    // --------------------------
+    // Text helpers
+    // --------------------------
+
+    private object TextUtil {
+        fun ellipsize(text: String, paint: Paint, maxWidth: Float): String {
+            if (paint.measureText(text) <= maxWidth) return text
+            var low = 0
+            var high = text.length
+            var best = "…"
+            while (low <= high) {
+                val mid = (low + high) / 2
+                val candidate = text.take(mid) + "…"
+                if (paint.measureText(candidate) <= maxWidth) {
+                    best = candidate
+                    low = mid + 1
+                } else {
+                    high = mid - 1
+                }
+            }
+            return best
+        }
+
+        fun wrapText(
+            c: Canvas,
+            text: String,
+            paint: Paint,
+            xLeft: Float,
+            xRight: Float,
+            startY: Float,
+            lineSpacing: Float = 14f
+        ): Float {
+            val words = text.split(' ')
+            val maxWidth = xRight - xLeft
+            var line = StringBuilder()
+            var y = startY
+
+            fun flush() {
+                if (line.isNotEmpty()) {
+                    c.drawText(line.toString(), xLeft, y, paint)
+                    y += lineSpacing
+                    line = StringBuilder()
+                }
+            }
+
+            for (w in words) {
+                val trial = if (line.isEmpty()) w else line.toString() + " " + w
+                if (paint.measureText(trial) <= maxWidth) {
+                    line.clear(); line.append(trial)
+                } else {
+                    flush()
+                    // Hard-break if a single word exceeds width
+                    if (paint.measureText(w) > maxWidth) {
+                        var idx = 0
+                        while (idx < w.length) {
+                            var lo = idx
+                            var hi = w.length
+                            while (lo < hi) {
+                                val mid = (lo + hi + 1) / 2
+                                val part = w.substring(idx, mid)
+                                if (paint.measureText(part) <= maxWidth) lo = mid else hi = mid - 1
+                            }
+                            val part = w.substring(idx, lo)
+                            c.drawText(part, xLeft, y, paint)
+                            y += lineSpacing
+                            idx = lo
+                        }
+                    } else {
+                        line.append(w)
+                    }
+                }
+            }
+            if (line.isNotEmpty()) {
                 c.drawText(line.toString(), xLeft, y, paint)
                 y += lineSpacing
-                line.clear(); line.append(w)
+            }
+            return y
+        }
+    }
+
+    // --------------------------
+    // Money
+    // --------------------------
+
+    private object MoneyFormatter {
+        fun inr(twoDecimals: Boolean): NumberFormat {
+            return NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
+                currency = Currency.getInstance("INR")
+                maximumFractionDigits = if (twoDecimals) 2 else 0
+                minimumFractionDigits = maximumFractionDigits
             }
         }
-        if (line.isNotEmpty()) {
-            c.drawText(line.toString(), xLeft, y, paint)
-            y += lineSpacing
-        }
-        return y
     }
 
     private fun hasCents(data: InvoiceData): Boolean {
