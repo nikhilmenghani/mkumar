@@ -192,17 +192,26 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             }
         }
 
-        fun header(rowHeight: Float = 14f, gapBelow: Float = 10f) {
+        fun header(rowHeight: Float = 14f, gapBelow: Float = 16f) {
+            // Draw top divider
             pager.ensure(rowHeight + 2 + gapBelow)
+            pager.lineAcross(rules.faintLine)
+            pager.space(2f)
+
+            // Vertically center text in header row
+            val textY = pager.y + rowHeight / 2 - (headerPaint.descent() + headerPaint.ascent()) / 2
             spec.columns.forEachIndexed { i, col ->
                 val (l, r) = colBounds[i]
                 val x = if (col.align == Align.RIGHT) r else l
                 val p = Paint(headerPaint).apply {
                     textAlign = if (col.align == Align.RIGHT) Paint.Align.RIGHT else Paint.Align.LEFT
                 }
-                pager.canvas.drawText(col.title, x, pager.y, p)
+                pager.canvas.drawText(col.title, x, textY, p)
             }
             pager.space(rowHeight)
+            pager.space(2f)
+
+            // Draw bottom divider
             pager.lineAcross(rules.faintLine)
             pager.space(gapBelow)
         }
@@ -324,16 +333,13 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 left, pager.y, typo.text
             )
             val rightAlign = Paint(typo.text).apply { textAlign = Paint.Align.RIGHT }
-            pager.canvas.drawText("Date: ${data.occurredAtText}", right, pager.y, rightAlign)
+            pager.canvas.drawText("Date Invoice Generated: ${data.occurredAtText}", right, pager.y, rightAlign)
             pager.space(16f)
 
             pager.canvas.drawText("Customer: ${data.customerName}", left, pager.y, typo.text)
             pager.space(16f)
             pager.canvas.drawText("Phone: ${data.customerPhone}", left, pager.y, typo.text)
             pager.space(12f)
-
-            pager.lineAcross(rules.faintLine)
-            pager.space(14f)
         }
     }
 

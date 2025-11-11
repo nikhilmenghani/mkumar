@@ -438,7 +438,7 @@ class CustomerDetailsViewModel @Inject constructor(
             ownerName = "Mahendra Menghani",
             customerPhone = uiCustomer?.phone ?: "-",
             ownerPhone = "9427956490",
-            ownerEmail = "mahendramenghani@gmail.com",
+            ownerEmail = "menghani.mahendra@gmail.com",
             orderId = order.id,
             occurredAtText = dateFmt.format(Date(order.occurredAt)),
             items = invoiceItems,
