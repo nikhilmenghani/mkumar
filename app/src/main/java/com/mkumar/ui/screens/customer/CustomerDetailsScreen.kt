@@ -159,6 +159,7 @@ fun CustomerDetailsScreen(
                 ProductType.Frame,
                 ProductType.Lens,
                 ProductType.ContactLens,
+                ProductType.GeneralProduct
             ),
             addProductLastUsed = null, // optional if you track it in VM
             onAddProductClick = { type ->

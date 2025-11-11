@@ -89,6 +89,11 @@ private fun RenderProductForm(
             initialData = productFormData as? ProductFormData.ContactLensData,
             onChange = updateProductFormData,
         )
+
+        ProductType.GeneralProduct -> GeneralProductForm(
+            initialData = productFormData as? ProductFormData.GeneralProductData,
+            onChange = updateProductFormData,
+        )
     }
 }
 
@@ -96,6 +101,7 @@ fun defaultFormFor(type: ProductType, productOwner: String): ProductFormData = w
     ProductType.Frame -> ProductFormData.FrameData().copy(productOwner = productOwner)
     ProductType.Lens -> ProductFormData.LensData().copy(productOwner = productOwner)
     ProductType.ContactLens -> ProductFormData.ContactLensData().copy(productOwner = productOwner)
+    ProductType.GeneralProduct -> ProductFormData.GeneralProductData().copy(productOwner = productOwner)
 }
 
 private fun <T : ProductFormData> validateAndSave(

@@ -34,11 +34,11 @@ object ProductFormValidators {
         return ValidationResult(errors.isEmpty(), errors)
     }
 
-    fun validate(formData: ProductFormData): ValidationResult {
-        return when (formData) {
-            is ProductFormData.FrameData -> validateFrameForm(formData)
-            is ProductFormData.LensData -> validateLensForm(formData)
-            is ProductFormData.ContactLensData -> validateContactLensForm(formData)
-        }
-    }
+//    fun validate(formData: ProductFormData): ValidationResult {
+//        return when (formData) {
+//            is ProductFormData.FrameData -> validateFrameForm(formData)
+//            is ProductFormData.LensData -> validateLensForm(formData)
+//            is ProductFormData.ContactLensData -> validateContactLensForm(formData)
+//        }
+//    }
 }

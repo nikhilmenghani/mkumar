@@ -250,3 +250,54 @@ fun ContactLensForm(
         )
     }
 }
+
+@OptIn(FlowPreview::class)
+@Composable
+fun GeneralProductForm(
+    initialData: ProductFormData.GeneralProductData? = null,
+    onChange: (ProductFormData.GeneralProductData) -> Unit,
+) {
+    var form by remember {
+        mutableStateOf(
+            initialData ?: ProductFormData.GeneralProductData()
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { form }
+            .debounce(200)
+            .distinctUntilChanged()
+            .collect { onChange(it) }
+    }
+
+    Column {
+        OLTextField(
+            value = form.productOwner,
+            label = "Product Owner",
+            onValueChange = { form = form.copy(productOwner = it) },
+            onCommit = { onChange(form) }
+        )
+        OLTextField(
+            value = form.productDescription,
+            label = "Description",
+            onValueChange = { form = form.copy(productDescription = it) },
+            onCommit = { onChange(form) }
+        )
+        OLTextField(
+            value = form.productType,
+            label = "Product Type",
+            onValueChange = { form = form.copy(productType = it) },
+            onCommit = { onChange(form) }
+        )
+
+        ItemPriceEditor(
+            initialUnitPrice = form.unitPrice.toString(),
+            initialDiscountPct = form.discountPct.toString(),
+            initialQuantity = form.quantity.toString(),
+            onUnitPriceChange = { form = form.copy(unitPrice = it.toIntOrNull() ?: 0) },
+            onDiscountChange = { form = form.copy(discountPct = it.toIntOrNull() ?: 0) },
+            onQuantityChange = { form = form.copy(quantity = it.toIntOrNull() ?: 1) },
+            onTotalChange = { form = form.copy(total = it.toIntOrNull() ?: 0) }
+        )
+    }
+}

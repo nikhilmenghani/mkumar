@@ -57,4 +57,16 @@ sealed class ProductFormData {
         override val discountPct: Int = 0,
         override val total: Int = 0
     ) : ProductFormData()
+
+    @Serializable
+    @SerialName("GeneralProductData")
+    data class GeneralProductData(
+        val productType: String = "",
+        override val productDescription: String = "",
+        override val productOwner: String = "",
+        override val unitPrice: Int = 0,
+        override val quantity: Int = 1,
+        override val discountPct: Int = 0,
+        override val total: Int = 0
+    ) : ProductFormData()
 }

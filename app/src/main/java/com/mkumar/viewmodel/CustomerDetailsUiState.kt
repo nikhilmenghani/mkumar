@@ -7,7 +7,7 @@ import kotlinx.serialization.json.Json
 import java.time.Instant
 import java.util.UUID
 
-enum class ProductType { Lens, Frame, ContactLens }
+enum class ProductType { Lens, Frame, ContactLens, GeneralProduct }
 
 val productTypeDisplayNames = mapOf(
     ProductType.ContactLens to "Contact Lens",
