@@ -32,7 +32,7 @@ fun OrderListPreview() {
         OrderRowUi(
             id = "1",
             occurredAt = java.time.Instant.now(),
-            itemsLabel = "2x Widget, 1x Gadget",
+//            items = emptyList(),
             amount = 1250,
             hasInvoice = true,
             isQueued = false,
@@ -42,7 +42,7 @@ fun OrderListPreview() {
         OrderRowUi(
             id = "2",
             occurredAt = java.time.Instant.now(),
-            itemsLabel = "1x Thingamajig",
+//            items = emptyList(),
             amount = 750,
             hasInvoice = false,
             isQueued = true,

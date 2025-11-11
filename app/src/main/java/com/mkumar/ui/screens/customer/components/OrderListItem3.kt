@@ -167,7 +167,7 @@ fun OrderListItem3Preview() {
         row = OrderRowUi(
             id = "1",
             occurredAt = java.time.Instant.now(),
-            itemsLabel = "", // not used here
+//            items = emptyList(),
             amount = 1250,
             hasInvoice = true,
             isQueued = true,

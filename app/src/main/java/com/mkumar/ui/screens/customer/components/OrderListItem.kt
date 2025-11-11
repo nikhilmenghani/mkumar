@@ -24,7 +24,6 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.screens.customer.model.OrderRowUi
 import com.mkumar.viewmodel.OrderRowAction
@@ -57,12 +56,12 @@ fun OrderListItem(
                 StatusBadges(row)
             }
             Spacer(Modifier.height(4.dp))
-            Text(
-                row.itemsLabel,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+//            Text(
+//                row.items.joinToString(", ") { it.name },
+//                style = MaterialTheme.typography.bodyMedium,
+//                maxLines = 2,
+//                overflow = TextOverflow.Ellipsis
+//            )
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total: ₹${row.amount}", style = MaterialTheme.typography.titleSmall)
@@ -99,7 +98,7 @@ fun OrderListItemPreview() {
         row = OrderRowUi(
             id = "1",
             occurredAt = java.time.Instant.now(),
-            itemsLabel = "2x Widget, 1x Gadget",
+//            items = emptyList(),
             amount = 1250,
             hasInvoice = true,
             isQueued = true,

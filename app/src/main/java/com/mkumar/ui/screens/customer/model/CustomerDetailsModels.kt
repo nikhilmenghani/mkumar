@@ -18,7 +18,7 @@ data class CustomerHeaderUi(
 data class OrderRowUi(
     val id: String,
     val occurredAt: Instant,
-    val itemsLabel: String,
+//    val items: List<UiOrderItem>,
     val amount: Int,
     val remainingBalance: Int,
     val isQueued: Boolean,     // not yet synced

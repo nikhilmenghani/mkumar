@@ -246,7 +246,7 @@ fun CustomerDetailsScreen(
                         OrderRowUi(
                             id = o.id,
                             occurredAt = o.occurredAt,
-                            itemsLabel = if (o.items.isEmpty()) "—" else o.items.joinToString { it.labelOrFallback() },
+//                            items = o.items,
                             amount = o.totalAmount,
                             isQueued = false,
                             isSynced = true,

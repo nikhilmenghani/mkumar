@@ -23,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.screens.customer.model.OrderRowUi
 import com.mkumar.viewmodel.OrderRowAction
@@ -55,13 +54,13 @@ fun OrderListItem2(
                 StatusBadges(row)
             }
             Spacer(Modifier.height(8.dp))
-            Text(
-                row.itemsLabel,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+//            Text(
+//                row.items.joinToString(", ") { it.name },
+//                style = MaterialTheme.typography.bodyLarge,
+//                maxLines = 2,
+//                overflow = TextOverflow.Ellipsis,
+//                color = MaterialTheme.colorScheme.onSurface
+//            )
             Spacer(Modifier.height(12.dp))
             androidx.compose.material3.HorizontalDivider()
             Spacer(Modifier.height(12.dp))
@@ -100,7 +99,7 @@ fun OrderListItem2Preview() {
         row = OrderRowUi(
             id = "1",
             occurredAt = java.time.Instant.now(),
-            itemsLabel = "2x Widget, 1x Gadget",
+//            items = emptyList(),
             amount = 1250,
             hasInvoice = true,
             isQueued = true,
