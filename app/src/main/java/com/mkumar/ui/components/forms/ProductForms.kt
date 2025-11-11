@@ -37,13 +37,6 @@ fun FrameForm(
         )
     }
 
-    LaunchedEffect(Unit) {
-        snapshotFlow { frame }
-            .debounce(200)
-            .distinctUntilChanged()
-            .collect { onChange(it) }
-    }
-
     // Throttle expensive upstream updates
     LaunchedEffect(Unit) {
         snapshotFlow { frame }
@@ -79,139 +72,58 @@ fun FrameForm(
     }
 }
 
+@OptIn(FlowPreview::class)
 @Composable
 fun LensForm(
     initialData: ProductFormData.LensData? = null,
     onChange: (ProductFormData.LensData) -> Unit,
 ) {
-    var owner by remember { mutableStateOf(initialData?.productOwner.orEmpty()) }
-    var leftSphere by remember { mutableStateOf(initialData?.leftSphere.orEmpty()) }
-    var leftAxis by remember { mutableStateOf(initialData?.leftAxis.orEmpty()) }
-    var rightSphere by remember { mutableStateOf(initialData?.rightSphere.orEmpty()) }
-    var rightAxis by remember { mutableStateOf(initialData?.rightAxis.orEmpty()) }
-    var unitPrice by remember { mutableStateOf(initialData?.unitPrice?.toString() ?: "") }
-    var discountPct by remember { mutableStateOf(initialData?.discountPct?.toString() ?: "0") }
-    var quantity by remember { mutableStateOf(initialData?.quantity?.toString() ?: "1") }
-    var total by remember { mutableStateOf(initialData?.total?.toString() ?: "0") }
-    var description by remember { mutableStateOf(initialData?.productDescription.orEmpty()) }
+    var lens by remember {
+        mutableStateOf(
+            initialData ?: ProductFormData.LensData(
+                productOwner = "",
+                productDescription = "",
+                leftSphere = "",
+                leftAxis = "",
+                rightSphere = "",
+                rightAxis = "",
+                unitPrice = 0,
+                discountPct = 0,
+                quantity = 1,
+                total = 0
+            )
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { lens }
+            .debounce(200)
+            .distinctUntilChanged()
+            .collect { onChange(it) }
+    }
 
     Column {
         OLTextField(
-            value = owner,
+            value = lens.productOwner,
             label = "Product Owner",
-            onCommit = {
-                onChange(
-                    ProductFormData.LensData(
-                        productOwner = owner,
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { owner = it }
+            onValueChange = { lens = lens.copy(productOwner = it) },
+            onCommit = { onChange(lens) }
         )
-
         OLTextField(
-            value = description,
+            value = lens.productDescription,
             label = "Description",
-            onCommit = {
-                onChange(
-                    ProductFormData.LensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { description = it }
+            onValueChange = { lens = lens.copy(productDescription = it) },
+            onCommit = { onChange(lens) }
         )
 
         ItemPriceEditor(
-            initialUnitPrice = unitPrice,
-            initialDiscountPct = discountPct,
-            initialQuantity = quantity,
-            onUnitPriceChange = { newPrice ->
-                unitPrice = newPrice
-                onChange(
-                    ProductFormData.LensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = newPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onDiscountChange = { newDiscount ->
-                discountPct = newDiscount
-                onChange(
-                    ProductFormData.LensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = newDiscount.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onQuantityChange = { newQuantity ->
-                quantity = newQuantity
-                onChange(
-                    ProductFormData.LensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = newQuantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onTotalChange = { newTotal ->
-                total = newTotal
-                onChange(
-                    ProductFormData.LensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        leftSphere = leftSphere,
-                        leftAxis = leftAxis,
-                        rightSphere = rightSphere,
-                        rightAxis = rightAxis,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = newTotal.toInt()
-                    )
-                )
-            }
+            initialUnitPrice = lens.unitPrice.toString(),
+            initialDiscountPct = lens.discountPct.toString(),
+            initialQuantity = lens.quantity.toString(),
+            onUnitPriceChange = { lens = lens.copy(unitPrice = it.toIntOrNull() ?: 0) },
+            onDiscountChange = { lens = lens.copy(discountPct = it.toIntOrNull() ?: 0) },
+            onQuantityChange = { lens = lens.copy(quantity = it.toIntOrNull() ?: 1) },
+            onTotalChange = { lens = lens.copy(total = it.toIntOrNull() ?: 0) }
         )
     }
 }
@@ -221,120 +133,43 @@ fun ContactLensForm(
     initialData: ProductFormData.ContactLensData? = null,
     onChange: (ProductFormData.ContactLensData) -> Unit,
 ) {
-    var owner by remember { mutableStateOf(initialData?.productOwner.orEmpty()) }
-    var power by remember { mutableStateOf(initialData?.power.orEmpty()) }
-    var duration by remember { mutableStateOf(initialData?.duration.orEmpty()) }
-    var unitPrice by remember { mutableStateOf(initialData?.unitPrice?.toString() ?: "0") }
-    var discountPct by remember { mutableStateOf(initialData?.discountPct?.toString() ?: "0") }
-    var quantity by remember { mutableStateOf(initialData?.quantity?.toString() ?: "1") }
-    var total by remember { mutableStateOf(initialData?.total?.toString() ?: "0") }
-    var description by remember { mutableStateOf(initialData?.productDescription.orEmpty()) }
+    var contactLens by remember {
+        mutableStateOf(
+            initialData ?: ProductFormData.ContactLensData(
+                productOwner = "",
+                productDescription = "",
+                power = "",
+                duration = "",
+                unitPrice = 0,
+                discountPct = 0,
+                quantity = 1,
+                total = 0
+            )
+        )
+    }
 
     Column {
         OLTextField(
-            value = owner,
+            value = contactLens.productOwner,
             label = "Product Owner",
-            onCommit = {
-                onChange(
-                    ProductFormData.ContactLensData(
-                        productOwner = owner,
-                        productDescription = description,
-                        power = power,
-                        duration = duration,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { owner = it }
+            onValueChange = { contactLens = contactLens.copy(productOwner = it) },
+            onCommit = { onChange(contactLens) }
         )
-
         OLTextField(
-            value = description,
+            value = contactLens.productDescription,
             label = "Description",
-            onCommit = {
-                onChange(
-                    ProductFormData.ContactLensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        power = power,
-                        duration = duration,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onValueChange = { description = it }
+            onValueChange = { contactLens = contactLens.copy(productDescription = it) },
+            onCommit = { onChange(contactLens) }
         )
 
         ItemPriceEditor(
-            initialUnitPrice = unitPrice,
-            initialDiscountPct = discountPct,
-            initialQuantity = quantity,
-            onUnitPriceChange = { newPrice ->
-                unitPrice = newPrice
-                onChange(
-                    ProductFormData.ContactLensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        power = power,
-                        duration = duration,
-                        unitPrice = newPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onDiscountChange = { newDiscount ->
-                discountPct = newDiscount
-                onChange(
-                    ProductFormData.ContactLensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        power = power,
-                        duration = duration,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = newDiscount.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onQuantityChange = { newQuantity ->
-                quantity = newQuantity
-                onChange(
-                    ProductFormData.ContactLensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        power = power,
-                        duration = duration,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = newQuantity.toIntOrNull() ?: 1,
-                        total = total.toInt()
-                    )
-                )
-            },
-            onTotalChange = { newTotal ->
-                total = newTotal
-                onChange(
-                    ProductFormData.ContactLensData(
-                        productOwner = initialData?.productOwner.orEmpty(),
-                        productDescription = description,
-                        power = power,
-                        duration = duration,
-                        unitPrice = unitPrice.toIntOrNull() ?: 0,
-                        discountPct = discountPct.toIntOrNull() ?: 0,
-                        quantity = quantity.toIntOrNull() ?: 1,
-                        total = newTotal.toInt()
-                    )
-                )
-            }
+            initialUnitPrice = contactLens.unitPrice.toString(),
+            initialDiscountPct = contactLens.discountPct.toString(),
+            initialQuantity = contactLens.quantity.toString(),
+            onUnitPriceChange = { contactLens = contactLens.copy(unitPrice = it.toIntOrNull() ?: 0) },
+            onDiscountChange = { contactLens = contactLens.copy(discountPct = it.toIntOrNull() ?: 0) },
+            onQuantityChange = { contactLens = contactLens.copy(quantity = it.toIntOrNull() ?: 1) },
+            onTotalChange = { contactLens = contactLens.copy(total = it.toIntOrNull() ?: 0) }
         )
     }
 }
