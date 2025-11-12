@@ -12,7 +12,8 @@ enum class ProductType { Lens, Frame, ContactLens, GeneralProduct }
 val productTypeDisplayNames = mapOf(
     ProductType.ContactLens to "Contact Lens",
     ProductType.Frame to "Frame",
-    ProductType.Lens to "Lens"
+    ProductType.Lens to "Lens",
+    ProductType.GeneralProduct to "General Product"
 )
 
 /** Lightweight UI customer model */

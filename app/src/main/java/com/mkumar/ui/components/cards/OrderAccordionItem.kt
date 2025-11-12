@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
@@ -49,6 +50,7 @@ import com.mkumar.ui.components.forms.defaultFormFor
 import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.ProductType
 import com.mkumar.viewmodel.UiOrderItem
+import com.mkumar.viewmodel.productTypeDisplayNames
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -76,16 +78,16 @@ fun OrderAccordionItem(
 
     val cardColors = AppColors.elevatedCardColors()
     val selectedTypeAssistChip = if (selectedType?.name == "GeneralProduct") {
-        (selectedProduct.formData as? ProductFormData.GeneralProductData)?.productType ?: selectedType.name
+        (selectedProduct.formData as? ProductFormData.GeneralProductData)?.productType ?: productTypeDisplayNames[selectedType]
     } else {
-        selectedType?.name
+        productTypeDisplayNames[selectedType]
     }
 
 
     // Title fallback text
     val titleText = selectedProduct.formData?.productDescription
-        ?.ifBlank { "New ${selectedType ?: ""}" }
-        ?: "New ${selectedType ?: ""}"
+        ?.ifBlank { "New ${productTypeDisplayNames[selectedType] ?: ""}" }
+        ?: "New ${productTypeDisplayNames[selectedType] ?: ""}"
 
     // Owner (subtitle) from draft so it reflects edits immediately
     val owner: String = draft.productOwner.orEmpty()
@@ -162,7 +164,13 @@ fun OrderAccordionItem(
                                 Spacer(Modifier.width(6.dp))
                                 AssistChip(
                                     onClick = { },
-                                    label = { selectedTypeAssistChip?.let { Text(it, style = MaterialTheme.typography.labelSmall) } }
+                                    label = { selectedTypeAssistChip?.let { Text(it,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis) } },
+                                    modifier = Modifier
+                                        .wrapContentHeight()
                                 )
                             }
                         }
@@ -171,7 +179,7 @@ fun OrderAccordionItem(
 
                 // Right: Price + Chevron
                 Column(
-                    modifier = Modifier.width(84.dp),
+                    modifier = Modifier.width(74.dp),
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
@@ -225,9 +233,9 @@ fun OrderAccordionItem(
 fun PreviewOrderAccordionItem() {
     val sampleProduct = UiOrderItem(
         id = "1",
-        productType = ProductType.Lens,
+        productType = ProductType.GeneralProduct,
         productDescription = "Sample Lens",
-        formData = defaultFormFor(ProductType.Lens, "Nikhil"),
+        formData = defaultFormFor(ProductType.GeneralProduct, "Mahendra"),
         finalTotal = 1200,
         name = "Nikhil",
         quantity = 1,
@@ -237,7 +245,7 @@ fun PreviewOrderAccordionItem() {
     OrderAccordionItem(
         productOwner = "Nikhil",
         selectedProduct = sampleProduct,
-        selectedType = ProductType.Lens,
+        selectedType = ProductType.GeneralProduct,
         onFormSave = { _, _ -> },
         onDelete = {},
         collapsedHeight = 92.dp
