@@ -4,11 +4,9 @@ import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
@@ -24,14 +22,11 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,19 +35,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.mkumar.common.constant.CustomerDetailsConstants
-import com.mkumar.ui.components.accordions.OrderSummaryAccordion
-import com.mkumar.ui.components.bottomsheets.BaseBottomSheet
-import com.mkumar.ui.components.bottomsheets.ProductPickerSheet
+import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderList
-import com.mkumar.ui.screens.customer.components.OrderSheet
 import com.mkumar.ui.screens.customer.model.CustomerHeaderUi
 import com.mkumar.ui.screens.customer.model.OrderRowUi
 import com.mkumar.viewmodel.CustomerDetailsEffect
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.OrderRowAction
-import com.mkumar.viewmodel.ProductType
 import com.mkumar.viewmodel.UiOrderItem
 import kotlinx.coroutines.flow.collectLatest
 
@@ -66,9 +57,6 @@ fun CustomerDetailsScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     // Bottom sheet state driven by ui.isOrderSheetOpen
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var showCustomerDialog by remember { mutableStateOf(false) }
-    var showProductPicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Snackbar + one-off effects
@@ -78,12 +66,6 @@ fun CustomerDetailsScreen(
             when (effect) {
                 is CustomerDetailsEffect.ShowMessage ->
                     snackbarHostState.showSnackbar(effect.message)
-
-                is CustomerDetailsEffect.OpenOrderSheet ->
-                    runCatching { showCustomerDialog = true }
-
-                CustomerDetailsEffect.CloseOrderSheet ->
-                    runCatching { showCustomerDialog = false }
 
                 is CustomerDetailsEffect.ViewInvoice -> {
                     val uri = effect.uri
@@ -114,67 +96,10 @@ fun CustomerDetailsScreen(
                             )
                         }
                 }
+                else -> {}
             }
         }
     }
-
-    if (showCustomerDialog){
-        BaseBottomSheet(
-            title = "Customer Details ${ui.draft.editingOrderId}",
-            showTitle = false,
-            sheetContent = {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 2.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 72.dp)
-                ) {
-                    item {
-                        OrderSheet(
-                            state = ui,
-                            viewModel = viewModel,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        if (ui.draft.items.isNotEmpty()) {
-                            OrderSummaryAccordion(
-                                totalAmount = ui.draft.totalAmount,
-                                adjustedAmount = ui.draft.adjustedAmount,
-                                onAdjustedAmountChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdjustedAmount(it)) },
-                                advanceTotal = ui.draft.advanceTotal,
-                                onAdvanceTotalChange = { viewModel.onIntent(CustomerDetailsIntent.UpdateAdvanceTotal(it)) },
-                                remainingBalance = ui.draft.remainingBalance,
-                                initiallyExpanded = false
-                            )
-                        }
-                    }
-                }
-            },
-            onDismiss = { viewModel.closeSheet() },
-            showDismiss = true,
-            onDoneClick = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
-            showDone = true,
-            showAddProduct = true,
-            addProductCommonTypes = ProductType.entries.toList(),
-            addProductLastUsed = null, // optional if you track it in VM
-            onAddProductClick = { type ->
-                viewModel.onIntent(CustomerDetailsIntent.AddItem(type))
-            },
-            onOpenProductPicker = {
-                showProductPicker = true
-            },
-        )
-    }
-
-    ProductPickerSheet(
-        isOpen = showProductPicker,
-        onDismiss = { showProductPicker = false },
-        allTypes = ProductType.entries.toList(),
-        onAddClick = { type ->
-            viewModel.onIntent(CustomerDetailsIntent.AddItem(type))
-            showProductPicker = false
-        }
-    )
 
     Scaffold(
         topBar = {
@@ -194,11 +119,19 @@ fun CustomerDetailsScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { viewModel.onIntent(CustomerDetailsIntent.NewSale) },
-                icon = { Icon(Icons.Outlined.AddShoppingCart, contentDescription = null) },
-                text = { Text("New Sale") }
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        val cid = ui.customer?.id.orEmpty()
+                        navController.navigate(Routes.orderEditor(customerId = cid))
+                    },
+                    icon = { Icon(Icons.Outlined.AddShoppingCart, contentDescription = null) },
+                    text = { Text("New Sale") }
+                )
+            }
+
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
@@ -256,7 +189,10 @@ fun CustomerDetailsScreen(
                     orders = rows,
                     onAction = { action ->
                         when (action) {
-                            is OrderRowAction.Open -> viewModel.onIntent(CustomerDetailsIntent.OpenOrder(action.orderId))
+                            is OrderRowAction.Open -> {
+                                val cid = ui.customer?.id.orEmpty()
+                                navController.navigate(Routes.orderEditor(customerId = cid, orderId = action.orderId))
+                            }
                             is OrderRowAction.Delete -> viewModel.onIntent(CustomerDetailsIntent.DeleteOrder(action.orderId))
                             is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId))
                             is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId))

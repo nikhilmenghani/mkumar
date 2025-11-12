@@ -1,5 +1,6 @@
 package com.mkumar.ui.navigation
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -50,6 +51,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,12 +69,14 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mkumar.common.extension.navigateWithState
 import com.mkumar.ui.screens.HomeScreen
 import com.mkumar.ui.screens.PreferenceScreen
 import com.mkumar.ui.screens.customer.CustomerDetailsScreen
+import com.mkumar.ui.screens.customer.OrderEditorScreen
 import com.mkumar.ui.screens.search.SearchScreen
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.CustomerViewModel
@@ -102,9 +106,16 @@ sealed class Screen(val route: String) {
 
 // --- Added: simple route helpers for CustomerDetail with an argument
 object Routes {
+    const val CustomerGraph = "customer_graph/{customerId}"
+    fun customerGraph(customerId: String) = "customer_graph/$customerId"
+
     const val CustomerDetail = "CustomerDetail"
     const val CustomerDetailWithArg = "CustomerDetail/{customerId}"
     fun customerDetail(id: String) = "CustomerDetail/$id"
+
+    const val OrderEditor = "orderEditor?customerId={customerId}&orderId={orderId}"
+    fun orderEditor(customerId: String, orderId: String = "") =
+        "orderEditor?customerId=$customerId&orderId=$orderId"
 }
 
 val excludedScreens = listOf(Screens.Profile.name, Screens.Apps.name)
@@ -371,6 +382,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     }
 }
 
+@SuppressLint("UnrememberedGetBackStackEntry")
 @Composable
 fun NavigationHost(
     navController: NavHostController,
@@ -520,17 +532,50 @@ fun NavigationHost(
             )
         }
 
-        composable(
-            route = Routes.CustomerDetailWithArg, // "CustomerDetail/{customerId}"
-            arguments = listOf(navArgument("customerId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val vm: CustomerDetailsViewModel =
-                hiltViewModel(backStackEntry)
+        navigation(
+            startDestination = Routes.CustomerDetailWithArg,     // "CustomerDetail/{customerId}"
+            route = Routes.CustomerGraph                         // "customer_graph/{customerId}"
+        ) {
+            composable(
+                route = Routes.CustomerDetailWithArg,
+                arguments = listOf(navArgument("customerId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val customerId = backStackEntry.arguments?.getString("customerId").orEmpty()
 
-            CustomerDetailsScreen(
-                navController = navController,
-                viewModel = vm
-            )
+                val parentEntry = remember(customerId) {
+                    navController.getBackStackEntry(Routes.customerGraph(customerId))
+                }
+                // One shared VM instance for both screens:
+                val vm: CustomerDetailsViewModel = hiltViewModel(parentEntry)
+
+                CustomerDetailsScreen(
+                    navController = navController,
+                    viewModel = vm
+                )
+            }
+
+            composable(
+                route = Routes.OrderEditor,
+                arguments = listOf(
+                    navArgument("customerId") { type = NavType.StringType },
+                    navArgument("orderId") { type = NavType.StringType; defaultValue = "" }
+                )
+            ) { backStackEntry ->
+                val customerId = backStackEntry.arguments?.getString("customerId").orEmpty()
+                val orderId = backStackEntry.arguments?.getString("orderId").orEmpty()
+
+                val parentEntry = remember(customerId) {
+                    navController.getBackStackEntry(Routes.customerGraph(customerId))
+                }
+                val vm: CustomerDetailsViewModel = hiltViewModel(parentEntry)
+
+                OrderEditorScreen(
+                    navController = navController,
+                    viewModel = vm,
+                    customerId = customerId,
+                    editingOrderId = orderId
+                )
+            }
         }
     }
 }
