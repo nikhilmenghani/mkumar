@@ -3,6 +3,7 @@ package com.mkumar.ui.components.inputs
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import java.math.RoundingMode
+import java.util.Locale
 
 /* ---------- FieldMode: one prop to rule formatting + keyboard ---------- */
 
@@ -78,4 +79,63 @@ sealed interface FieldMode {
             return n.coerceIn(0, 100).toString()
         }
     }
+
+    /** NEW: TitleCase for human names/owners: "john DOE-smith" -> "John Doe-Smith" */
+    data class TitleCase(
+        val locale: Locale = Locale.getDefault()
+    ) : FieldMode {
+        override val keyboardType = KeyboardType.Text
+        override val defaultIme = ImeAction.Next
+
+        override fun sanitizeOnChange(input: String): String {
+            // collapse repeated spaces while typing (optional nice touch)
+            return input.replace(Regex("\\s+"), " ")
+        }
+
+        override fun formatOnCommit(input: String): String = input.toTitleCasePreservingDelimiters(locale)
+    }
+
+    /** NEW: lowerCamelCase: "product owner name" -> "productOwnerName" */
+    data class LowerCamelCase(
+        val locale: Locale = Locale.getDefault()
+    ) : FieldMode {
+        override val keyboardType = KeyboardType.Text
+        override val defaultIme = ImeAction.Next
+
+        override fun sanitizeOnChange(input: String): String {
+            // keep simple; users can type freely
+            return input
+        }
+
+        override fun formatOnCommit(input: String): String = input.toLowerCamel(locale)
+    }
+}
+
+private fun String.toTitleCasePreservingDelimiters(locale: Locale): String {
+    if (isBlank()) return this
+    val lower = lowercase(locale)
+    val breakers = setOf(' ', '-', '\'', '’', '/', '\t', '\n')
+    val out = StringBuilder(lower.length)
+    var newWord = true
+    for (ch in lower) {
+        if (newWord && ch.isLetter()) {
+            out.append(ch.titlecase(locale))
+            newWord = false
+        } else {
+            out.append(ch)
+            newWord = ch in breakers
+        }
+    }
+    return out.toString()
+}
+
+private fun String.toLowerCamel(locale: Locale): String {
+    if (isBlank()) return this
+    val parts = trim().split(Regex("[\\s_\\-/'’]+")).filter { it.isNotBlank() }
+    if (parts.isEmpty()) return ""
+    val first = parts.first().lowercase(locale)
+    val rest = parts.drop(1).joinToString("") { w ->
+        w.lowercase(locale).replaceFirstChar { it.titlecase(locale) }
+    }
+    return first + rest
 }

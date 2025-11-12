@@ -45,6 +45,7 @@ fun FrameForm(
         OLTextField(
             value = frame.productOwner,
             label = "Product Owner",
+            mode = FieldMode.TitleCase(),
             onValueChange = { frame = frame.copy(productOwner = it) },
             onCommit = { onChange(frame) }
         )
@@ -52,6 +53,7 @@ fun FrameForm(
         OLTextField(
             value = frame.productDescription,
             label = "Description",
+            mode = FieldMode.TitleCase(),
             onValueChange = { frame = frame.copy(productDescription = it) },
             onCommit = { onChange(frame) }
         )
@@ -91,12 +93,14 @@ fun LensForm(
         OLTextField(
             value = lens.productOwner,
             label = "Product Owner",
+            mode = FieldMode.TitleCase(),
             onValueChange = { lens = lens.copy(productOwner = it) },
             onCommit = { onChange(lens) }
         )
         OLTextField(
             value = lens.productDescription,
             label = "Description",
+            mode = FieldMode.TitleCase(),
             onValueChange = { lens = lens.copy(productDescription = it) },
             onCommit = { onChange(lens) }
         )
@@ -132,12 +136,14 @@ fun ContactLensForm(
         OLTextField(
             value = form.productOwner,
             label = "Product Owner",
+            mode = FieldMode.TitleCase(),
             onValueChange = { form = form.copy(productOwner = it) },
             onCommit = { onChange(form) }
         )
         OLTextField(
             value = form.productDescription,
             label = "Description",
+            mode = FieldMode.TitleCase(),
             onValueChange = { form = form.copy(productDescription = it) },
             onCommit = { onChange(form) }
         )
@@ -274,18 +280,21 @@ fun GeneralProductForm(
         OLTextField(
             value = form.productOwner,
             label = "Product Owner",
+            mode = FieldMode.TitleCase(),
             onValueChange = { form = form.copy(productOwner = it) },
             onCommit = { onChange(form) }
         )
         OLTextField(
             value = form.productDescription,
             label = "Description",
+            mode = FieldMode.TitleCase(),
             onValueChange = { form = form.copy(productDescription = it) },
             onCommit = { onChange(form) }
         )
         OLTextField(
             value = form.productType,
             label = "Product Type",
+            mode = FieldMode.TitleCase(),
             onValueChange = { form = form.copy(productType = it) },
             onCommit = { onChange(form) }
         )
