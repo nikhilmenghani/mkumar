@@ -155,12 +155,7 @@ fun CustomerDetailsScreen(
             onDoneClick = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
             showDone = true,
             showAddProduct = true,
-            addProductCommonTypes = listOf(
-                ProductType.Frame,
-                ProductType.Lens,
-                ProductType.ContactLens,
-                ProductType.GeneralProduct
-            ),
+            addProductCommonTypes = ProductType.entries.toList(),
             addProductLastUsed = null, // optional if you track it in VM
             onAddProductClick = { type ->
                 viewModel.onIntent(CustomerDetailsIntent.AddItem(type))

@@ -2,6 +2,7 @@ package com.mkumar.ui.meta
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lens
+import androidx.compose.material.icons.outlined.ProductionQuantityLimits
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.mkumar.viewmodel.ProductType
@@ -18,5 +19,6 @@ data class ProductTypeMeta(
 val productTypeMeta: Map<ProductType, ProductTypeMeta> = mapOf(
     ProductType.Frame to ProductTypeMeta("Frame", Icons.Outlined.RemoveRedEye, tags = listOf("frames", "spectacles")),
     ProductType.Lens to ProductTypeMeta("Lens", Icons.Outlined.Lens, tags = listOf("lenses", "optical")),
-    ProductType.ContactLens to ProductTypeMeta("Contact Lens", Icons.Outlined.Lens, tags = listOf("contacts"))
+    ProductType.ContactLens to ProductTypeMeta("Contact Lens", Icons.Outlined.Lens, tags = listOf("contacts")),
+    ProductType.GeneralProduct to ProductTypeMeta("General Product", Icons.Outlined.ProductionQuantityLimits, tags = listOf("Watch", "Chain", "Belt"))
 )
