@@ -75,6 +75,12 @@ fun OrderAccordionItem(
     var draft by remember { mutableStateOf(draftBeforeState) }
 
     val cardColors = AppColors.elevatedCardColors()
+    val selectedTypeAssistChip = if (selectedType?.name == "GeneralProduct") {
+        (selectedProduct.formData as? ProductFormData.GeneralProductData)?.productType ?: selectedType.name
+    } else {
+        selectedType?.name
+    }
+
 
     // Title fallback text
     val titleText = selectedProduct.formData?.productDescription
@@ -156,7 +162,7 @@ fun OrderAccordionItem(
                                 Spacer(Modifier.width(6.dp))
                                 AssistChip(
                                     onClick = { },
-                                    label = { Text(selectedType.name, style = MaterialTheme.typography.labelSmall) }
+                                    label = { selectedTypeAssistChip?.let { Text(it, style = MaterialTheme.typography.labelSmall) } }
                                 )
                             }
                         }
