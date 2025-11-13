@@ -1,5 +1,6 @@
 package com.mkumar.domain.invoice
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -256,36 +257,6 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             pager.space(gapBelow)
         }
 
-        fun row(cells: List<String>, rowHeight: Float = 18f) {
-            pager.ensure(rowHeight)
-            val rowTop = pager.y
-            val rowBottom = rowTop + rowHeight
-            val textY = rowTop + rowHeight / 2 - (bodyPaint.descent() + bodyPaint.ascent()) / 2
-
-            spec.columns.forEachIndexed { i, col ->
-                val (l, r) = colBounds[i]
-                val p = Paint(bodyPaint)
-                val x = when (col.align) {
-                    Align.LEFT -> {
-                        p.textAlign = Paint.Align.LEFT
-                        l + cellPaddingX
-                    }
-                    Align.RIGHT -> {
-                        p.textAlign = Paint.Align.RIGHT
-                        r - cellPaddingX
-                    }
-                    Align.CENTER -> {
-                        p.textAlign = Paint.Align.CENTER
-                        (l + r) / 2f
-                    }
-                }
-                pager.canvas.drawText(cells.getOrElse(i) { "" }, x, textY, p)
-            }
-
-            drawRowBorders(rowTop, rowBottom)
-            pager.space(rowHeight)
-        }
-
         fun ellipsizedRow(cells: List<String>, rowHeight: Float = 18f) {
             pager.ensure(rowHeight)
             val rowTop = pager.y
@@ -345,16 +316,22 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 color = Color.DKGRAY
             }
 
-            val x0 = l0 + cellPaddingX
+            val titleHeight = titlePaint.descent() - titlePaint.ascent()
+            val subHeight = if (subtext.isNullOrBlank()) 0f else (subPaint.descent() - subPaint.ascent())
+            val lineSpacing = if (subtext.isNullOrBlank()) 0f else 2f
 
+            val textBlockHeight = titleHeight + subHeight + lineSpacing
+            val rowCenter = rowTop + rowHeight / 2f
+            val firstBaseline = rowCenter - textBlockHeight / 2f - titlePaint.ascent()
+
+            val x0 = l0 + cellPaddingX
             val titleText = TextUtil.ellipsize(title, titlePaint, maxW0)
-            val titleBaseline = rowTop + 4f - titlePaint.ascent()
-            pager.canvas.drawText(titleText, x0, titleBaseline, titlePaint)
+            pager.canvas.drawText(titleText, x0, firstBaseline, titlePaint)
 
             if (!subtext.isNullOrBlank()) {
+                val secondBaseline = firstBaseline + titleHeight + lineSpacing
                 val subText = TextUtil.ellipsize(subtext, subPaint, maxW0)
-                val subBaseline = titleBaseline + (subPaint.descent() - subPaint.ascent()) + 1.5f
-                pager.canvas.drawText(subText, x0, subBaseline, subPaint)
+                pager.canvas.drawText(subText, x0, secondBaseline, subPaint)
             }
 
             // Remaining columns: single line, vertically centered
@@ -407,21 +384,51 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             val logoRight = logoLeft + logoSize
             val logoBottom = logoTop + logoSize
 
-            // Simple placeholder logo
-            val logoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            val logoRectLeft = logoLeft
+            val logoRectTop = logoTop
+            val logoRectRight = logoRight
+            val logoRectBottom = logoBottom
+
+            val logoBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = 2f
                 color = Color.DKGRAY
             }
-            c.drawRoundRect(logoLeft, logoTop, logoRight, logoBottom, 8f, 8f, logoPaint)
+            c.drawRoundRect(logoRectLeft, logoRectTop, logoRectRight, logoRectBottom, 8f, 8f, logoBorderPaint)
 
-            val logoTextPaint = Paint(typo.text).apply {
-                textAlign = Paint.Align.CENTER
-                textSize = 16f
-                typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
+            // Use app logo if available, else placeholder "M"
+            val logoBitmap: Bitmap? = null
+            if (logoBitmap != null) {
+                val srcW = logoBitmap.width.toFloat()
+                val srcH = logoBitmap.height.toFloat()
+                val scale = minOf(
+                    (logoRectRight - logoRectLeft) / srcW,
+                    (logoRectBottom - logoRectTop) / srcH
+                )
+                val destW = srcW * scale
+                val destH = srcH * scale
+                val dx = (logoRectLeft + logoRectRight - destW) / 2f
+                val dy = (logoRectTop + logoRectBottom - destH) / 2f
+                c.drawBitmap(
+                    Bitmap.createScaledBitmap(
+                        logoBitmap,
+                        destW.toInt().coerceAtLeast(1),
+                        destH.toInt().coerceAtLeast(1),
+                        true
+                    ),
+                    dx,
+                    dy,
+                    null
+                )
+            } else {
+                val logoTextPaint = Paint(typo.text).apply {
+                    textAlign = Paint.Align.CENTER
+                    textSize = 16f
+                    typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
+                }
+                val logoTextY = logoTop + logoSize / 2 - (logoTextPaint.descent() + logoTextPaint.ascent()) / 2
+                c.drawText("M", (logoLeft + logoRight) / 2f, logoTextY, logoTextPaint)
             }
-            val logoTextY = logoTop + logoSize / 2 - (logoTextPaint.descent() + logoTextPaint.ascent()) / 2
-            c.drawText("M", (logoLeft + logoRight) / 2f, logoTextY, logoTextPaint)
 
             // "M Kumar" centered
             val titlePaint = Paint(typo.title).apply {
@@ -502,8 +509,6 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             val normalText = typo.text
 
             val infoRowHeight = 18f
-            val colGap = 24f
-            val colWidth = (pager.contentWidth - colGap) / 2f
             val leftX = pager.contentLeft
             val rightX = pager.contentLeft + pager.contentWidth
 
@@ -554,7 +559,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
             pager.y = infoY
             pager.space(10f)
-            pager.lineAcross(rules.faintLine)
+            // also no divider here to avoid double-line before table
             pager.space(8f)
         }
     }
@@ -598,7 +603,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 if (hasOwner) {
                     table.itemRowWithSubtext(
                         title = item.description,
-                        subtext = "Owner: $owner",
+                        subtext = "($owner)",
                         otherCells = listOf(
                             item.qty.toString(),
                             unit,
@@ -625,23 +630,38 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
     private object TotalsSection {
         fun draw(pager: Pager, data: InvoiceData, money: NumberFormat, typo: Typography, rules: Rules) {
-            // Divider before totals
+            // Some space before totals
             pager.ensure(28f)
-            pager.lineAcross(rules.faintLine)
             pager.space(12f)
 
-            // Use the same column fractions as ItemsSection
+            // Compute bounds of the "Total" column to align numbers under it
             val colFractions = listOf(0.40f, 0.12f, 0.16f, 0.16f, 0.16f)
-            val discountColIndex = 3 // 0-based index for Discount %
-            val anchorFraction = colFractions.take(discountColIndex).sum()
-            val labelAnchorX = pager.contentLeft + pager.contentWidth * anchorFraction
-            val rightX = pager.contentLeft + pager.contentWidth
+            val totalFractions = colFractions.sum()
+            var x = pager.contentLeft
+            var totalColLeft = x
+            var totalColRight = x + pager.contentWidth
+
+            colFractions.forEachIndexed { index, frac ->
+                val w = (frac / totalFractions) * pager.contentWidth
+                if (index == colFractions.lastIndex) {
+                    totalColLeft = x
+                    totalColRight = x + w
+                }
+                x += w
+            }
+
+            val valueX = totalColRight - 4f
+            val labelX = totalColLeft - 8f
 
             fun totalRow(label: String, value: Double, bold: Boolean = false) {
-                val labelPaint = Paint(typo.text).apply { textAlign = Paint.Align.RIGHT }
+                val labelPaint = Paint(typo.text).apply {
+                    textAlign = Paint.Align.RIGHT
+                }
+                val valueCenterX = (totalColLeft + totalColRight) / 2f
                 val valuePaint = if (bold) typo.rightBold else typo.right
-                pager.canvas.drawText(label, labelAnchorX, pager.y, labelPaint)
-                pager.canvas.drawText(money.format(value), rightX, pager.y, valuePaint)
+                valuePaint.textAlign = Paint.Align.CENTER
+                pager.canvas.drawText(label, labelX, pager.y, labelPaint)
+                pager.canvas.drawText(money.format(value), valueCenterX, pager.y, valuePaint)
                 pager.space(16f)
             }
 
@@ -673,62 +693,6 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 }
             }
             return best
-        }
-
-        fun wrapText(
-            c: Canvas,
-            text: String,
-            paint: Paint,
-            xLeft: Float,
-            xRight: Float,
-            startY: Float,
-            lineSpacing: Float = 14f
-        ): Float {
-            val words = text.split(' ')
-            val maxWidth = xRight - xLeft
-            var line = StringBuilder()
-            var y = startY
-
-            fun flush() {
-                if (line.isNotEmpty()) {
-                    c.drawText(line.toString(), xLeft, y, paint)
-                    y += lineSpacing
-                    line = StringBuilder()
-                }
-            }
-
-            for (w in words) {
-                val trial = if (line.isEmpty()) w else line.toString() + " " + w
-                if (paint.measureText(trial) <= maxWidth) {
-                    line.clear(); line.append(trial)
-                } else {
-                    flush()
-                    // Hard-break if a single word exceeds width
-                    if (paint.measureText(w) > maxWidth) {
-                        var idx = 0
-                        while (idx < w.length) {
-                            var lo = idx
-                            var hi = w.length
-                            while (lo < hi) {
-                                val mid = (lo + hi + 1) / 2
-                                val part = w.substring(idx, mid)
-                                if (paint.measureText(part) <= maxWidth) lo = mid else hi = mid - 1
-                            }
-                            val part = w.substring(idx, lo)
-                            c.drawText(part, xLeft, y, paint)
-                            y += lineSpacing
-                            idx = lo
-                        }
-                    } else {
-                        line.append(w)
-                    }
-                }
-            }
-            if (line.isNotEmpty()) {
-                c.drawText(line.toString(), xLeft, y, paint)
-                y += lineSpacing
-            }
-            return y
         }
     }
 
