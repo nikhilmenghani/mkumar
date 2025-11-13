@@ -6,8 +6,12 @@ import java.util.Locale
 
 object CustomerDetailsConstants {
 
-    fun getInvoiceFileName(orderId: String, withTimeStamp: Boolean = false): String {
-        val invoiceShort = "INV-" + orderId.takeLast(6).uppercase(Locale.getDefault())
+    fun getInvoiceFileName(orderId: String, invoiceNumber: String, withTimeStamp: Boolean = false): String {
+        val invoiceShort = if (invoiceNumber.isBlank()) {
+            "INV-" + orderId.takeLast(6).uppercase(Locale.getDefault())
+        } else {
+            "INV-$invoiceNumber"
+        }
         return if (withTimeStamp) {
             val dateFormat = SimpleDateFormat("dd-MM-yy-HHmmss", Locale.getDefault())
             val dateStr = dateFormat.format(Date())

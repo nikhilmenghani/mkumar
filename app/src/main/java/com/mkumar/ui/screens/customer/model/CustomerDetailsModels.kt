@@ -18,6 +18,7 @@ data class CustomerHeaderUi(
 data class OrderRowUi(
     val id: String,
     val occurredAt: Instant,
+    val invoiceNumber: String,
 //    val items: List<UiOrderItem>,
     val amount: Int,
     val remainingBalance: Int,

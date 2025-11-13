@@ -3,8 +3,17 @@ package com.mkumar.data.db
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.mkumar.data.db.dao.*
-import com.mkumar.data.db.entities.*
+import com.mkumar.data.db.dao.CustomerDao
+import com.mkumar.data.db.dao.InvoiceCounterDao
+import com.mkumar.data.db.dao.OrderDao
+import com.mkumar.data.db.dao.OrderItemDao
+import com.mkumar.data.db.dao.SearchDao
+import com.mkumar.data.db.entities.CustomerEntity
+import com.mkumar.data.db.entities.InvoiceCounterEntity
+import com.mkumar.data.db.entities.OrderEntity
+import com.mkumar.data.db.entities.OrderItemEntity
+import com.mkumar.data.db.entities.OutboxEntity
+import com.mkumar.data.db.entities.SearchFts
 import com.mkumar.data.utils.Converters
 
 @Database(
@@ -13,9 +22,10 @@ import com.mkumar.data.utils.Converters
         OrderEntity::class,
         OrderItemEntity::class,
         OutboxEntity::class,
-        SearchFts::class
+        SearchFts::class,
+        InvoiceCounterEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -24,4 +34,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun orderDao(): OrderDao
     abstract fun orderItemDao(): OrderItemDao
     abstract fun searchDao(): SearchDao
+    abstract fun invoiceCounterDao(): InvoiceCounterDao
 }

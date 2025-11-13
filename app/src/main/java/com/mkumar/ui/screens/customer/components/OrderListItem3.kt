@@ -132,12 +132,12 @@ fun OrderListItem3(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (row.hasInvoice) {
-                            FilledTonalIconButton(onClick = { onAction(OrderRowAction.ViewInvoice(row.id)) }) {
+                            FilledTonalIconButton(onClick = { onAction(OrderRowAction.ViewInvoice(row.id, row.invoiceNumber)) }) {
                                 Icon(Icons.Outlined.PictureAsPdf, contentDescription = "Invoice")
                             }
                             Spacer(Modifier.size(8.dp))
                         }
-                        FilledTonalIconButton(onClick = { onAction(OrderRowAction.Share(row.id)) }) {
+                        FilledTonalIconButton(onClick = { onAction(OrderRowAction.Share(row.id, row.invoiceNumber)) }) {
                             Icon(Icons.Outlined.Share, contentDescription = "Share")
                         }
                         Spacer(Modifier.size(8.dp))
@@ -167,6 +167,7 @@ fun OrderListItem3Preview() {
         row = OrderRowUi(
             id = "1",
             occurredAt = java.time.Instant.now(),
+            invoiceNumber = "390",
 //            items = emptyList(),
             amount = 1250,
             hasInvoice = true,

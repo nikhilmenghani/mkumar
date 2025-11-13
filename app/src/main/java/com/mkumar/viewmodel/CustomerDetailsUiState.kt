@@ -29,6 +29,7 @@ data class UiCustomer(
  */
 data class UiOrder(
     val id: String,
+    val invoiceNumber: String,
     val occurredAt: Instant,
     val items: List<UiOrderItem>,
     val subtotalBeforeAdjust: Int,
@@ -89,7 +90,7 @@ data class CustomerDetailsUiState(
 sealed interface CustomerDetailsEffect {
     data class ShowMessage(val message: String) : CustomerDetailsEffect
     data class OpenOrderSheet(val orderId: String? = null) : CustomerDetailsEffect
-    data class ViewInvoice(val orderId: String, val uri: Uri) : CustomerDetailsEffect
+    data class ViewInvoice(val orderId: String, val invoiceNumber: String, val uri: Uri) : CustomerDetailsEffect
     data class ShareInvoice(val orderId: String, val uri: Uri) : CustomerDetailsEffect
     data object CloseOrderSheet : CustomerDetailsEffect
 }
@@ -105,8 +106,8 @@ sealed interface CustomerDetailsIntent {
     data class UpdateAdjustedAmount(val value: Int) : CustomerDetailsIntent
     data class UpdateAdvanceTotal(val value: Int) : CustomerDetailsIntent
     data class DeleteOrder(val orderId: String) : CustomerDetailsIntent
-    data class ShareOrder(val orderId: String) : CustomerDetailsIntent
-    data class ViewInvoice(val orderId: String) : CustomerDetailsIntent
+    data class ShareOrder(val orderId: String, val invoiceNumber: String) : CustomerDetailsIntent
+    data class ViewInvoice(val orderId: String, val invoiceNumber: String) : CustomerDetailsIntent
 
     data class AddItem(val product: ProductType) : CustomerDetailsIntent
 //    data class UpdateItem(val item: UiOrderItem) : CustomerDetailsIntent
@@ -119,9 +120,9 @@ sealed interface CustomerDetailsIntent {
 
 sealed interface OrderRowAction {
     data class Open(val orderId: String) : OrderRowAction
-    data class ViewInvoice(val orderId: String) : OrderRowAction
+    data class ViewInvoice(val orderId: String, val invoiceNumber: String) : OrderRowAction
     data class Delete(val orderId: String) : OrderRowAction
-    data class Share(val orderId: String) : OrderRowAction
+    data class Share(val orderId: String, val invoiceNumber: String) : OrderRowAction
 }
 
 sealed interface NewOrderIntent {

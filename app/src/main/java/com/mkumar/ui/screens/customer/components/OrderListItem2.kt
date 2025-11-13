@@ -68,11 +68,11 @@ fun OrderListItem2(
                 Text("Total: ₹${row.amount}", style = MaterialTheme.typography.titleMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (row.hasInvoice) {
-                        FilledTonalIconButton(onClick = { onAction(OrderRowAction.ViewInvoice(row.id)) }) {
+                        FilledTonalIconButton(onClick = { onAction(OrderRowAction.ViewInvoice(row.id, row.invoiceNumber)) }) {
                             Icon(Icons.Outlined.PictureAsPdf, contentDescription = "Invoice")
                         }
                     }
-                    FilledTonalIconButton(onClick = { onAction(OrderRowAction.Share(row.id)) }) {
+                    FilledTonalIconButton(onClick = { onAction(OrderRowAction.Share(row.id, row.invoiceNumber)) }) {
                         Icon(Icons.Outlined.Share, contentDescription = "Share")
                     }
                     IconButton(onClick = { onAction(OrderRowAction.Delete(row.id)) }) {
@@ -99,6 +99,7 @@ fun OrderListItem2Preview() {
         row = OrderRowUi(
             id = "1",
             occurredAt = java.time.Instant.now(),
+            invoiceNumber = "390",
 //            items = emptyList(),
             amount = 1250,
             hasInvoice = true,

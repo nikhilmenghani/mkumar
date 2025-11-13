@@ -50,7 +50,6 @@ import com.mkumar.viewmodel.OrderRowAction
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -67,7 +66,7 @@ fun OrderListItem4(
     val interaction = remember { MutableInteractionSource() }
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
-    val invoiceNumber = "INV-" + row.id.takeLast(6).uppercase(Locale.getDefault())
+    val invoiceNumber = row.invoiceNumber//.padStart(5, '0')
 
     val isPaid = row.remainingBalance == 0
     val containerColor = ledgerContainerColor(isPaid)
@@ -92,7 +91,7 @@ fun OrderListItem4(
                         title = "Invoice",
                         supportingText = "Generate or view invoice PDF",
                         icon = Icons.Outlined.PictureAsPdf,
-                        onClick = { onAction(OrderRowAction.ViewInvoice(row.id)) }
+                        onClick = { onAction(OrderRowAction.ViewInvoice(row.id, row.invoiceNumber)) }
                     )
                 )
                 add(
@@ -101,7 +100,7 @@ fun OrderListItem4(
                         supportingText = "Share order details",
                         icon = Icons.Outlined.Share,
                         startNewGroup = true,
-                        onClick = { onAction(OrderRowAction.Share(row.id)) }
+                        onClick = { onAction(OrderRowAction.Share(row.id, row.invoiceNumber)) }
                     )
                 )
                 add(
@@ -153,7 +152,7 @@ fun OrderListItem4(
                                 )
                             }
                             Text(
-                                text = "Created • " + createdFmtTimeFirst.format(row.occurredAt.atZone(ZoneId.systemDefault())),
+                                text = createdFmtTimeFirst.format(row.occurredAt.atZone(ZoneId.systemDefault())),
                                 style = MaterialTheme.typography.titleSmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -230,6 +229,7 @@ private fun OrderListItem4Preview() {
             row = OrderRowUi(
                 id = "1",
                 occurredAt = Instant.now(),
+                invoiceNumber = "390",
 //                items = emptyList(),
                 amount = 1250,
                 hasInvoice = true,
@@ -244,6 +244,7 @@ private fun OrderListItem4Preview() {
             row = OrderRowUi(
                 id = "2",
                 occurredAt = Instant.now(),
+                invoiceNumber = "390",
 //                items = emptyList(),
                 amount = 950,
                 hasInvoice = true,

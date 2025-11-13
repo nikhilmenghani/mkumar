@@ -51,4 +51,8 @@ data class OrderEntity(
 
     /** advanceTotal amount in minor units (0 if none) */
     val advanceTotal: Int = 0,
+
+    /** Invoice sequence number, if any */
+    @ColumnInfo(name = "invoice_seq")
+    val invoiceSeq: Long? = null // null for old orders
 )

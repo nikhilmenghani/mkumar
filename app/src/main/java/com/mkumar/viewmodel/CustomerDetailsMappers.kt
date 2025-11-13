@@ -6,6 +6,7 @@ import com.mkumar.domain.pricing.PricingInput
 import com.mkumar.domain.pricing.PricingResult
 import com.mkumar.domain.pricing.PricingService
 import java.time.Instant
+import java.util.Locale
 
 /** Aggregated UI payload for CustomerDetails screen. */
 data class UiBundle(val customer: UiCustomer, val orders: List<UiOrder>)
@@ -49,7 +50,8 @@ fun CustomerWithOrders.toUi(
             adjustedAmount       = order.adjustedAmount,
             totalAmount          = order.totalAmount,
             advanceTotal         = order.advanceTotal,
-            remainingBalance     = order.remainingBalance
+            remainingBalance     = order.remainingBalance,
+            invoiceNumber = order.invoiceSeq?.let { "INV-%d".format(it) } ?: ("INV-" + order.id.takeLast(6).uppercase(Locale.getDefault()))
         )
     }.sortedByDescending { it.occurredAt }
 

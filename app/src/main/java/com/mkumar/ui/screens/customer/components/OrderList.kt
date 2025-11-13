@@ -32,6 +32,7 @@ fun OrderListPreview() {
         OrderRowUi(
             id = "1",
             occurredAt = java.time.Instant.now(),
+            invoiceNumber = "2",
 //            items = emptyList(),
             amount = 1250,
             hasInvoice = true,
@@ -42,6 +43,7 @@ fun OrderListPreview() {
         OrderRowUi(
             id = "2",
             occurredAt = java.time.Instant.now(),
+            invoiceNumber = "103",
 //            items = emptyList(),
             amount = 750,
             hasInvoice = false,

@@ -330,7 +330,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             val invoiceLabel = "Invoice: "
             pager.canvas.drawText(invoiceLabel, left, pager.y, boldLabel)
             pager.canvas.drawText(
-                CustomerDetailsConstants.getInvoiceFileName(data.orderId),
+                CustomerDetailsConstants.getInvoiceFileName(data.orderId, data.invoiceNumber),
                 left + boldLabel.measureText(invoiceLabel), pager.y, typo.text
             )
 

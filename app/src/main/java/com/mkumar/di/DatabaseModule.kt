@@ -4,6 +4,7 @@ package com.mkumar.di
 import android.content.Context
 import androidx.room.Room
 import com.mkumar.data.db.AppDatabase
+import com.mkumar.data.db.MIGRATION_1_2
 import com.mkumar.data.db.dao.CustomerDao
 import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.OrderItemDao
@@ -19,14 +20,17 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-    @Provides @Singleton
+
+    @Provides
+    @Singleton
     fun provideDatabase(@ApplicationContext ctx: Context): AppDatabase =
-        Room.databaseBuilder(ctx, AppDatabase::class.java, "mkumar.db").build()
+        Room.databaseBuilder(ctx, AppDatabase::class.java, "mkumar.db")
+            .addMigrations(MIGRATION_1_2)   // <-- IMPORTANT
+            .build()
 
     @Provides fun provideCustomerDao(db: AppDatabase): CustomerDao = db.customerDao()
     @Provides fun provideOrderDao(db: AppDatabase): OrderDao = db.orderDao()
     @Provides fun provideOrderItemDao(db: AppDatabase): OrderItemDao = db.orderItemDao()
-
-    @Provides
-    fun provideSearchDao(db: AppDatabase): SearchDao = db.searchDao()   // <- add this
+    @Provides fun provideSearchDao(db: AppDatabase): SearchDao = db.searchDao()
 }
+

@@ -76,12 +76,13 @@ fun CustomerDetailsScreen(
                     val chooser = Intent.createChooser(intent, "Open invoice")
                     runCatching { context.startActivity(chooser) }
                         .onFailure { _ ->
-                            val hint = humanReadableInvoiceLocation(effect.orderId)
+                            val hint = humanReadableInvoiceLocation(effect.orderId, effect.invoiceNumber)
                             snackbarHostState.showSnackbar(
                                 "No PDF app found. Invoice saved at: $hint"
                             )
                         }
                 }
+
                 is CustomerDetailsEffect.ShareInvoice -> {
                     val send = Intent(Intent.ACTION_SEND).apply {
                         type = "application/pdf"
@@ -96,6 +97,7 @@ fun CustomerDetailsScreen(
                             )
                         }
                 }
+
                 else -> {}
             }
         }
@@ -121,7 +123,7 @@ fun CustomerDetailsScreen(
         floatingActionButton = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+            ) {
                 ExtendedFloatingActionButton(
                     onClick = {
                         val cid = ui.customer?.id.orEmpty()
@@ -175,6 +177,7 @@ fun CustomerDetailsScreen(
                         OrderRowUi(
                             id = o.id,
                             occurredAt = o.occurredAt,
+                            invoiceNumber = o.invoiceNumber,
 //                            items = o.items,
                             amount = o.totalAmount,
                             isQueued = false,
@@ -193,9 +196,10 @@ fun CustomerDetailsScreen(
                                 val cid = ui.customer?.id.orEmpty()
                                 navController.navigate(Routes.orderEditor(customerId = cid, orderId = action.orderId))
                             }
+
                             is OrderRowAction.Delete -> viewModel.onIntent(CustomerDetailsIntent.DeleteOrder(action.orderId))
-                            is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId))
-                            is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId))
+                            is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId, action.invoiceNumber))
+                            is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId, action.invoiceNumber))
                         }
                     },
                     modifier = Modifier.fillMaxSize()
@@ -205,10 +209,11 @@ fun CustomerDetailsScreen(
     }
 }
 
-fun humanReadableInvoiceLocation(orderId: String): String {
-    val fileName = CustomerDetailsConstants.getInvoiceFileName(orderId) + ".pdf"
+fun humanReadableInvoiceLocation(orderId: String, invoiceNumber: String): String {
+    val fileName = CustomerDetailsConstants.getInvoiceFileName(orderId = orderId, invoiceNumber = invoiceNumber) + ".pdf"
     return "Files > Downloads > Documents > MKumar > Invoices > $fileName"
 }
+
 // Helper for item label rendering without depending on exact UiOrderItem fields
 fun UiOrderItem.labelOrFallback(): String =
     buildString {

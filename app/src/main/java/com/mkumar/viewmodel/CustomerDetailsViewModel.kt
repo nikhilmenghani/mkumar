@@ -99,6 +99,7 @@ class CustomerDetailsViewModel @Inject constructor(
                     orders.map { order ->
                         UiOrder(
                             id = order.id,
+                            invoiceNumber = order.invoiceSeq.toString(),
                             occurredAt = Instant.ofEpochMilli(order.occurredAt),
                             items = emptyList(),
                             subtotalBeforeAdjust = 0,
@@ -135,8 +136,8 @@ class CustomerDetailsViewModel @Inject constructor(
             is CustomerDetailsIntent.OpenOrder -> openExistingOrder(intent.orderId)
             is CustomerDetailsIntent.UpdateOrder -> updateExistingOrder(intent.orderId)
             is CustomerDetailsIntent.DeleteOrder -> deleteOrder(intent.orderId)
-            is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId)
-            is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId)
+            is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId, intent.invoiceNumber)
+            is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId, intent.invoiceNumber)
             is CustomerDetailsIntent.AddItem -> addItem(intent.product)
             is CustomerDetailsIntent.UpdateOccurredAt -> updateOccurredAt(intent.occurredAt)
 
@@ -307,7 +308,7 @@ class CustomerDetailsViewModel @Inject constructor(
             )
 
             try {
-                orderRepo.upsert(orderEntity)
+                orderRepo.createOrderWithItems(orderEntity)
 
                 // 3) Open sheet with a fresh draft bound to this orderId
                 _ui.value = s.copy(
@@ -379,8 +380,8 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun generateInvoicePdf(orderId: String): android.net.Uri? {
-        val fileName = CustomerDetailsConstants.getInvoiceFileName(orderId, withTimeStamp = true) + ".pdf"
+    private suspend fun generateInvoicePdf(orderId: String, invoiceNumber: String): android.net.Uri? {
+        val fileName = CustomerDetailsConstants.getInvoiceFileName(orderId, invoiceNumber, withTimeStamp = true) + ".pdf"
 
         val s = _ui.value
         val uiCustomer = s.customer
@@ -440,6 +441,7 @@ class CustomerDetailsViewModel @Inject constructor(
             ownerPhone = "9427956490",
             ownerEmail = "menghani.mahendra@gmail.com",
             orderId = order.id,
+            invoiceNumber = order.invoiceSeq.toString(),
             occurredAtText = dateFmt.format(Date(order.occurredAt)),
             items = invoiceItems,
             subtotal = priced.subtotalBeforeAdjust.toDouble(),
@@ -452,11 +454,11 @@ class CustomerDetailsViewModel @Inject constructor(
         return saveInvoicePdf(app, fileName, bytes)
     }
 
-    fun shareOrder(orderId: String) {
+    fun shareOrder(orderId: String, invoiceNumber: String) {
         viewModelScope.launch {
             try {
                 _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
-                val uri = generateInvoicePdf(orderId)
+                val uri = generateInvoicePdf(orderId, invoiceNumber)
                 if (uri != null) {
                     _effects.tryEmit(CustomerDetailsEffect.ShareInvoice(orderId, uri))
                     _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Invoice ready."))
@@ -469,13 +471,13 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-    fun viewInvoice(orderId: String) {
+    fun viewInvoice(orderId: String, invoiceNumber: String) {
         viewModelScope.launch {
             try {
                 _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
-                val uri = generateInvoicePdf(orderId)
+                val uri = generateInvoicePdf(orderId, invoiceNumber)
                 if (uri != null) {
-                    _effects.tryEmit(CustomerDetailsEffect.ViewInvoice(orderId, uri))
+                    _effects.tryEmit(CustomerDetailsEffect.ViewInvoice(orderId, invoiceNumber, uri))
                     _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Invoice ready."))
                 } else {
                     _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Order not found."))
@@ -559,7 +561,7 @@ class CustomerDetailsViewModel @Inject constructor(
             try {
                 // If you have a transaction helper, use it:
                 // orderRepo.withTransaction { ... }
-                orderRepo.upsert(orderEntity)
+                orderRepo.createOrderWithItems(orderEntity)
                 for (item in itemEntities) orderItemRepo.upsert(item)
 
                 // Optional: mark status = CONFIRMED here if you track status

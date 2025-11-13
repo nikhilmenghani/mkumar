@@ -10,6 +10,7 @@ data class InvoiceData(
     val ownerPhone: String,
     val ownerEmail: String,
     val orderId: String,
+    val invoiceNumber: String,
     val occurredAtText: String,
     val items: List<InvoiceItemRow>,
     val subtotal: Double,
