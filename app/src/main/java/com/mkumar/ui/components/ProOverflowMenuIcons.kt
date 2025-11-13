@@ -62,26 +62,10 @@ fun ProOverflowMenuIcons(
                 }
 
                 DropdownMenuItem(
-                    text = {
-//                        Column {
-//                            Text(
-//                                item.title,
-//                                style = MaterialTheme.typography.bodyLarge,
-//                                maxLines = 1
-//                            )
-//                            item.supportingText?.let {
-//                                Text(
-//                                    it,
-//                                    style = MaterialTheme.typography.bodySmall,
-//                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-//                                    maxLines = 1
-//                                )
-//                            }
-//                        }
-                }, leadingIcon = item.icon?.let { ic -> { Icon(ic, contentDescription = null) } }, trailingIcon = item.trailing?.let { tr -> { tr() } }, onClick = {
-                    onExpandedChange(false)
-                    item.onClick()
-                }, colors = colors, modifier = Modifier.heightIn(min = 48.dp)
+                    text = {}, leadingIcon = item.icon?.let { ic -> { Icon(ic, contentDescription = null) } }, trailingIcon = item.trailing?.let { tr -> { tr() } }, onClick = {
+                        onExpandedChange(false)
+                        item.onClick()
+                    }, colors = colors, modifier = Modifier.heightIn(min = 48.dp)
                 )
             }
         }
