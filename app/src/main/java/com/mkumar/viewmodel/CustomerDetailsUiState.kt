@@ -1,6 +1,7 @@
 package com.mkumar.viewmodel
 
 
+import android.graphics.Bitmap
 import android.net.Uri
 import com.mkumar.data.ProductFormData
 import kotlinx.serialization.json.Json
@@ -114,8 +115,8 @@ sealed interface CustomerDetailsIntent {
     data class UpdateAdjustedAmount(val value: Int) : CustomerDetailsIntent
     data class UpdateAdvanceTotal(val value: Int) : CustomerDetailsIntent
     data class DeleteOrder(val orderId: String) : CustomerDetailsIntent
-    data class ShareOrder(val orderId: String, val invoiceNumber: String) : CustomerDetailsIntent
-    data class ViewInvoice(val orderId: String, val invoiceNumber: String) : CustomerDetailsIntent
+    data class ShareOrder(val orderId: String, val invoiceNumber: String, val logo: Bitmap) : CustomerDetailsIntent
+    data class ViewInvoice(val orderId: String, val invoiceNumber: String, val logo: Bitmap) : CustomerDetailsIntent
 
     data class AddItem(val product: ProductType) : CustomerDetailsIntent
 //    data class UpdateItem(val item: UiOrderItem) : CustomerDetailsIntent

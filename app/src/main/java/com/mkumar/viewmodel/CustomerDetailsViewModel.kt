@@ -1,5 +1,6 @@
 package com.mkumar.viewmodel
 
+import android.graphics.Bitmap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -136,8 +137,8 @@ class CustomerDetailsViewModel @Inject constructor(
             is CustomerDetailsIntent.OpenOrder -> openExistingOrder(intent.orderId)
             is CustomerDetailsIntent.UpdateOrder -> updateExistingOrder(intent.orderId)
             is CustomerDetailsIntent.DeleteOrder -> deleteOrder(intent.orderId)
-            is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId, intent.invoiceNumber)
-            is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId, intent.invoiceNumber)
+            is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId, intent.invoiceNumber, intent.logo)
+            is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId, intent.invoiceNumber, intent.logo)
             is CustomerDetailsIntent.AddItem -> addItem(intent.product)
             is CustomerDetailsIntent.UpdateOccurredAt -> updateOccurredAt(intent.occurredAt)
 
@@ -381,7 +382,7 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun generateInvoicePdf(orderId: String, invoiceNumber: String): android.net.Uri? {
+    private suspend fun generateInvoicePdf(orderId: String, invoiceNumber: String, logo: Bitmap): android.net.Uri? {
         val fileName = CustomerDetailsConstants.getInvoiceFileName(orderId, invoiceNumber, withTimeStamp = true) + ".pdf"
 
         val s = _ui.value
@@ -437,7 +438,6 @@ class CustomerDetailsViewModel @Inject constructor(
             )
         }
 
-
         val invoiceData = InvoiceData(
             shopName = "M Kumar Luxurious Watch & Optical Store",
             shopAddress = "7, Shlok Height, Opp. Dev Paradise & Dharti Silver, Nr. Mansarovar Road, Chandkheda, Ahmedabad.",
@@ -453,18 +453,19 @@ class CustomerDetailsViewModel @Inject constructor(
             subtotal = priced.subtotalBeforeAdjust.toDouble(),
             adjustedTotal = priced.adjustedAmount.toDouble(),
             advanceTotal = priced.advanceTotal.toDouble(),
-            remainingBalance = priced.remainingBalance.toDouble()
+            remainingBalance = priced.remainingBalance.toDouble(),
+            logoBitmap = logo
         )
 
         val bytes = InvoicePdfBuilderImpl().build(invoiceData)
         return saveInvoicePdf(app, fileName, bytes)
     }
 
-    fun shareOrder(orderId: String, invoiceNumber: String) {
+    fun shareOrder(orderId: String, invoiceNumber: String, logo: Bitmap) {
         viewModelScope.launch {
             try {
                 _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
-                val uri = generateInvoicePdf(orderId, invoiceNumber)
+                val uri = generateInvoicePdf(orderId, invoiceNumber, logo)
                 if (uri != null) {
                     _effects.tryEmit(CustomerDetailsEffect.ShareInvoice(orderId, uri))
                     _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Invoice ready."))
@@ -477,11 +478,11 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-    fun viewInvoice(orderId: String, invoiceNumber: String) {
+    fun viewInvoice(orderId: String, invoiceNumber: String, logo: Bitmap) {
         viewModelScope.launch {
             try {
                 _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
-                val uri = generateInvoicePdf(orderId, invoiceNumber)
+                val uri = generateInvoicePdf(orderId, invoiceNumber, logo)
                 if (uri != null) {
                     _effects.tryEmit(CustomerDetailsEffect.ViewInvoice(orderId, invoiceNumber, uri))
                     _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Invoice ready."))

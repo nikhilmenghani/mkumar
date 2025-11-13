@@ -1,6 +1,8 @@
 // com.mkumar.domain.invoice.InvoiceData.kt
 package com.mkumar.domain.invoice
 
+import android.graphics.Bitmap
+
 data class InvoiceData(
     val shopName: String,
     val shopAddress: String,
@@ -16,7 +18,8 @@ data class InvoiceData(
     val subtotal: Double,
     val adjustedTotal: Double,
     val advanceTotal: Double,
-    val remainingBalance: Double
+    val remainingBalance: Double,
+    val logoBitmap: Bitmap? = null
 )
 
 data class InvoiceItemRow(
