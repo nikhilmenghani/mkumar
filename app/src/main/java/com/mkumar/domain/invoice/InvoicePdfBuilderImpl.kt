@@ -181,14 +181,14 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
     private class TableDrawer(
         private val pager: Pager,
-        private val spec: TableSpec,
+        val spec: TableSpec,
         private val headerPaint: Paint,
         private val bodyPaint: Paint,
         private val rules: Rules
     ) {
         private val cellPaddingX = 4f
 
-        private val colBounds: List<Pair<Float, Float>> by lazy {
+        val colBounds: List<Pair<Float, Float>> by lazy {
             val w = pager.contentWidth
             var x = pager.contentLeft
             spec.columns.map { col ->
@@ -206,7 +206,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         private fun tableRight(): Float =
             colBounds.last().second + spec.columns.last().padRight
 
-        private fun drawRowBorders(top: Float, bottom: Float) {
+        fun drawRowBorders(top: Float, bottom: Float) {
             val tableLeft = tableLeft()
             val tableRight = tableRight()
 
@@ -586,11 +586,8 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             data.items.forEach { item ->
                 val owner = item.owner.takeIf { it.isNotBlank() }
                 val hasOwner = owner != null
-                val singleRowHeight = 18f
-                val twoLineRowHeight = 28f
-                val rowHeight = if (hasOwner) twoLineRowHeight else singleRowHeight
+                val rowHeight = 18f
 
-                // If we need a new page, we also redraw the header & table header
                 pager.ensure(rowHeight + 8f) {
                     HeaderSection.draw(pager, data, typo, rules)
                     drawHeader(pager, typo, rules)
@@ -600,18 +597,48 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 val disc = if (item.discount > 0.0) "${item.discount}%" else "-"
                 val total = money.format(item.total)
 
-                // Item title + owner (simple subtext style: "Title (Owner)")
-//                val owner = item.owner.takeIf { it.isNotBlank() }
-                val itemTitle = if (owner != null) {
-                    "${item.description} ($owner)"
-                } else {
-                    item.description
+                // Custom drawing for the first column
+                val (l, r) = table.colBounds[0]
+                val x0 = l + 4f // cellPaddingX
+                val textY = pager.y + rowHeight / 2 - (typo.tableText.descent() + typo.tableText.ascent()) / 2
+
+                // Draw item description
+                val titlePaint = Paint(typo.tableText).apply { textAlign = Paint.Align.LEFT }
+                pager.canvas.drawText(item.description, x0, textY, titlePaint)
+
+                // Draw owner in smaller font, right after description
+                if (hasOwner) {
+                    val ownerPaint = Paint(typo.tableText).apply {
+                        textAlign = Paint.Align.LEFT
+                        textSize = typo.tableText.textSize - 2f
+                        color = Color.DKGRAY
+                    }
+                    val descWidth = titlePaint.measureText(item.description)
+                    pager.canvas.drawText(" (${owner})", x0 + descWidth, textY, ownerPaint)
                 }
 
-                table.ellipsizedRow(
-                    listOf(itemTitle, item.qty.toString(), unit, disc, total),
-                    rowHeight
-                )
+                // Draw other columns as usual
+                val otherCells = listOf(item.qty.toString(), unit, disc, total)
+                table.spec.columns.drop(1).forEachIndexed { idx, col ->
+                    val (cl, cr) = table.colBounds[idx + 1]
+                    val p = Paint(typo.tableText)
+                    val x = when (col.align) {
+                        Align.LEFT -> cl + 4f
+                        Align.RIGHT -> cr - 4f
+                        Align.CENTER -> (cl + cr) / 2f
+                    }
+                    p.textAlign = when (col.align) {
+                        Align.LEFT -> Paint.Align.LEFT
+                        Align.RIGHT -> Paint.Align.RIGHT
+                        Align.CENTER -> Paint.Align.CENTER
+                    }
+                    val text = otherCells.getOrElse(idx) { "" }
+                    pager.canvas.drawText(text, x, textY, p)
+                }
+
+                // Draw row borders and advance
+                table.drawRowBorders(pager.y, pager.y + rowHeight)
+                pager.space(rowHeight)
             }
         }
     }
