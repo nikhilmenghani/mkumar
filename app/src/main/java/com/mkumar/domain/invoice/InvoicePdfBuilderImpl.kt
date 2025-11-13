@@ -100,6 +100,12 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             strokeWidth = 1f
             color = Color.LTGRAY
         }
+
+        val tableBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 0.8f
+            color = Color.LTGRAY
+        }
     }
 
     // --------------------------
@@ -192,14 +198,38 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             }
         }
 
-        fun header(rowHeight: Float = 14f, gapBelow: Float = 16f) {
-            // Draw top divider
-            pager.ensure(rowHeight + 2 + gapBelow)
-            pager.lineAcross(rules.faintLine)
-            pager.space(2f)
+        private fun tableLeft(): Float =
+            colBounds.first().first - spec.columns.first().padLeft
 
-            // Vertically center text in header row
-            val textY = pager.y + rowHeight / 2 - (headerPaint.descent() + headerPaint.ascent()) / 2
+        private fun tableRight(): Float =
+            colBounds.last().second + spec.columns.last().padRight
+
+        private fun drawRowBorders(top: Float, bottom: Float) {
+            val tableLeft = tableLeft()
+            val tableRight = tableRight()
+
+            // Outer rect
+            pager.canvas.drawRect(tableLeft, top, tableRight, bottom, rules.tableBorder)
+
+            // Vertical grid lines
+            var x = tableLeft
+            val totalWidth = pager.contentWidth
+            spec.columns.forEachIndexed { index, col ->
+                val colW = (col.widthFraction / spec.totalFractions) * totalWidth
+                x += colW
+                if (index < spec.columns.lastIndex) {
+                    pager.canvas.drawLine(x, top, x, bottom, rules.tableBorder)
+                }
+            }
+        }
+
+        fun header(rowHeight: Float = 18f, gapBelow: Float = 6f) {
+            pager.ensure(rowHeight + gapBelow)
+
+            val rowTop = pager.y
+            val rowBottom = rowTop + rowHeight
+
+            val textY = rowTop + rowHeight / 2 - (headerPaint.descent() + headerPaint.ascent()) / 2
             spec.columns.forEachIndexed { i, col ->
                 val (l, r) = colBounds[i]
                 val x = if (col.align == Align.RIGHT) r else l
@@ -208,29 +238,43 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 }
                 pager.canvas.drawText(col.title, x, textY, p)
             }
-            pager.space(rowHeight)
-            pager.space(2f)
 
-            // Draw bottom divider
-            pager.lineAcross(rules.faintLine)
+            // Borders for header row
+            drawRowBorders(rowTop, rowBottom)
+
+            pager.space(rowHeight)
             pager.space(gapBelow)
         }
 
-        fun row(cells: List<String>, rowHeight: Float = 16f) {
+        fun row(cells: List<String>, rowHeight: Float = 18f) {
             pager.ensure(rowHeight)
+            val rowTop = pager.y
+            val rowBottom = rowTop + rowHeight
+
+            val textY = rowTop + rowHeight / 2 - (bodyPaint.descent() + bodyPaint.ascent()) / 2
+
             spec.columns.forEachIndexed { i, col ->
                 val (l, r) = colBounds[i]
                 val p = Paint(bodyPaint).apply {
                     textAlign = if (col.align == Align.RIGHT) Paint.Align.RIGHT else Paint.Align.LEFT
                 }
                 val x = if (col.align == Align.RIGHT) r else l
-                pager.canvas.drawText(cells.getOrElse(i) { "" }, x, pager.y, p)
+                pager.canvas.drawText(cells.getOrElse(i) { "" }, x, textY, p)
             }
+
+            // Borders for body row
+            drawRowBorders(rowTop, rowBottom)
+
             pager.space(rowHeight)
         }
 
-        fun ellipsizedRow(cells: List<String>, rowHeight: Float = 16f) {
+        fun ellipsizedRow(cells: List<String>, rowHeight: Float = 18f) {
             pager.ensure(rowHeight)
+            val rowTop = pager.y
+            val rowBottom = rowTop + rowHeight
+
+            val textY = rowTop + rowHeight / 2 - (bodyPaint.descent() + bodyPaint.ascent()) / 2
+
             spec.columns.forEachIndexed { i, col ->
                 val (l, r) = colBounds[i]
                 val p = Paint(bodyPaint).apply {
@@ -239,8 +283,12 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 val x = if (col.align == Align.RIGHT) r else l
                 val maxW = (r - l)
                 val txt = TextUtil.ellipsize(cells.getOrElse(i) { "" }, p, maxW)
-                pager.canvas.drawText(txt, x, pager.y, p)
+                pager.canvas.drawText(txt, x, textY, p)
             }
+
+            // Borders for body row
+            drawRowBorders(rowTop, rowBottom)
+
             pager.space(rowHeight)
         }
     }
@@ -251,115 +299,139 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
     private object HeaderSection {
         fun draw(pager: Pager, data: InvoiceData, typo: Typography, rules: Rules) {
-            val left = pager.contentLeft
-            val right = left + pager.contentWidth
-            val colGap = 16f
-            val colWidth = (pager.contentWidth - colGap) / 2
-
-            // Shop name: first line big bold, second line small bold bold
-            val shopNameLines = listOf(
-                "M Kumar", // big bold
-                "Luxurious Watch & Optical Store" // small bold
-            )
-
-            // Address lines with heading
-            val addressLines = listOf(
-                "Address:", // heading, bold
-                "7, Shlok Height,",
-                "Opp. Dev Paradise & Dharti Silver,",
-                "Nr. Mansarovar Road, Chandkheda,",
-                "Ahmedabad, Gujarat - 382424"
-            )
-
-            // Prepare left column lines
-            val leftLines = mutableListOf<Pair<String, Paint>>()
-            leftLines.add(shopNameLines[0] to typo.title) // big bold
-            leftLines.add(shopNameLines[1] to Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD }) // small bold
-
-            // Phone and email: label bold, value regular, both on same line
-            val phoneLabel = "Phone: "
-            val emailLabel = "Email: "
-            if (data.ownerPhone.isNotBlank()) leftLines.add("" to typo.text)
-            if (data.ownerEmail.isNotBlank()) leftLines.add("" to typo.text)
-
-            val maxLines = maxOf(leftLines.size, addressLines.size)
+            val c = pager.canvas
+            val centerX = pager.contentLeft + pager.contentWidth / 2f
             var y = pager.y
-            var leftLineIdx = 0
-            var addressLineIdx = 0
 
-            for (i in 0 until maxLines) {
-                // Left column
-                if (leftLineIdx == 0) {
-                    val (line, paint) = leftLines[leftLineIdx]
-                    pager.canvas.drawText(line, left, y, paint)
-                    leftLineIdx++
-                } else if (leftLineIdx == 1) {
-                    val (line, paint) = leftLines[leftLineIdx]
-                    pager.canvas.drawText(line, left, y, paint)
-                    leftLineIdx++
-                } else if (leftLineIdx == 2 && data.ownerPhone.isNotBlank()) {
-                    pager.canvas.drawText(phoneLabel, left, y, Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD })
-                    pager.canvas.drawText(" ${data.ownerPhone}", left + typo.label.measureText(phoneLabel), y, typo.text)
-                    leftLineIdx++
-                } else if (leftLineIdx == 3 && data.ownerEmail.isNotBlank()) {
-                    pager.canvas.drawText(emailLabel, left, y, Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD })
-                    pager.canvas.drawText(" ${data.ownerEmail}", left + typo.label.measureText(emailLabel), y, typo.text)
-                    leftLineIdx++
-                }
+            // --- Logo + Title row ---
+            val logoSize = 40f
+            val logoLeft = pager.contentLeft
+            val logoTop = y
+            val logoRight = logoLeft + logoSize
+            val logoBottom = logoTop + logoSize
 
-                // Right column (fully right-aligned)
-                if (addressLineIdx < addressLines.size) {
-                    val line = addressLines[addressLineIdx]
-                    val paint = if (addressLineIdx == 0)
-                        Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.RIGHT }
-                    else
-                        Paint(typo.text).apply { textAlign = Paint.Align.RIGHT }
-                    pager.canvas.drawText(line, right, y, paint)
-                    addressLineIdx++
-                }
-                y += 18f
+            // Simple placeholder logo: rounded rect + "M"
+            val logoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = 2f
+                color = Color.DKGRAY
             }
-            pager.y = y
+            c.drawRoundRect(logoLeft, logoTop, logoRight, logoBottom, 8f, 8f, logoPaint)
 
+            val logoTextPaint = Paint(typo.text).apply {
+                textAlign = Paint.Align.CENTER
+                textSize = 16f
+                typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
+            }
+            val logoTextY = logoTop + logoSize / 2 - (logoTextPaint.descent() + logoTextPaint.ascent()) / 2
+            c.drawText("M", (logoLeft + logoRight) / 2f, logoTextY, logoTextPaint)
+
+            // "M Kumar" centered
+            val titlePaint = Paint(typo.title).apply {
+                textAlign = Paint.Align.CENTER
+            }
+            val nameY = logoTop + logoSize / 2 - 4f
+            c.drawText("M Kumar", centerX, nameY, titlePaint)
+
+            // "Luxurious Watch & Optical Store" smaller, centered
+            val subtitlePaint = Paint(typo.label).apply {
+                textAlign = Paint.Align.CENTER
+                textSize = 12.5f
+            }
+            val taglineY = nameY + 16f
+            c.drawText("Luxurious Watch & Optical Store", centerX, taglineY, subtitlePaint)
+
+            y = logoBottom + 8f
+
+            // --- Address (2 lines), centered ---
+            val addressLines = listOf(
+                "7, Shlok Height, Opp. Dev Paradise & Dharti Silver,",
+                "Nr. Mansarovar Road, Chandkheda, Ahmedabad, Gujarat - 382424"
+            )
+            val addressPaint = Paint(typo.label).apply {
+                textAlign = Paint.Align.CENTER
+            }
+            addressLines.forEach { line ->
+                c.drawText(line, centerX, y, addressPaint)
+                y += 14f
+            }
+
+            pager.y = y
             pager.space(6f)
             pager.lineAcross(rules.faintLine)
-            pager.space(14f)
+            pager.space(10f)
 
-            val boldLabel = Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD }
-
-            val invoiceLabel = "Invoice: "
-            pager.canvas.drawText(invoiceLabel, left, pager.y, boldLabel)
-            pager.canvas.drawText(
-                CustomerDetailsConstants.getInvoiceFileName(data.orderId, data.invoiceNumber),
-                left + boldLabel.measureText(invoiceLabel), pager.y, typo.text
-            )
-
-            val dateLabel = "Date Invoice Generated: "
-            val dateValue = data.occurredAtText
-            val rightAlignBold = Paint(typo.label).apply {
-                typeface = Typeface.DEFAULT_BOLD
-                textAlign = Paint.Align.RIGHT
+            // --- Big centered "Invoice" title ---
+            val invoiceTitlePaint = Paint(typo.title).apply {
+                textAlign = Paint.Align.CENTER
+                textSize = 20f
             }
-            val rightAlign = Paint(typo.text).apply { textAlign = Paint.Align.RIGHT }
-            val dateValueWidth = rightAlign.measureText(dateValue)
-            pager.canvas.drawText(dateLabel, right - dateValueWidth, pager.y, rightAlignBold)
-            pager.canvas.drawText(dateValue, right, pager.y, rightAlign)
-            pager.space(16f)
+            val invoiceTitleY = pager.y + 18f
+            c.drawText("Invoice", centerX, invoiceTitleY, invoiceTitlePaint)
+            pager.y = invoiceTitleY + 18f
+            pager.space(6f)
 
-            val customerLabel = "Customer: "
-            pager.canvas.drawText(customerLabel, left, pager.y, boldLabel)
-            pager.canvas.drawText(
+            // --- Customer & Invoice info section (two columns) ---
+            val boldLabel = Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD }
+            val normalText = typo.text
+
+            val infoRowHeight = 18f
+            val colGap = 24f
+            val colWidth = (pager.contentWidth - colGap) / 2f
+            val leftX = pager.contentLeft
+            val rightColLeft = leftX + colWidth + colGap
+            val rightX = pager.contentLeft + pager.contentWidth
+
+            var infoY = pager.y
+
+            // Row 1: Customer name (left) / Invoice # (right)
+            // Left: "Customer: <name>"
+            c.drawText("Customer: ", leftX, infoY, boldLabel)
+            c.drawText(
                 data.customerName,
-                left + boldLabel.measureText(customerLabel), pager.y, typo.text
+                leftX + boldLabel.measureText("Customer: "),
+                infoY,
+                normalText
             )
-            pager.space(16f)
 
-            pager.canvas.drawText(phoneLabel, left, pager.y, boldLabel)
-            pager.canvas.drawText(
+            // Right: "Invoice #: <fileName>"
+            val invoiceFileName = CustomerDetailsConstants.getInvoiceFileName(data.orderId, data.invoiceNumber)
+            val rightLabel = Paint(boldLabel).apply { textAlign = Paint.Align.RIGHT }
+            val rightValue = Paint(normalText).apply { textAlign = Paint.Align.RIGHT }
+
+            val invoiceLabelText = "Invoice #: "
+            val invoiceLabelWidth = rightLabel.measureText(invoiceLabelText)
+            val invoiceValueWidth = rightValue.measureText(invoiceFileName)
+            val invoiceLabelX = rightX - invoiceValueWidth - 4f
+            c.drawText(invoiceLabelText, invoiceLabelX, infoY, rightLabel)
+            c.drawText(invoiceFileName, rightX, infoY, rightValue)
+
+            infoY += infoRowHeight
+
+            // Row 2: Customer phone (left) / Invoice Generated Date (right)
+            val phoneLabel = "Phone: "
+            c.drawText(phoneLabel, leftX, infoY, boldLabel)
+            c.drawText(
                 data.customerPhone,
-                left + boldLabel.measureText(phoneLabel), pager.y, typo.text
+                leftX + boldLabel.measureText(phoneLabel),
+                infoY,
+                normalText
             )
-            pager.space(12f)
+
+            val dateLabelText = "Invoice Generated: "
+            val dateValue = data.occurredAtText
+            val dateLabelWidth = rightLabel.measureText(dateLabelText)
+            val dateValueWidth = rightValue.measureText(dateValue)
+            val dateLabelX = rightX - dateValueWidth - 4f
+            c.drawText(dateLabelText, dateLabelX, infoY, rightLabel)
+            c.drawText(dateValue, rightX, infoY, rightValue)
+
+            infoY += infoRowHeight
+
+            pager.y = infoY
+            pager.space(10f)
+            pager.lineAcross(rules.faintLine)
+            pager.space(8f)
         }
     }
 
@@ -381,9 +453,9 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
         fun drawRows(pager: Pager, data: InvoiceData, money: NumberFormat, typo: Typography, rules: Rules) {
             val table = TableDrawer(pager, spec, typo.tableHeader, typo.tableText, rules)
-            val rowHeight = 16f
+            val rowHeight = 18f
 
-            data.items.forEachIndexed { index, item ->
+            data.items.forEach { item ->
                 // If we need a new page, we also redraw the header & table header
                 pager.ensure(rowHeight + 8f) {
                     HeaderSection.draw(pager, data, typo, rules)
@@ -394,8 +466,18 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 val disc = if (item.discount > 0.0) "${item.discount}%" else "-"
                 val total = money.format(item.total)
 
-                // Ellipsize long names
-                table.ellipsizedRow(listOf(item.description, item.qty.toString(), unit, disc, total), rowHeight)
+                // Item title + owner (simple subtext style: "Title (Owner)")
+                val owner = item.owner.takeIf { it.isNotBlank() }
+                val itemTitle = if (owner != null) {
+                    "${item.description} ($owner)"
+                } else {
+                    item.description
+                }
+
+                table.ellipsizedRow(
+                    listOf(itemTitle, item.qty.toString(), unit, disc, total),
+                    rowHeight
+                )
             }
         }
     }

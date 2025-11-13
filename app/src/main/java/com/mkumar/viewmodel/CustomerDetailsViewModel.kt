@@ -429,7 +429,8 @@ class CustomerDetailsViewModel @Inject constructor(
                 unitPrice = e.unitPrice.toDouble(),
                 total = lineTotal.toDouble(),
                 discount = e.discountPercentage,
-                description = "[" + e.productOwnerName + "] -> " + description
+                description = description,
+                owner = e.productOwnerName
             )
         }
 

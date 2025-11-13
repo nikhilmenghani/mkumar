@@ -25,5 +25,6 @@ data class InvoiceItemRow(
     val unitPrice: Double,
     val total: Double,
     val discount: Int,
+    val owner: String,
     val description: String
 )

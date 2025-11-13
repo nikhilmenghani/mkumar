@@ -16,13 +16,27 @@ class InvoicePdfBuilderImplTest {
             customerName = "Amit Kumar",
             customerPhone = "+91 98765 43210",
             items = listOf(
-                InvoiceItemRow("Item A", 2, 100.0, 200.0),
-                InvoiceItemRow("Item B", 1, 150.0, 150.0)
+                InvoiceItemRow(
+                    "Item A", 2, 100.0, 200.0,
+                    discount = 90,
+                    owner = "Nikhil",
+                    description = "test item A description"
+                ),
+                InvoiceItemRow(
+                    "Item B", 1, 150.0, discount = 90,
+                    owner = "Nikhil",
+                    description = "test item A description",
+                    total = 1000.0
+                )
             ),
             subtotal = 350.0,
-            discount = 0.0,
-            tax = 0.0,
-            grandTotal = 350.0
+            ownerName = "Nikhil",
+            ownerPhone = "7506712435",
+            ownerEmail = "nikhil@menghani.com",
+            invoiceNumber = "INV-123",
+            adjustedTotal = 990.00,
+            advanceTotal = 700.00,
+            remainingBalance = 100.00
         )
         val pdfBytes = builder.build(data)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
