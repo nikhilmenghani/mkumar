@@ -80,13 +80,13 @@ private fun RenderProductForm(
             onChange = updateProductFormData,
         )
 
-        ProductType.Lens -> LensForm(
-            initialData = productFormData as? ProductFormData.LensData,
+        ProductType.Glass -> GlassForm(
+            initialData = productFormData as? ProductFormData.GlassData,
             onChange = updateProductFormData,
         )
 
-        ProductType.ContactLens -> ContactLensForm(
-            initialData = productFormData as? ProductFormData.ContactLensData,
+        ProductType.Lens -> ContactLensForm(
+            initialData = productFormData as? ProductFormData.LensData,
             onChange = updateProductFormData,
         )
 
@@ -99,8 +99,8 @@ private fun RenderProductForm(
 
 fun defaultFormFor(type: ProductType, productOwner: String): ProductFormData = when (type) {
     ProductType.Frame -> ProductFormData.FrameData().copy(productOwner = productOwner)
+    ProductType.Glass -> ProductFormData.GlassData().copy(productOwner = productOwner)
     ProductType.Lens -> ProductFormData.LensData().copy(productOwner = productOwner)
-    ProductType.ContactLens -> ProductFormData.ContactLensData().copy(productOwner = productOwner)
     ProductType.GeneralProduct -> ProductFormData.GeneralProductData().copy(productOwner = productOwner)
 }
 

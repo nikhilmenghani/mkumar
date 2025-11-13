@@ -72,13 +72,13 @@ fun FrameForm(
 
 @OptIn(FlowPreview::class)
 @Composable
-fun LensForm(
-    initialData: ProductFormData.LensData? = null,
-    onChange: (ProductFormData.LensData) -> Unit,
+fun GlassForm(
+    initialData: ProductFormData.GlassData? = null,
+    onChange: (ProductFormData.GlassData) -> Unit,
 ) {
     var lens by remember {
         mutableStateOf(
-            initialData ?: ProductFormData.LensData()
+            initialData ?: ProductFormData.GlassData()
         )
     }
 
@@ -120,10 +120,10 @@ fun LensForm(
 @OptIn(FlowPreview::class)
 @Composable
 fun ContactLensForm(
-    initialData: ProductFormData.ContactLensData? = null,
-    onChange: (ProductFormData.ContactLensData) -> Unit,
+    initialData: ProductFormData.LensData? = null,
+    onChange: (ProductFormData.LensData) -> Unit,
 ) {
-    var form by remember { mutableStateOf(initialData ?: ProductFormData.ContactLensData()) }
+    var form by remember { mutableStateOf(initialData ?: ProductFormData.LensData()) }
 
     LaunchedEffect(Unit) {
         snapshotFlow { form }
@@ -285,17 +285,17 @@ fun GeneralProductForm(
             onCommit = { onChange(form) }
         )
         OLTextField(
-            value = form.productDescription,
-            label = "Description",
-            mode = FieldMode.TitleCase(),
-            onValueChange = { form = form.copy(productDescription = it) },
-            onCommit = { onChange(form) }
-        )
-        OLTextField(
             value = form.productType,
             label = "Product Type",
             mode = FieldMode.TitleCase(),
             onValueChange = { form = form.copy(productType = it) },
+            onCommit = { onChange(form) }
+        )
+        OLTextField(
+            value = form.productDescription,
+            label = "Description",
+            mode = FieldMode.TitleCase(),
+            onValueChange = { form = form.copy(productDescription = it) },
             onCommit = { onChange(form) }
         )
 

@@ -29,8 +29,8 @@ sealed class ProductFormData {
     ) : ProductFormData()
 
     @Serializable
-    @SerialName("LensData")
-    data class LensData(
+    @SerialName("GlassData")
+    data class GlassData(
         override val productDescription: String = "",
         override val productOwner: String = "",
         override val unitPrice: Int = 0,
@@ -40,8 +40,8 @@ sealed class ProductFormData {
     ) : ProductFormData()
 
     @Serializable
-    @SerialName("ContactLensData")
-    data class ContactLensData(
+    @SerialName("LensData")
+    data class LensData(
         val rightSph: String = "",
         val rightCyl: String = "",
         val rightAxis: String = "",

@@ -83,13 +83,13 @@ fun GroupedOrderAccordion(
 @Composable
 fun PreviewGroupedOrderAccordion() {
     val items = listOf(
-        UiOrderItem(id = "1", productType = ProductType.Lens, productDescription = "Single Vision Lens", formData = defaultFormFor(ProductType.Lens, "Nikhil"), finalTotal = 1200, name = "Nikhil",
+        UiOrderItem(id = "1", productType = ProductType.Glass, productDescription = "Single Vision Glass", formData = defaultFormFor(ProductType.Glass, "Nikhil"), finalTotal = 1200, name = "Nikhil",
             quantity =
             1, unitPrice = 25, discountPercentage = 10),
         UiOrderItem(id = "2", productType = ProductType.Frame, productDescription = "Acetate Frame", formData = defaultFormFor(ProductType.Frame, "Nikhil"), finalTotal = 2200, name = "Nikhil",
             quantity = 1,
             unitPrice = 50, discountPercentage = 0),
-        UiOrderItem(id = "3", productType = ProductType.ContactLens, productDescription = "Monthly Contacts", formData = defaultFormFor(ProductType.ContactLens, "Nikhil"), finalTotal = 1500, name =
+        UiOrderItem(id = "3", productType = ProductType.Lens, productDescription = "Monthly Contacts", formData = defaultFormFor(ProductType.Lens, "Nikhil"), finalTotal = 1500, name =
             "Nikhil", quantity = 1, unitPrice = 35, discountPercentage = 5),
     )
     MaterialTheme {

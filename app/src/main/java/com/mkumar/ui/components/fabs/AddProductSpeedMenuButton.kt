@@ -81,7 +81,7 @@ fun AddProductSpeedMenuButton(
 @Composable
 private fun AddProductSpeedMenuButtonPreview() {
     AddProductSpeedMenuButton(
-        commonTypes = listOf(ProductType.Frame, ProductType.Lens, ProductType.ContactLens),
+        commonTypes = ProductType.entries.toList(),
         lastUsed = ProductType.Frame,
         onAddClick = {},
         onOpenPicker = {}
