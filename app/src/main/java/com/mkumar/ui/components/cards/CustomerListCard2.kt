@@ -41,7 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.CustomerFormState
 import com.mkumar.ui.components.ProMenuItem
-import com.mkumar.ui.components.ProOverflowMenu
+import com.mkumar.ui.components.ProOverflowMenuIcons
 import com.mkumar.ui.theme.AppColors
 
 data class MenuAction(
@@ -118,7 +118,7 @@ fun CustomerListCard2(
                         }
                     }
                 }
-                ProOverflowMenu(
+                ProOverflowMenuIcons(
                     expanded = menuExpanded,
                     onExpandedChange = { menuExpanded = it },
                     items = buildList {

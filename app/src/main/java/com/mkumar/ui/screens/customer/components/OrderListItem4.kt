@@ -44,7 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.components.ProMenuItem
-import com.mkumar.ui.components.ProOverflowMenu
+import com.mkumar.ui.components.ProOverflowMenuIcons
 import com.mkumar.ui.screens.customer.model.OrderRowUi
 import com.mkumar.viewmodel.OrderRowAction
 import java.time.Instant
@@ -81,7 +81,7 @@ fun OrderListItem4(
         colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
-        ProOverflowMenu(
+        ProOverflowMenuIcons(
             expanded = menuExpanded,
             onExpandedChange = { menuExpanded = it },
             menuOffset = with(density) { DpOffset(menuOffsetPx.x.toDp() + 8.dp, menuOffsetPx.y.toDp() + 8.dp) },
