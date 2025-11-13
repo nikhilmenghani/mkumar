@@ -76,43 +76,138 @@ fun GlassForm(
     initialData: ProductFormData.GlassData? = null,
     onChange: (ProductFormData.GlassData) -> Unit,
 ) {
-    var lens by remember {
+    var form by remember {
         mutableStateOf(
             initialData ?: ProductFormData.GlassData()
         )
     }
 
     LaunchedEffect(Unit) {
-        snapshotFlow { lens }
+        snapshotFlow { form }
             .debounce(200)
             .distinctUntilChanged()
             .collect { onChange(it) }
     }
 
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OLTextField(
-            value = lens.productOwner,
+            value = form.productOwner,
             label = "Product Owner",
             mode = FieldMode.TitleCase(),
-            onValueChange = { lens = lens.copy(productOwner = it) },
-            onCommit = { onChange(lens) }
+            onValueChange = { form = form.copy(productOwner = it) },
+            onCommit = { onChange(form) }
         )
         OLTextField(
-            value = lens.productDescription,
+            value = form.productDescription,
             label = "Description",
             mode = FieldMode.TitleCase(),
-            onValueChange = { lens = lens.copy(productDescription = it) },
-            onCommit = { onChange(lens) }
+            onValueChange = { form = form.copy(productDescription = it) },
+            onCommit = { onChange(form) }
         )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OLTextField(
+                value = form.rightSph,
+                label = "Right Sph",
+                placeholder = "+1.50",
+                mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
+                onValueChange = { form = form.copy(rightSph = it) },
+                modifier = Modifier.weight(1f),
+                onCommit = { onChange(form) } // still emits when blurred/done/next
+            )
+            OLTextField(
+                value = form.rightCyl,
+                label = "Right Cyl",
+                placeholder = "-0.50",
+                mode = FieldMode.SignedDecimal(scale = 2, forcePlus = false),
+                onValueChange = { form = form.copy(rightCyl = it) },
+                modifier = Modifier.weight(1f),
+                onCommit = { onChange(form) }
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OLTextField(
+                value = form.rightAxis,
+                label = "Right Axis",
+                placeholder = "175",
+                mode = FieldMode.AxisDegrees,        // clamps 0..180 on commit
+                onValueChange = { form = form.copy(rightAxis = it) },
+                modifier = Modifier.weight(1f),
+                onCommit = { onChange(form) }
+            )
+            OLTextField(
+                value = form.rightAdd,
+                label = "Right Add",
+                placeholder = "+1.75",
+                mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
+                onValueChange = { form = form.copy(rightAdd = it) },
+                modifier = Modifier.weight(1f),
+                onCommit = { onChange(form) }
+            )
+        }
+
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OLTextField(
+                value = form.leftSph,
+                label = "Left Sph",
+                placeholder = "+1.50",
+                mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
+                onValueChange = { form = form.copy(leftSph = it) },
+                modifier = Modifier.weight(1f),
+                onCommit = { onChange(form) } // still emits when blurred/done/next
+            )
+            OLTextField(
+                value = form.leftCyl,
+                label = "Left Cyl",
+                placeholder = "-0.50",
+                mode = FieldMode.SignedDecimal(scale = 2, forcePlus = false),
+                onValueChange = { form = form.copy(leftCyl = it) },
+                modifier = Modifier.weight(1f),
+                onCommit = { onChange(form) }
+            )
+        }
+
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OLTextField(
+                value = form.leftAxis,
+                label = "Left Axis",
+                placeholder = "175",
+                mode = FieldMode.AxisDegrees,        // clamps 0..180 on commit
+                onValueChange = { form = form.copy(leftAxis = it) },
+                modifier = Modifier.weight(1f),
+                onCommit = { onChange(form) }
+            )
+            OLTextField(
+                value = form.leftAdd,
+                label = "Left Add",
+                placeholder = "+1.75",
+                mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
+                onValueChange = { form = form.copy(leftAdd = it) },
+                modifier = Modifier.weight(1f),
+                onCommit = { onChange(form) }
+            )
+        }
 
         ItemPriceEditor(
-            initialUnitPrice = lens.unitPrice.toString(),
-            initialDiscountPct = lens.discountPct.toString(),
-            initialQuantity = lens.quantity.toString(),
-            onUnitPriceChange = { lens = lens.copy(unitPrice = it.toIntOrNull() ?: 0) },
-            onDiscountChange = { lens = lens.copy(discountPct = it.toIntOrNull() ?: 0) },
-            onQuantityChange = { lens = lens.copy(quantity = it.toIntOrNull() ?: 1) },
-            onTotalChange = { lens = lens.copy(total = it.toIntOrNull() ?: 0) }
+            initialUnitPrice = form.unitPrice.toString(),
+            initialDiscountPct = form.discountPct.toString(),
+            initialQuantity = form.quantity.toString(),
+            onUnitPriceChange = { form = form.copy(unitPrice = it.toIntOrNull() ?: 0) },
+            onDiscountChange = { form = form.copy(discountPct = it.toIntOrNull() ?: 0) },
+            onQuantityChange = { form = form.copy(quantity = it.toIntOrNull() ?: 1) },
+            onTotalChange = { form = form.copy(total = it.toIntOrNull() ?: 0) }
         )
     }
 }

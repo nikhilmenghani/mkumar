@@ -31,6 +31,14 @@ sealed class ProductFormData {
     @Serializable
     @SerialName("GlassData")
     data class GlassData(
+        val rightSph: String = "",
+        val rightCyl: String = "",
+        val rightAxis: String = "",
+        val rightAdd: String = "",
+        val leftSph: String = "",
+        val leftCyl: String = "",
+        val leftAxis: String = "",
+        val leftAdd: String = "",
         override val productDescription: String = "",
         override val productOwner: String = "",
         override val unitPrice: Int = 0,

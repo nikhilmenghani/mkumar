@@ -19,6 +19,6 @@ data class ProductTypeMeta(
 val productTypeMeta: Map<ProductType, ProductTypeMeta> = mapOf(
     ProductType.Frame to ProductTypeMeta("Frame", Icons.Outlined.RemoveRedEye, tags = listOf("frames", "spectacles")),
     ProductType.Glass to ProductTypeMeta("Glass", Icons.Outlined.Lens, tags = listOf("lenses", "optical")),
-    ProductType.Lens to ProductTypeMeta("Contact Lens", Icons.Outlined.Lens, tags = listOf("lens", "contacts")),
+    ProductType.Lens to ProductTypeMeta("Lens", Icons.Outlined.Lens, tags = listOf("lens", "contacts")),
     ProductType.GeneralProduct to ProductTypeMeta("General Product", Icons.Outlined.ProductionQuantityLimits, tags = listOf("Watch", "Chain", "Belt"))
 )
