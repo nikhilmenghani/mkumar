@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToLong
 
 @Composable
 fun ItemPriceEditor(
@@ -42,7 +43,7 @@ fun ItemPriceEditor(
                 val discount = initialDiscountPct.toIntOrNull() ?: 0
                 val subtotal = price * qty
                 val discounted = subtotal * (1 - discount / 100.0)
-                discounted.toLong().toString()
+                discounted.roundToLong().toString()
             }
         )
     }
@@ -54,7 +55,7 @@ fun ItemPriceEditor(
         val discount = discountPct.toIntOrNull() ?: 0
         val subtotal = price * qty
         val discounted = subtotal * (1 - discount / 100.0)
-        total = discounted.toLong().toString()
+        total = discounted.roundToLong().toString()
         onTotalChange(total)
     }
 
