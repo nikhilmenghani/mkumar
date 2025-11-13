@@ -65,6 +65,7 @@ data class UiOrderItem(
 /** Draft used in bottom sheet while composing a new order. */
 data class OrderDraft(
     val occurredAt: Instant = Instant.now(),
+    val invoiceNumber: Long = 0,
     val items: List<UiOrderItem> = emptyList(),
     val subtotalBeforeAdjust: Int = 0,
     val adjustedAmount: Int = 0,

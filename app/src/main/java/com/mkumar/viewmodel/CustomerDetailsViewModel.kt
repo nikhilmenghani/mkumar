@@ -308,7 +308,7 @@ class CustomerDetailsViewModel @Inject constructor(
             )
 
             try {
-                orderRepo.createOrderWithItems(orderEntity)
+                val result = orderRepo.createOrderWithItems(orderEntity)
 
                 // 3) Open sheet with a fresh draft bound to this orderId
                 _ui.value = s.copy(
@@ -316,6 +316,7 @@ class CustomerDetailsViewModel @Inject constructor(
                     draft = OrderDraft(
                         occurredAt = now,
                         editingOrderId = newOrderId,
+                        invoiceNumber = result.invoiceSeq ?: 0
                         // other defaults as needed
                     ),
                     errorMessage = null
@@ -341,7 +342,7 @@ class CustomerDetailsViewModel @Inject constructor(
 
             val occurredAt = Instant.ofEpochMilli(order.occurredAt)
             // Reuse your pricing pipeline to recompute totals for a read-back draft:
-            val draft = recomputeTotals(uiItems, occurredAt, order.adjustedAmount, order.advanceTotal).copy(hasUnsavedChanges = false, editingOrderId = order.id)
+            val draft = recomputeTotals(uiItems, occurredAt, order.adjustedAmount, order.advanceTotal).copy(hasUnsavedChanges = false, editingOrderId = order.id, invoiceNumber = order.invoiceSeq ?: 0)
 
             _ui.value = _ui.value.copy(
                 isOrderSheetOpen = true,
@@ -553,7 +554,8 @@ class CustomerDetailsViewModel @Inject constructor(
                 adjustedAmount = draft.adjustedAmount,
                 advanceTotal = draft.advanceTotal,
                 totalAmount = draft.totalAmount,
-                remainingBalance = draft.remainingBalance
+                remainingBalance = draft.remainingBalance,
+                invoiceSeq = draft.invoiceNumber
             )
 
             val itemEntities = draft.items.map { it.toEntity(orderId) }
@@ -561,7 +563,7 @@ class CustomerDetailsViewModel @Inject constructor(
             try {
                 // If you have a transaction helper, use it:
                 // orderRepo.withTransaction { ... }
-                orderRepo.createOrderWithItems(orderEntity)
+                orderRepo.upsert(orderEntity)
                 for (item in itemEntities) orderItemRepo.upsert(item)
 
                 // Optional: mark status = CONFIRMED here if you track status
