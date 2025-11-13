@@ -22,6 +22,7 @@ data class InvoiceData(
 data class InvoiceItemRow(
     val name: String,
     val qty: Int,
+    val productType: String,
     val unitPrice: Double,
     val total: Double,
     val discount: Int,

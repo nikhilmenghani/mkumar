@@ -419,6 +419,12 @@ class CustomerDetailsViewModel @Inject constructor(
             val p = pricedById[e.id]
             val lineTotal = p?.lineTotal ?: e.finalTotal
             val description = UiOrderItem.deserializeFormData(e.formDataJson)?.productDescription ?: ""
+            val productType = if (e.productTypeLabel == "GeneralProduct") {
+                (UiOrderItem.deserializeFormData(e.formDataJson) as? ProductFormData.GeneralProductData)?.productType
+                    ?: productTypeLabelDisplayNames[e.productTypeLabel] ?: "Unknown"
+            } else {
+                productTypeLabelDisplayNames[e.productTypeLabel] ?: "Unknown"
+            }
             InvoiceItemRow(
                 name = s.customer?.name ?: "",
                 qty = e.quantity,
@@ -426,9 +432,11 @@ class CustomerDetailsViewModel @Inject constructor(
                 total = lineTotal.toDouble(),
                 discount = e.discountPercentage,
                 description = description,
-                owner = e.productOwnerName
+                owner = e.productOwnerName,
+                productType = productType
             )
         }
+
 
         val invoiceData = InvoiceData(
             shopName = "M Kumar Luxurious Watch & Optical Store",

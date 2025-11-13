@@ -569,9 +569,9 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         private val spec = TableSpec(
             listOf(
                 ColumnSpec(title = "Item",       widthFraction = 0.40f, align = Align.LEFT,   padRight = 8f),
-                ColumnSpec(title = "Qty",        widthFraction = 0.12f, align = Align.CENTER),
-                ColumnSpec(title = "Unit",       widthFraction = 0.16f, align = Align.CENTER),
-                ColumnSpec(title = "Discount %", widthFraction = 0.16f, align = Align.CENTER),
+                ColumnSpec(title = "Type",       widthFraction = 0.18f, align = Align.CENTER),
+                ColumnSpec(title = "Rate",       widthFraction = 0.16f, align = Align.CENTER),
+                ColumnSpec(title = "Disc %",     widthFraction = 0.10f, align = Align.CENTER),
                 ColumnSpec(title = "Total",      widthFraction = 0.16f, align = Align.CENTER),
             )
         )
@@ -618,7 +618,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 }
 
                 // Draw other columns as usual
-                val otherCells = listOf(item.qty.toString(), unit, disc, total)
+                val otherCells = listOf(item.productType, unit, disc, total)
                 table.spec.columns.drop(1).forEachIndexed { idx, col ->
                     val (cl, cr) = table.colBounds[idx + 1]
                     val p = Paint(typo.tableText)
@@ -683,7 +683,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             totalRow("Subtotal", data.subtotal)
             if (data.adjustedTotal != 0.0) totalRow("Adjusted Total", -kotlin.math.abs(data.adjustedTotal))
             if (data.advanceTotal != 0.0) totalRow("Advance Total", data.advanceTotal)
-            totalRow("Remaining Balance", data.remainingBalance, bold = true)
+            totalRow("Total Due", data.remainingBalance, bold = true)
         }
     }
 

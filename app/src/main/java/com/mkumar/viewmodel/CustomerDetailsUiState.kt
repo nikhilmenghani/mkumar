@@ -16,6 +16,13 @@ val productTypeDisplayNames = mapOf(
     ProductType.GeneralProduct to "General Product"
 )
 
+val productTypeLabelDisplayNames = mapOf(
+    "ContactLens" to "Contact Lens",
+    "Frame" to "Frame",
+    "Lens" to "Lens",
+    "GeneralProduct" to "General Product"
+)
+
 /** Lightweight UI customer model */
 data class UiCustomer(
     val id: String,
