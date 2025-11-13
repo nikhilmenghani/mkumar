@@ -10,7 +10,11 @@ object CustomerDetailsConstants {
         val invoiceShort = if (invoiceNumber.isBlank()) {
             "INV-" + orderId.takeLast(6).uppercase(Locale.getDefault())
         } else {
-            "INV-$invoiceNumber"
+            if (invoiceNumber.startsWith("INV-", ignoreCase = true)) {
+                invoiceNumber
+            } else {
+                "INV-$invoiceNumber"
+            }
         }
         return if (withTimeStamp) {
             val dateFormat = SimpleDateFormat("dd-MM-yy-HHmmss", Locale.getDefault())
