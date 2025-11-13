@@ -585,7 +585,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
             data.items.forEach { item ->
                 val owner = item.owner.takeIf { it.isNotBlank() }
-                val hasOwner = owner != null
+                val hasOwner = (owner != null) && (owner != item.name)
                 val rowHeight = 18f
 
                 pager.ensure(rowHeight + 8f) {

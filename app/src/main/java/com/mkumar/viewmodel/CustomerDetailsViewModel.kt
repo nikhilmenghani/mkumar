@@ -420,11 +420,7 @@ class CustomerDetailsViewModel @Inject constructor(
             val lineTotal = p?.lineTotal ?: e.finalTotal
             val description = UiOrderItem.deserializeFormData(e.formDataJson)?.productDescription ?: ""
             InvoiceItemRow(
-                name = when {
-                    e.productOwnerName.isNotBlank() -> e.productOwnerName
-                    e.productTypeLabel.isNotBlank() -> e.productTypeLabel
-                    else -> "Item"
-                },
+                name = s.customer?.name ?: "",
                 qty = e.quantity,
                 unitPrice = e.unitPrice.toDouble(),
                 total = lineTotal.toDouble(),
