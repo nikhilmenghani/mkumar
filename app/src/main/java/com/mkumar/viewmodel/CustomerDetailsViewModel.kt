@@ -46,7 +46,7 @@ class CustomerDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val dateFmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    private val dateFmt = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault())
     private val customerId: String =
         checkNotNull(savedStateHandle["customerId"]) { "customerId nav-arg is required" }
 
