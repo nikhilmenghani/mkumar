@@ -600,30 +600,18 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 val disc = if (item.discount > 0.0) "${item.discount}%" else "-"
                 val total = money.format(item.total)
 
-                if (hasOwner) {
-                    table.itemRowWithSubtext(
-                        title = item.description,
-                        subtext = "($owner)",
-                        otherCells = listOf(
-                            item.qty.toString(),
-                            unit,
-                            disc,
-                            total
-                        ),
-                        rowHeight = twoLineRowHeight
-                    )
+                // Item title + owner (simple subtext style: "Title (Owner)")
+//                val owner = item.owner.takeIf { it.isNotBlank() }
+                val itemTitle = if (owner != null) {
+                    "${item.description} ($owner)"
                 } else {
-                    table.ellipsizedRow(
-                        listOf(
-                            item.description,
-                            item.qty.toString(),
-                            unit,
-                            disc,
-                            total
-                        ),
-                        rowHeight = singleRowHeight
-                    )
+                    item.description
                 }
+
+                table.ellipsizedRow(
+                    listOf(itemTitle, item.qty.toString(), unit, disc, total),
+                    rowHeight
+                )
             }
         }
     }
