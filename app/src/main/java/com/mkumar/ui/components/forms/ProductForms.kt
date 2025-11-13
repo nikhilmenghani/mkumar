@@ -123,7 +123,7 @@ fun ContactLensForm(
     initialData: ProductFormData.ContactLensData? = null,
     onChange: (ProductFormData.ContactLensData) -> Unit,
 ) {
-    var form by remember(initialData) { mutableStateOf(initialData ?: ProductFormData.ContactLensData()) }
+    var form by remember { mutableStateOf(initialData ?: ProductFormData.ContactLensData()) }
 
     LaunchedEffect(Unit) {
         snapshotFlow { form }
