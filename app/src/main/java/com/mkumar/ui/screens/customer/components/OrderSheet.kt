@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.components.cards.OrderAccordionItem
 import com.mkumar.ui.components.cards.OrderHeaderCardPro
-import com.mkumar.ui.components.dialogs.DeleteProductConfirmDialog
+import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsUiState
@@ -153,7 +155,13 @@ fun OrderSheet(
     }
 
     if (pendingDeleteId != null) {
-        DeleteProductConfirmDialog(
+        ConfirmActionDialog(
+            title = "Remove product?",
+            message = "This product will be removed from the order. You can add it again later if needed.",
+            confirmLabel = "Delete",
+            dismissLabel = "Cancel",
+            icon = Icons.Outlined.DeleteForever,
+            highlightConfirmAsDestructive = true,
             onConfirm = {
                 pendingDeleteId?.let { id ->
                     viewModel.onNewOrderIntent(NewOrderIntent.FormDelete(id))
