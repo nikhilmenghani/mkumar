@@ -561,7 +561,8 @@ class CustomerDetailsViewModel @Inject constructor(
                 advanceTotal = draft.advanceTotal,
                 totalAmount = draft.totalAmount,
                 remainingBalance = draft.remainingBalance,
-                invoiceSeq = draft.invoiceNumber
+                invoiceSeq = draft.invoiceNumber,
+                updatedAt = System.currentTimeMillis()
             )
 
             val itemEntities = draft.items.map { it.toEntity(orderId) }
@@ -636,7 +637,8 @@ class CustomerDetailsViewModel @Inject constructor(
             productTypeLabel = productType.toString(),
             productOwnerName = formData?.productOwner ?: "Error",
             formDataJson = serializedFormData,
-            finalTotal = finalTotal
+            finalTotal = finalTotal,
+            updatedAt = System.currentTimeMillis()
         )
     }
 
@@ -651,7 +653,8 @@ class CustomerDetailsViewModel @Inject constructor(
             name = deserializedFormData?.productOwner ?: productOwnerName,
             formData = deserializedFormData,
             finalTotal = finalTotal,
-            productDescription = deserializedFormData?.productDescription ?: ""
+            productDescription = deserializedFormData?.productDescription ?: "",
+            updatedAt = updatedAt
         )
     }
 

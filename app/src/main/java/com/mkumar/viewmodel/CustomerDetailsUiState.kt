@@ -58,6 +58,7 @@ data class UiOrderItem(
     val unitPrice: Int,
     val discountPercentage: Int,
     val finalTotal: Int = 0,
+    val updatedAt: Long = System.currentTimeMillis()
 ) {
     fun serializeFormData(): String? {
         return formData?.let { Json.encodeToString(it) }

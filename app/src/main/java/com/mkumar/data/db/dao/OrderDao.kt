@@ -16,6 +16,9 @@ interface OrderDao {
     @Upsert
     suspend fun upsert(order: OrderEntity)
 
+    @Query("UPDATE orders SET updatedAt = :now WHERE id = :orderId")
+    suspend fun touchUpdatedAt(orderId: String, now: Long)
+
     @Insert(onConflict = OnConflictStrategy.Companion.ABORT)
     suspend fun insert(order: OrderEntity)
 

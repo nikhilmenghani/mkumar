@@ -24,8 +24,9 @@ class CustomerRepositoryImpl @Inject constructor(
 ) : CustomerRepository {
 
     override suspend fun upsert(customer: CustomerEntity) {
-        customerDao.upsert(customer)
-        reindexCustomerForSearch(customer)
+        val updated = customer.copy(updatedAt = System.currentTimeMillis())
+        customerDao.upsert(updated)
+        reindexCustomerForSearch(updated)
     }
 
     override suspend fun deleteById(customerId: String) {
@@ -56,30 +57,6 @@ class CustomerRepositoryImpl @Inject constructor(
             phone3 = phone3
         )
         searchDao.upsert(entry)
-    }
-
-    /** Upsert Customer AND its FTS row in one transaction (Room @Transaction on DAO is fine too). */
-    suspend fun upsertCustomerWithIndex(c: CustomerEntity) = withContext(Dispatchers.IO) {
-        customerDao.upsert(c)
-        val folded = foldName(c.name).replace(" ", "")
-        val digits = digitsOnly(c.phone)
-        val name3 = ngrams(folded, 3).joinToString(" ").ifBlank { null }
-        val phone3 = digits?.let { d -> ngrams(d, 3).joinToString(" ").ifBlank { null } }
-        val entry = SearchFts(
-            customerId = c.id,
-            name = foldName(c.name),
-            phone = digits,
-            name3 = name3,
-            phone3 = phone3
-        )
-        searchDao.upsert(entry)
-    }
-
-
-    /** Delete customer AND remove from FTS. */
-    suspend fun deleteCustomerWithIndex(customerId: String) = withContext(Dispatchers.IO) {
-        customerDao.deleteById(customerId)
-        searchDao.deleteByCustomerId(customerId)
     }
 
     override suspend fun searchCustomers(q: String, mode: SearchMode, limit: Int): List<UiCustomerMini> {

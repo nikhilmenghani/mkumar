@@ -46,6 +46,9 @@ interface OrderItemDao {
     @Query("DELETE FROM order_items WHERE id = :itemId")
     suspend fun deleteProductById(itemId: String)
 
+    @Query("SELECT orderId FROM order_items WHERE id = :itemId LIMIT 1")
+    suspend fun getOrderIdByItemId(itemId: String): String?
+
     /**
      * Fetch all items for a given order as Flow for reactive UI binding.
      */

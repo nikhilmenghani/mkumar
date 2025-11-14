@@ -17,7 +17,10 @@ class OrderRepositoryImpl @Inject constructor(
     private val invoiceNumberService: InvoiceNumberService
 ) : OrderRepository {
 
-    override suspend fun upsert(order: OrderEntity) = orderDao.upsert(order)
+    override suspend fun upsert(order: OrderEntity) {
+        val now = System.currentTimeMillis()
+        orderDao.upsert(order.copy(updatedAt = now))
+    }
 
     override suspend fun delete(orderId: String) = orderDao.deleteById(orderId)
 
@@ -30,13 +33,11 @@ class OrderRepositoryImpl @Inject constructor(
     override suspend fun getOrder(orderId: String): OrderEntity? =
         orderDao.getById(orderId)
 
-    override suspend fun createOrderWithItems(
-        order: OrderEntity
-    ): OrderEntity = db.withTransaction {
+    override suspend fun createOrderWithItems(order: OrderEntity): OrderEntity = db.withTransaction {
+        val now = System.currentTimeMillis()
         val invoiceSeq = invoiceNumberService.takeNextInvoiceNumberInCurrentTx()
-        val orderWithInvoice = order.copy(invoiceSeq = invoiceSeq)
-        orderDao.upsert(orderWithInvoice)
-
-        orderWithInvoice
+        val stamped = order.copy(invoiceSeq = invoiceSeq, updatedAt = now)
+        orderDao.upsert(stamped)
+        stamped
     }
 }
