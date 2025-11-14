@@ -54,7 +54,7 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
                 }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun createOrUpdateCustomerCard(name: String, phone: String, email: String? = null) {
+    fun createOrUpdateCustomerCard(name: String, phone: String, email: String? = null): String {
         val customer = CustomerEntity(
             id = UUID.randomUUID().toString(), // or ULID
             name = name.trim(),
@@ -65,6 +65,7 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
             repository.upsert(customer)
             // optional: update search index here if you wired SearchDao
         }
+        return customer.id
     }
 
     fun removeCustomer(customerID: String) {

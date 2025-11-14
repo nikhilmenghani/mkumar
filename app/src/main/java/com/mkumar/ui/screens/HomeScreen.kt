@@ -232,7 +232,9 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
             onDoneClick = {
                 if (name.isNotBlank()) {
                     if (sheetMode == CustomerSheetMode.Add) {
-                        vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
+                        val customerId = vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
+                        vm.selectCustomer(customerId)
+                        navController.navigate(Routes.customerDetail(customerId))
                     } else {
                         editingCustomerId?.let { vm.updateCustomer(it, name.trim(), phone.trim()) }
                     }
