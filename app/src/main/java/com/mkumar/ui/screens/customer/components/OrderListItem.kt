@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PictureAsPdf
@@ -46,7 +45,6 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.DateFormat
 import com.mkumar.common.extension.formatAsDate
-import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.common.extension.toLong
 import com.mkumar.ui.components.ProMenuItem
 import com.mkumar.ui.components.ProOverflowMenuIcons
@@ -136,32 +134,34 @@ fun OrderListItem(
                             )
                         }
                 ) {
+                    // Top row: Invoice + Time Badge
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            if (invoiceNumber.isNotBlank()) {
-                                Text(
-                                    text = "#$invoiceNumber",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
+                        if (invoiceNumber.isNotBlank()) {
                             Text(
-                                text = row.occurredAt.formatAsDateTime(),
-                                style = MaterialTheme.typography.titleSmall,
+                                text = "#$invoiceNumber",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
                             )
                         }
 
+                        // Time badge in top right
+                        TimeBadges(row)
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Bottom row: Ledger amounts
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
                         Column(
-                            modifier = Modifier.wrapContentWidth(Alignment.End),
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             horizontalAlignment = Alignment.End
                         ) {
@@ -175,9 +175,6 @@ fun OrderListItem(
                             }
                         }
                     }
-
-                    Spacer(Modifier.height(10.dp))
-//                    TimeBadges(row)
                 }
             }
         )
@@ -229,7 +226,7 @@ private fun TimeBadges(row: OrderRowUi) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Created badge
+
         AssistChip(
             onClick = {},
             label = {
@@ -238,40 +235,39 @@ private fun TimeBadges(row: OrderRowUi) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Created:",
+                        text = "Last Updated:",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = row.occurredAt.formatAsDate(DateFormat.SHORT_DATE_TIME),
+                        text = row.lastUpdatedAt.formatAsDate(DateFormat.SHORT_DATE_TIME),
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
             }
         )
-
-        // Updated badge (only show if different from created)
-        if (row.lastUpdatedAt != row.occurredAt) {
-            AssistChip(
-                onClick = {},
-                label = {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Updated:",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = row.lastUpdatedAt.formatAsDate(DateFormat.SHORT_DATE_TIME),
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                }
-            )
-        }
+//        // Updated badge (only show if different from created)
+//        if (row.lastUpdatedAt != row.occurredAt) {
+//            AssistChip(
+//                onClick = {},
+//                label = {
+//                    Row(
+//                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+//                        verticalAlignment = Alignment.CenterVertically
+//                    ) {
+//                        Text(
+//                            text = "Created:",
+//                            style = MaterialTheme.typography.labelSmall,
+//                            color = MaterialTheme.colorScheme.onSurfaceVariant
+//                        )
+//                        Text(
+//                            text = row.occurredAt.formatAsDate(DateFormat.SHORT_DATE_TIME),
+//                            style = MaterialTheme.typography.labelMedium
+//                        )
+//                    }
+//                }
+//            )
+//        }
     }
 }
 
