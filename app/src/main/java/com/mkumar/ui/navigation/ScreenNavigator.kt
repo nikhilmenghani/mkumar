@@ -3,8 +3,13 @@ package com.mkumar.ui.navigation
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseInOutQuart
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,6 +18,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
@@ -82,11 +89,45 @@ import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.CustomerViewModel
 
 
-data class NavItem(
-    val label: String,
-    val icon: ImageVector,
-    val route: String
-)
+private const val SharedAxisDuration = 300
+
+// Shared Axis X (horizontal depth) → used for CustomerDetails
+fun sharedAxisXEnter(forward: Boolean): EnterTransition {
+    return fadeIn(tween(SharedAxisDuration, easing = FastOutSlowInEasing)) +
+            slideInHorizontally(
+                tween(SharedAxisDuration, easing = FastOutSlowInEasing)
+            ) { fullWidth ->
+                if (forward) fullWidth / 3 else -fullWidth / 3
+            }
+}
+
+fun sharedAxisXExit(forward: Boolean): ExitTransition {
+    return fadeOut(tween(SharedAxisDuration, easing = FastOutLinearInEasing)) +
+            slideOutHorizontally(
+                tween(SharedAxisDuration, easing = FastOutLinearInEasing)
+            ) { fullWidth ->
+                if (forward) -fullWidth / 3 else fullWidth / 3
+            }
+}
+
+// Shared Axis Z (scale-depth) → perfect for Editor screen
+fun sharedAxisZEnter(forward: Boolean): EnterTransition {
+    return fadeIn(tween(SharedAxisDuration, easing = LinearOutSlowInEasing)) +
+            scaleIn(
+                tween(SharedAxisDuration, easing = LinearOutSlowInEasing),
+                initialScale = if (forward) 0.85f else 1.1f
+            )
+}
+
+fun sharedAxisZExit(forward: Boolean): ExitTransition {
+    return fadeOut(tween(SharedAxisDuration, easing = FastOutLinearInEasing)) +
+            scaleOut(
+                tween(SharedAxisDuration, easing = FastOutLinearInEasing),
+                targetScale = if (forward) 1.1f else 0.85f
+            )
+}
+
+data class NavItem(val label: String, val icon: ImageVector, val route: String)
 
 val listOfNavItems = listOf(
     NavItem("Home", Icons.Default.Home, Screens.Home.name),
@@ -127,7 +168,7 @@ fun ScreenNavigator(
     val navController = rememberNavController()
     Scaffold(
         bottomBar = { Material3BottomNavigationBar(navController) },
-        contentWindowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0)
+        contentWindowInsets = WindowInsets(0.dp)
     ) { innerPadding ->
         NavigationHost(
             navController = navController,
@@ -538,7 +579,11 @@ fun NavigationHost(
         ) {
             composable(
                 route = Routes.CustomerDetailWithArg,
-                arguments = listOf(navArgument("customerId") { type = NavType.StringType })
+                arguments = listOf(navArgument("customerId") { type = NavType.StringType }),
+                enterTransition = { sharedAxisXEnter(forward = true) },
+                exitTransition = { sharedAxisXExit(forward = true) },
+                popEnterTransition = { sharedAxisXEnter(forward = false) },
+                popExitTransition = { sharedAxisXExit(forward = false) }
             ) { backStackEntry ->
                 val customerId = backStackEntry.arguments?.getString("customerId").orEmpty()
 
@@ -559,7 +604,11 @@ fun NavigationHost(
                 arguments = listOf(
                     navArgument("customerId") { type = NavType.StringType },
                     navArgument("orderId") { type = NavType.StringType; defaultValue = "" }
-                )
+                ),
+                enterTransition = { sharedAxisZEnter(forward = true) },
+                exitTransition = { sharedAxisZExit(forward = true) },
+                popEnterTransition = { sharedAxisZEnter(forward = false) },
+                popExitTransition = { sharedAxisZExit(forward = false) }
             ) { backStackEntry ->
                 val customerId = backStackEntry.arguments?.getString("customerId").orEmpty()
                 val orderId = backStackEntry.arguments?.getString("orderId").orEmpty()
