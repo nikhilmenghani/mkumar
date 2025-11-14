@@ -3,6 +3,7 @@ package com.mkumar.viewmodel
 
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.compose.runtime.Immutable
 import com.mkumar.data.ProductFormData
 import kotlinx.serialization.json.Json
 import java.time.Instant
@@ -24,6 +25,15 @@ val productTypeLabelDisplayNames = mapOf(
     "GeneralProduct" to "General Product"
 )
 
+// All the elements that we want to display on the Customer Details Screen in Order Card goes below
+@Immutable
+data class CustomerHeaderUi(
+    val customer: UiCustomer?,
+    val totalOrders: Int,
+    val totalSpent: Int,
+    val totalRemaining: Int,
+)
+
 /** Lightweight UI customer model */
 data class UiCustomer(
     val id: String,
@@ -32,19 +42,33 @@ data class UiCustomer(
     val createdAt: Long
 )
 
+
+// All the elements that we want to display on the Customer Details Screen in Order Card goes below
+@Immutable
+data class OrderRowUi(
+    val id: String,
+    val occurredAt: Long,
+    val lastUpdatedAt: Long,
+    val invoiceNumber: String,
+    val amount: Int,
+    val remainingBalance: Int,
+    val adjustedTotal: Int? = null,               // if != 0 -> use as Total
+)
+
 /**
  * UI order totals aligned to PricingResult fields.
  */
 data class UiOrder(
     val id: String,
     val invoiceNumber: String,
-    val occurredAt: Instant,
+    val occurredAt: Long,
     val items: List<UiOrderItem>,
     val subtotalBeforeAdjust: Int,
     val adjustedAmount: Int,
     val totalAmount: Int,
     val advanceTotal: Int,
-    val remainingBalance: Int
+    val remainingBalance: Int,
+    val lastUpdatedAt: Long
 )
 
 /** UI order item uses rupees + percentage discount */

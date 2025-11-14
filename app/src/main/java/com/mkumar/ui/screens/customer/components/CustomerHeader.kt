@@ -19,7 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mkumar.ui.screens.customer.model.CustomerHeaderUi
+import com.mkumar.viewmodel.CustomerHeaderUi
+import com.mkumar.viewmodel.UiCustomer
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -34,15 +35,17 @@ fun CustomerHeader(
             .border(1.dp, Color.Gray, shape = MaterialTheme.shapes.medium)
             .padding(0.dp)
     ) {
-        ElevatedCard(modifier = Modifier,
-            shape = MaterialTheme.shapes.medium) {
+        ElevatedCard(
+            modifier = Modifier,
+            shape = MaterialTheme.shapes.medium
+        ) {
             Column(Modifier.padding(16.dp)) {
-                Text(header.name, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                header.customer?.let { Text(it.name, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 Spacer(Modifier.height(4.dp))
-                Text(header.phoneFormatted, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                header.customer?.let { Text(it.phone, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 Spacer(Modifier.height(8.dp))
-                val joined = header.joinedAt?.let {
-                    val date = java.time.Instant.ofEpochMilli(it)
+                val joined = header.customer?.let {
+                    val date = java.time.Instant.ofEpochMilli(it.createdAt)
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate()
                     fmt.format(date)
@@ -85,12 +88,15 @@ fun CustomerHeader(
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true)
 @Composable
 fun CustomerHeaderPreview() {
+    val customer = UiCustomer(
+        id = "123",
+        name = "Mahendra Menghani",
+        phone = "+91 98765 43210",
+        createdAt = System.currentTimeMillis() - 86400000L * 365, // 1 year ago
+    )
     CustomerHeader(
         header = CustomerHeaderUi(
-            id = "123",
-            name = "Mahendra Menghani",
-            phoneFormatted = "+91 98765 43210",
-            joinedAt = System.currentTimeMillis() - 86400000L * 365, // 1 year ago
+            customer = customer,
             totalOrders = 42,
             totalSpent = 12500,
             totalRemaining = 2500

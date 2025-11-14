@@ -5,9 +5,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mkumar.ui.screens.customer.model.OrderRowUi
+import com.mkumar.common.extension.toLong
 import com.mkumar.viewmodel.OrderRowAction
+import com.mkumar.viewmodel.OrderRowUi
+import java.time.Instant
 
 @Composable
 fun OrderList(
@@ -20,35 +23,30 @@ fun OrderList(
         modifier = modifier
     ) {
         items(orders, key = { it.id }) { row ->
-            OrderListItem4(row = row, onAction = onAction)
+            OrderListItem(row = row, onAction = onAction)
         }
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
 fun OrderListPreview() {
     val sampleOrders = listOf(
         OrderRowUi(
             id = "1",
-            occurredAt = java.time.Instant.now(),
+            occurredAt = Instant.now().toLong(),
             invoiceNumber = "2",
-//            items = emptyList(),
             amount = 1250,
-            hasInvoice = true,
-            isQueued = false,
-            isSynced = true,
-            remainingBalance = 300
+            remainingBalance = 300,
+            lastUpdatedAt = Instant.now().toLong(),
+            adjustedTotal = 1200
         ),
         OrderRowUi(
             id = "2",
-            occurredAt = java.time.Instant.now(),
+            occurredAt = Instant.now().toLong(),
             invoiceNumber = "103",
-//            items = emptyList(),
             amount = 750,
-            hasInvoice = false,
-            isQueued = true,
-            isSynced = false,
+            lastUpdatedAt = Instant.now().toLong(),
             remainingBalance = 0
         )
     )

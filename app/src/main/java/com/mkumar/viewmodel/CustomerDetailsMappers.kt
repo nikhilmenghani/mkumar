@@ -1,12 +1,13 @@
 package com.mkumar.viewmodel
 
 import com.mkumar.data.db.entities.OrderEntity
+import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.domain.pricing.PricingInput
 import com.mkumar.domain.pricing.PricingResult
 import com.mkumar.domain.pricing.PricingService
-import java.time.Instant
 import java.util.Locale
+import java.util.UUID
 
 /** Aggregated UI payload for CustomerDetails screen. */
 data class UiBundle(val customer: UiCustomer, val orders: List<UiOrder>)
@@ -41,22 +42,30 @@ fun CustomerWithOrders.toUi(
                 advanceTotal   = advanceOf(order).coerceAtLeast(0)
             )
         )
-
-        UiOrder(
-            id = order.id,
-            occurredAt = Instant.ofEpochMilli(order.occurredAt),
-            items = uiItems,
-            subtotalBeforeAdjust = priced.subtotalBeforeAdjust,
-            adjustedAmount       = order.adjustedAmount,
-            totalAmount          = order.totalAmount,
-            advanceTotal         = order.advanceTotal,
-            remainingBalance     = order.remainingBalance,
-            invoiceNumber = order.invoiceSeq?.let { "INV-%d".format(it) } ?: ("INV-" + order.id.takeLast(6).uppercase(Locale.getDefault()))
-        )
+        order.toUiOrder(uiItems, priced.subtotalBeforeAdjust)
     }.sortedByDescending { it.occurredAt }
 
     return UiBundle(uiCustomer, uiOrders)
 }
+
+fun UiOrder.toOrderRowUi(): OrderRowUi =
+    OrderRowUi(
+        id = id,
+        occurredAt = occurredAt,
+        invoiceNumber = invoiceNumber,
+        amount = totalAmount,
+        remainingBalance = remainingBalance,
+        adjustedTotal = adjustedAmount,
+        lastUpdatedAt = lastUpdatedAt
+    )
+
+fun UiOrderItem.toItemInput(): PricingInput.ItemInput =
+    PricingInput.ItemInput(
+        itemId = id,
+        quantity = quantity,
+        unitPrice = unitPrice,
+        discountPercentage = discountPercentage
+    )
 
 /* ---------------------------- PRICING HELPERS ---------------------------- */
 
@@ -71,29 +80,48 @@ fun List<UiOrderItem>.toPricingInput(
     advanceTotal = advanceTotal.coerceAtLeast(0)
 )
 
-fun UiOrderItem.toItemInput(): PricingInput.ItemInput =
-    PricingInput.ItemInput(
-        itemId = id,
+fun UiOrderItem.toEntity(orderId: String): OrderItemEntity {
+    val serializedFormData = serializeFormData()
+    return OrderItemEntity(
+        id = id.ifBlank { UUID.randomUUID().toString() },
+        orderId = orderId,
         quantity = quantity,
-        unitPrice = unitPrice,                 // rupees
-        discountPercentage = discountPercentage
+        unitPrice = unitPrice,
+        discountPercentage = discountPercentage.coerceIn(0, 100),
+        productTypeLabel = productType.toString(),
+        productOwnerName = formData?.productOwner ?: "Error",
+        formDataJson = serializedFormData,
+        finalTotal = finalTotal,
+        updatedAt = System.currentTimeMillis()
     )
+}
 
-/* ------------------------------ UI Totals ------------------------------- */
+fun OrderItemEntity.toUiItem(): UiOrderItem {
+    val deserializedFormData = UiOrderItem.deserializeFormData(formDataJson)
+    return UiOrderItem(
+        id = id,
+        quantity = quantity,
+        unitPrice = unitPrice,
+        discountPercentage = discountPercentage,
+        productType = ProductType.valueOf(productTypeLabel),
+        name = deserializedFormData?.productOwner ?: productOwnerName,
+        formData = deserializedFormData,
+        finalTotal = finalTotal,
+        productDescription = deserializedFormData?.productDescription ?: "",
+        updatedAt = updatedAt
+    )
+}
 
-data class UiTotals(
-    val subtotalBeforeAdjust: Int,
-    val adjustedAmount: Int,
-    val totalAmount: Int,
-    val advanceTotal: Int,
-    val remainingBalance: Int
-)
-
-fun PricingResult.toUiTotals(): UiTotals =
-    UiTotals(
+fun OrderEntity.toUiOrder(items: List<UiOrderItem> = emptyList(), subtotalBeforeAdjust: Int = 0 ): UiOrder =
+    UiOrder(
+        id = id,
+        occurredAt = occurredAt,
+        items = items,
         subtotalBeforeAdjust = subtotalBeforeAdjust,
         adjustedAmount = adjustedAmount,
         totalAmount = totalAmount,
         advanceTotal = advanceTotal,
-        remainingBalance = remainingBalance
+        remainingBalance = remainingBalance,
+        lastUpdatedAt = updatedAt,
+        invoiceNumber = invoiceSeq?.let { "INV-%d".format(it) } ?: ("INV-" + id.takeLast(6).uppercase(Locale.getDefault()))
     )

@@ -98,17 +98,7 @@ class CustomerDetailsViewModel @Inject constructor(
             val ordersFlow = orderRepo.observeOrdersForCustomer(customerId)
                 .map { orders ->
                     orders.map { order ->
-                        UiOrder(
-                            id = order.id,
-                            invoiceNumber = order.invoiceSeq.toString(),
-                            occurredAt = Instant.ofEpochMilli(order.occurredAt),
-                            items = emptyList(),
-                            subtotalBeforeAdjust = 0,
-                            adjustedAmount = 0,
-                            totalAmount = 0,
-                            advanceTotal = 0,
-                            remainingBalance = 0
-                        )
+                        order.toUiOrder()
                     }.sortedByDescending { it.occurredAt }
                 }
 
@@ -622,55 +612,6 @@ class CustomerDetailsViewModel @Inject constructor(
             hasUnsavedChanges = true
         )
     }
-
-    // --- Persist order ---
-
-    // In your ViewModel
-    private fun UiOrderItem.toEntity(orderId: String): OrderItemEntity {
-        val serializedFormData = serializeFormData()
-        return OrderItemEntity(
-            id = id.ifBlank { UUID.randomUUID().toString() },
-            orderId = orderId,
-            quantity = quantity,
-            unitPrice = unitPrice,
-            discountPercentage = discountPercentage.coerceIn(0, 100),
-            productTypeLabel = productType.toString(),
-            productOwnerName = formData?.productOwner ?: "Error",
-            formDataJson = serializedFormData,
-            finalTotal = finalTotal,
-            updatedAt = System.currentTimeMillis()
-        )
-    }
-
-    private fun OrderItemEntity.toUiItem(): UiOrderItem {
-        val deserializedFormData = UiOrderItem.deserializeFormData(formDataJson)
-        return UiOrderItem(
-            id = id,
-            quantity = quantity,
-            unitPrice = unitPrice,
-            discountPercentage = discountPercentage,
-            productType = ProductType.valueOf(productTypeLabel),
-            name = deserializedFormData?.productOwner ?: productOwnerName,
-            formData = deserializedFormData,
-            finalTotal = finalTotal,
-            productDescription = deserializedFormData?.productDescription ?: "",
-            updatedAt = updatedAt
-        )
-    }
-
-
-    // --- Helpers ---
-
-    private fun UiOrderItem.ensureId(): UiOrderItem =
-        if (id.isBlank()) copy(id = UUID.randomUUID().toString()) else this
-
-    private fun UiOrderItem.toItemInput(): PricingInput.ItemInput =
-        PricingInput.ItemInput(
-            itemId = id,
-            quantity = quantity,
-            unitPrice = unitPrice,
-            discountPercentage = discountPercentage
-        )
 
     private fun emitMessage(msg: String) {
         _effects.tryEmit(CustomerDetailsEffect.ShowMessage(msg))

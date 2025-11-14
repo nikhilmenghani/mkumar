@@ -42,13 +42,12 @@ import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderList
-import com.mkumar.ui.screens.customer.model.CustomerHeaderUi
-import com.mkumar.ui.screens.customer.model.OrderRowUi
 import com.mkumar.viewmodel.CustomerDetailsEffect
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsViewModel
+import com.mkumar.viewmodel.CustomerHeaderUi
 import com.mkumar.viewmodel.OrderRowAction
-import com.mkumar.viewmodel.UiOrderItem
+import com.mkumar.viewmodel.toOrderRowUi
 import kotlinx.coroutines.flow.collectLatest
 
 @SuppressLint("LocalContextResourcesRead")
@@ -164,10 +163,7 @@ fun CustomerDetailsScreen(
             // Header
             CustomerHeader(
                 header = CustomerHeaderUi(
-                    id = ui.customer?.id.orEmpty(),
-                    name = ui.customer?.name.orEmpty(),
-                    phoneFormatted = ui.customer?.phone.orEmpty(),
-                    joinedAt = ui.customer?.createdAt,
+                    customer = ui.customer,
                     totalOrders = ui.orders.size,
                     totalSpent = ui.orders.sumOf { it.totalAmount },
                     totalRemaining = ui.orders.sumOf { it.remainingBalance }
@@ -191,18 +187,7 @@ fun CustomerDetailsScreen(
                 // Reuse existing list UI by adapting to OrderRowUi
                 val rows = remember(ui.orders) {
                     ui.orders.map { o ->
-                        OrderRowUi(
-                            id = o.id,
-                            occurredAt = o.occurredAt,
-                            invoiceNumber = o.invoiceNumber,
-//                            items = o.items,
-                            amount = o.totalAmount,
-                            isQueued = false,
-                            isSynced = true,
-                            hasInvoice = true,
-                            remainingBalance = o.remainingBalance,
-                            adjustedTotal = o.adjustedAmount
-                        )
+                        o.toOrderRowUi()
                     }
                 }
                 OrderList(
@@ -247,24 +232,3 @@ fun humanReadableInvoiceLocation(orderId: String, invoiceNumber: String): String
     val fileName = CustomerDetailsConstants.getInvoiceFileName(orderId = orderId, invoiceNumber = invoiceNumber) + ".pdf"
     return "Files > Downloads > Documents > MKumar > Invoices > $fileName"
 }
-
-// Helper for item label rendering without depending on exact UiOrderItem fields
-fun UiOrderItem.labelOrFallback(): String =
-    buildString {
-        // Try best-effort fields; fallback to quantity×price
-        // If your UiOrderItem has fields like `title`/`description`/`brand`, prefer them.
-        try {
-            val cls = this@labelOrFallback::class
-            val title = runCatching { cls.members.firstOrNull { it.name == "description" }?.call(this@labelOrFallback) as? String }.getOrNull()
-                ?: runCatching { cls.members.firstOrNull { it.name == "brand" }?.call(this@labelOrFallback) as? String }.getOrNull()
-                ?: "Item"
-            append(title)
-        } catch (_: Throwable) {
-            append("Item")
-        }
-        append(" (")
-        append(quantity)
-        append("×₹")
-        append(unitPrice)
-        append(")")
-    }
