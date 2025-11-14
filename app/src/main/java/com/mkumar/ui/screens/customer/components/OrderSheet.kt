@@ -168,9 +168,7 @@ fun OrderSheet(
                 }
                 pendingDeleteId = null
             },
-            onDismiss = {
-                pendingDeleteId = null
-            }
+            onDismiss = { pendingDeleteId = null }
         )
     }
 }
