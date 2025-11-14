@@ -64,6 +64,7 @@ import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.cards.CustomerInfoCard
 import com.mkumar.ui.components.cards.CustomerListCard2
+import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.components.fabs.StandardFab
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.navigation.Screens
@@ -101,6 +102,8 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     var editingCustomerId by remember { mutableStateOf<String?>(null) }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+
+    var deleteTarget by remember { mutableStateOf<CustomerFormState?>(null) }
 
     LaunchedEffect(currentCustomerId) {
         // Whenever the VM's openForms map changes, push only the current customer's set
@@ -195,10 +198,8 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     vm.selectCustomer(customer.id)
                     navController.navigate(Routes.customerDetail(customer.id))
                 },
-                // We still keep direct update callback for other entry points if you want:
                 onUpdateCustomer = { id, n, p -> vm.updateCustomer(id, n, p) },
-                onDelete = { customer -> vm.removeCustomer(customer.id) },
-                // NEW: Provide onEdit to open the same ShortBottomSheet prefilled
+                onDelete = { customer -> deleteTarget = customer }, // changed
                 onEdit = { customer ->
                     sheetMode = CustomerSheetMode.Edit
                     editingCustomerId = customer.id
@@ -276,6 +277,21 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     Text("Copy")
                 }
             }
+        )
+    }
+
+    if (deleteTarget != null) {
+        ConfirmActionDialog(
+            title = "Delete Customer",
+            message = "This action cannot be undone. Delete this customer?",
+            confirmLabel = "Delete",
+            dismissLabel = "Cancel",
+            highlightConfirmAsDestructive = true,
+            onConfirm = {
+                vm.removeCustomer(deleteTarget!!.id)
+                deleteTarget = null
+            },
+            onDismiss = { deleteTarget = null }
         )
     }
 }
