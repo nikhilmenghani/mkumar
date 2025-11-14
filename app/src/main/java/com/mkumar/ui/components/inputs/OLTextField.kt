@@ -1,11 +1,13 @@
 package com.mkumar.ui.components.inputs
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,35 +37,31 @@ fun OLTextField(
     val focusManager = LocalFocusManager.current
     var hadFocus by remember { mutableStateOf(false) }
 
-    // Compose the actual actions
     val imeAction = imeActionOverride ?: mode.defaultIme
+
     val actions = KeyboardActions(
         onNext = {
-            // 1) write back any formatting
             val formatted = mode.formatOnCommit(value)
             if (formatted != value) onValueChange(formatted)
             onCommit?.invoke()
-            // 2) move focus or call custom
-            when {
-                onNext != null -> onNext()
-                else -> focusManager.moveFocus(FocusDirection.Next)
-            }
+
+            if (onNext != null) onNext()
+            else focusManager.moveFocus(FocusDirection.Next)
         },
         onDone = {
             val formatted = mode.formatOnCommit(value)
             if (formatted != value) onValueChange(formatted)
             onCommit?.invoke()
-            when {
-                onDone != null -> onDone()
-                else -> focusManager.clearFocus()
-            }
+
+            if (onDone != null) onDone()
+            else focusManager.clearFocus()
         }
     )
 
     OutlinedTextField(
         value = value,
         onValueChange = { onValueChange(mode.sanitizeOnChange(it)) },
-        label = { Text(label) },
+        label = { Text(label, maxLines = 1) },     // prevents stretching
         placeholder = { if (placeholder != null) Text(placeholder) },
         singleLine = singleLine,
         keyboardOptions = KeyboardOptions(
@@ -73,6 +71,7 @@ fun OLTextField(
         keyboardActions = actions,
         modifier = modifier
             .fillMaxWidth()
+            .heightIn(min = TextFieldDefaults.MinHeight)  // FIX: stable height at 130–200%
             .padding(bottom = 8.dp)
             .onFocusChanged { fs ->
                 if (hadFocus && !fs.isFocused) {

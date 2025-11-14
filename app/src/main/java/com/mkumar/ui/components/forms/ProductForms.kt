@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductFormData
 import com.mkumar.ui.components.inputs.FieldMode
@@ -404,4 +405,97 @@ fun GeneralProductForm(
             onTotalChange = { form = form.copy(total = it.toIntOrNull() ?: 0) }
         )
     }
+}
+
+@Preview(showBackground = true, widthDp = 360)
+@Composable
+private fun FrameFormPreview() {
+    FrameForm(
+        initialData = ProductFormData.FrameData(
+            productOwner = "Ray-Ban",
+            productDescription = "Aviator Classic",
+            unitPrice = 5000,
+            discountPct = 10,
+            quantity = 1,
+            total = 4500
+        ),
+        onChange = {}
+    )
+}
+
+@Preview(showBackground = true, widthDp = 360)
+@Composable
+private fun GlassFormPreview() {
+    GlassForm(
+        initialData = ProductFormData.GlassData(
+            productOwner = "Essilor",
+            productDescription = "Varilux Progressive",
+            rightSph = "+1.50",
+            rightCyl = "-0.50",
+            rightAxis = "175",
+            rightAdd = "+1.75",
+            leftSph = "+1.25",
+            leftCyl = "-0.75",
+            leftAxis = "5",
+            leftAdd = "+1.75",
+            unitPrice = 8000,
+            discountPct = 5,
+            quantity = 1,
+            total = 7600
+        ),
+        onChange = {}
+    )
+}
+
+@Preview(showBackground = true, widthDp = 360)
+@Composable
+private fun ContactLensFormPreview() {
+    ContactLensForm(
+        initialData = ProductFormData.LensData(
+            productOwner = "Acuvue",
+            productDescription = "Oasys Daily",
+            rightSph = "-2.50",
+            rightCyl = "-0.75",
+            rightAxis = "180",
+            rightAdd = "+1.00",
+            leftSph = "-2.75",
+            leftCyl = "-0.50",
+            leftAxis = "10",
+            leftAdd = "+1.00",
+            unitPrice = 3000,
+            discountPct = 15,
+            quantity = 2,
+            total = 5100
+        ),
+        onChange = {}
+    )
+}
+
+@Preview(showBackground = true, widthDp = 360)
+@Composable
+private fun GeneralProductFormPreview() {
+    GeneralProductForm(
+        initialData = ProductFormData.GeneralProductData(
+            productOwner = "Zeiss",
+            productType = "Cleaning Solution",
+            productDescription = "Lens Care Kit",
+            unitPrice = 500,
+            discountPct = 0,
+            quantity = 1,
+            total = 500
+        ),
+        onChange = {}
+    )
+}
+
+@Preview(showBackground = true, widthDp = 320, name = "Small Screen")
+@Composable
+private fun GlassFormSmallScreenPreview() {
+    GlassForm(
+        initialData = ProductFormData.GlassData(
+            rightSph = "+1.50",
+            rightCyl = "-0.50"
+        ),
+        onChange = {}
+    )
 }
