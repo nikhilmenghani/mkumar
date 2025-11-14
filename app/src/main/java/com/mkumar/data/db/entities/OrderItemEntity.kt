@@ -21,8 +21,8 @@ import java.util.UUID
             entity = OrderEntity::class,
             parentColumns = ["id"],
             childColumns = ["orderId"],
-            onDelete = ForeignKey.Companion.CASCADE,
-            onUpdate = ForeignKey.Companion.CASCADE
+            onDelete = ForeignKey.CASCADE,
+            onUpdate = ForeignKey.CASCADE
         )
     ],
     indices = [
@@ -36,28 +36,23 @@ data class OrderItemEntity(
     @ColumnInfo
     val orderId: String,
 
-    /** Frame | Lens | Contact Lens (from ProductType.label) */
+    /** Frame | Lens | Contact Lens */
     val productTypeLabel: String = "",
 
-    /** Owner name captured in your UI (can be empty) */
+    /** Optional owner name */
     val productOwnerName: String = "",
 
-    /**
-     * Serialized ProductFormData (kotlinx serialization) as JSON string.
-     * You can add a TypeConverter later if you want a strong type here.
-     */
+    /** Serialized ProductFormData */
     val formDataJson: String? = null,
 
-    /** Per-unit price in minor units (optional if you derive only from form data) */
     val unitPrice: Int = 0,
-
-    /** Whole number of units */
     val quantity: Int = 1,
-    /** Discount percentage (0.0 - 100.0) */
     val discountPercentage: Int = 0,
 
-    /** unitPrice * quantity in minor units */
+    /** Derived totals */
     val subtotal: Int = unitPrice * quantity,
-    /** Final total after discount applied in minor units */
-    val finalTotal: Int = 0
+    val finalTotal: Int = 0,
+
+    /** Updated time — update this whenever form changes */
+    val updatedAt: Long = System.currentTimeMillis()
 )

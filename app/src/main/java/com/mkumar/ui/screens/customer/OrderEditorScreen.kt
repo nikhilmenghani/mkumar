@@ -152,14 +152,28 @@ fun OrderEditorScreen(
                             },
                             onOpenPicker = { showProductPicker = true }
                         )
+                        if (ui.draft.items.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(12.dp))
+                            FloatingActionButton(
+                                onClick = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Icon(Icons.Default.DoneAll, contentDescription = "Save")
+                            }
+                        }
                         Spacer(modifier = Modifier.width(12.dp))
                         FloatingActionButton(
-                            onClick = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
+                            onClick = { navController.popBackStack() },
                             containerColor = MaterialTheme.colorScheme.surface,
                             contentColor = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(56.dp),
+                            modifier = Modifier.size(56.dp)
                         ) {
-                            Icon(Icons.Default.DoneAll, contentDescription = "Save")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Dismiss"
+                            )
                         }
                     }
                 }

@@ -40,19 +40,16 @@ data class OrderEntity(
     /** When the order occurred (epoch millis) */
     val occurredAt: Long = System.currentTimeMillis(),
 
-    /** Adjusted Amount applied to subtotal (minor units) */
+    /** For recalculating summary values */
     val adjustedAmount: Int = 0,
-
-    /** Sum of item subtotals (minor units) */
     val totalAmount: Int = 0,
-
-    /** Absolute amount in minor units (0 if none) */
     val remainingBalance: Int = 0,
-
-    /** advanceTotal amount in minor units (0 if none) */
     val advanceTotal: Int = 0,
 
     /** Invoice sequence number, if any */
     @ColumnInfo(name = "invoice_seq")
-    val invoiceSeq: Long? = null // null for old orders
+    val invoiceSeq: Long? = null,
+
+    /** Updated time — always overwrite when updating */
+    val updatedAt: Long = System.currentTimeMillis()
 )

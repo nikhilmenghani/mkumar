@@ -3,9 +3,12 @@ package com.mkumar.ui.components.bottomsheets
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,7 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ShortBottomSheet(
     title: String,
@@ -53,24 +56,18 @@ fun ShortBottomSheet(
         confirmValueChange = { it != SheetValue.Hidden }
     )
 
+    // 👇 detect if keyboard is visible
+    val imeVisible = WindowInsets.isImeVisible
+
     ModalBottomSheet(
         onDismissRequest = {
-            scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                onDismiss()
-            }
+            scope.launch { bottomSheetState.hide() }.invokeOnCompletion { onDismiss() }
         },
         sheetState = bottomSheetState
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
+        Box(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth()) {
                 if (showTitle) {
-                    // Title
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleLarge,
@@ -80,7 +77,6 @@ fun ShortBottomSheet(
                             .padding(bottom = 16.dp)
                     )
 
-                    // Divider
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
                         thickness = 1.dp,
@@ -89,21 +85,17 @@ fun ShortBottomSheet(
                 }
 
                 val actionsHeight = 56.dp + 16.dp * 2
-                // Dynamic Content
-                // Content takes remaining space above FAB row
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = actionsHeight)
+                        .padding(bottom = if (!imeVisible) actionsHeight else 0.dp)
                 ) {
-                    Box(Modifier.fillMaxWidth()) {
-                        sheetContent()
-                    }
+                    sheetContent()
                 }
             }
 
-            // Buttons Row with Left & Right Alignment
-            if (showNext || showPrevious || showDone || showDismiss) {
+            // 👇 Hide FAB row when IME is visible
+            if (!imeVisible && (showNext || showPrevious || showDone || showDismiss)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -113,34 +105,21 @@ fun ShortBottomSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left Side (Previous Button)
                     if (showPrevious) {
                         FloatingActionButton(
-                            onClick = { onPreviousClick() },
+                            onClick = onPreviousClick,
                             modifier = Modifier.size(56.dp)
                         ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Previous"
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
                         }
                     } else {
-                        Spacer(modifier = Modifier.width(56.dp)) // Ensures alignment consistency
+                        Spacer(Modifier.width(56.dp))
                     }
 
-                    // Right Side (Next, Done, Dismiss)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (showNext) {
-                            FloatingActionButton(
-                                onClick = { onNextClick() },
-                                modifier = Modifier.size(56.dp)
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = "Next"
-                                )
+                            FloatingActionButton(onClick = onNextClick, modifier = Modifier.size(56.dp)) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next")
                             }
                         }
 
