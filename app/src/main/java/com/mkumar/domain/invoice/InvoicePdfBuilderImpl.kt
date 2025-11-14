@@ -73,14 +73,14 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             color = Color.BLACK
         }
         val tableHeader = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = 11.5f
-            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            textSize = 11f  // slightly bigger than body
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)  // sans-serif bold
             color = Color.BLACK
             textAlign = Paint.Align.LEFT
         }
         val tableText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = 11.5f
-            typeface = Typeface.MONOSPACE
+            textSize = 10f  // match descriptionSmall
+            typeface = Typeface.SANS_SERIF  // sans-serif regular
             color = Color.BLACK
             textAlign = Paint.Align.LEFT
         }
@@ -94,6 +94,10 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
             color = Color.BLACK
             textAlign = Paint.Align.RIGHT
+        }
+        val descriptionSmall = Paint(text).apply {
+            textSize = 10f
+            typeface = Typeface.SANS_SERIF
         }
     }
 
@@ -258,7 +262,11 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             pager.space(gapBelow)
         }
 
-        fun ellipsizedRow(cells: List<String>, rowHeight: Float = 18f) {
+        fun ellipsizedRow(
+            cells: List<String>,
+            rowHeight: Float = 18f,
+            descriptionPaint: Paint? = null
+        ) {
             pager.ensure(rowHeight)
             val rowTop = pager.y
             val rowBottom = rowTop + rowHeight
@@ -266,7 +274,9 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
             spec.columns.forEachIndexed { i, col ->
                 val (l, r) = colBounds[i]
-                val p = Paint(bodyPaint)
+                // Use custom paint for first (description) column if provided
+                val basePaint = if (i == 0 && descriptionPaint != null) descriptionPaint else bodyPaint
+                val p = Paint(basePaint)
                 val x = when (col.align) {
                     Align.LEFT -> {
                         p.textAlign = Paint.Align.LEFT
@@ -588,8 +598,8 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         // Updated alignment: Item = LEFT, others = CENTER
         private val spec = TableSpec(
             listOf(
-                ColumnSpec(title = "Item",       widthFraction = 0.40f, align = Align.LEFT,   padRight = 8f),
-                ColumnSpec(title = "Type",       widthFraction = 0.18f, align = Align.CENTER),
+                ColumnSpec(title = "Item",       widthFraction = 0.42f, align = Align.LEFT,   padRight = 8f),
+                ColumnSpec(title = "Type",       widthFraction = 0.16f, align = Align.CENTER),
                 ColumnSpec(title = "Rate",       widthFraction = 0.16f, align = Align.CENTER),
                 ColumnSpec(title = "Disc %",     widthFraction = 0.10f, align = Align.CENTER),
                 ColumnSpec(title = "Total",      widthFraction = 0.16f, align = Align.CENTER),
@@ -637,14 +647,9 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 } else {
                     // Single-line row, ellipsized if too long
                     table.ellipsizedRow(
-                        listOf(
-                            item.description,
-                            item.productType,
-                            unit,
-                            disc,
-                            total
-                        ),
-                        rowHeight = singleRowHeight
+                        listOf(item.description, item.productType, unit, disc, total),
+                        rowHeight = singleRowHeight,
+                        descriptionPaint = typo.descriptionSmall // new smaller font
                     )
                 }
             }
