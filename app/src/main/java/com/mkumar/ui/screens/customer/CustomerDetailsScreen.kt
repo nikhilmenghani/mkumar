@@ -26,6 +26,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.mkumar.R
 import com.mkumar.common.constant.CustomerDetailsConstants
+import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderList
@@ -75,6 +77,7 @@ fun CustomerDetailsScreen(
     }
     // Snackbar + one-off effects
     val snackbarHostState = remember { SnackbarHostState() }
+    val (pendingDeleteOrderId, setPendingDeleteOrderId) = remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
@@ -211,13 +214,30 @@ fun CustomerDetailsScreen(
                                 navController.navigate(Routes.orderEditor(customerId = cid, orderId = action.orderId))
                             }
 
-                            is OrderRowAction.Delete -> viewModel.onIntent(CustomerDetailsIntent.DeleteOrder(action.orderId))
+                            is OrderRowAction.Delete -> {
+                                setPendingDeleteOrderId(action.orderId)
+                            }
                             is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId, action.invoiceNumber, logo))
                             is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId, action.invoiceNumber, logo))
                         }
                     },
                     modifier = Modifier.fillMaxSize()
                 )
+
+                if (pendingDeleteOrderId != null) {
+                    ConfirmActionDialog(
+                        title = "Delete Order",
+                        message = "This action cannot be undone. Delete this order?",
+                        confirmLabel = "Delete",
+                        dismissLabel = "Cancel",
+                        highlightConfirmAsDestructive = true,
+                        onConfirm = {
+                            viewModel.onIntent(CustomerDetailsIntent.DeleteOrder(pendingDeleteOrderId))
+                            setPendingDeleteOrderId(null)
+                        },
+                        onDismiss = { setPendingDeleteOrderId(null) }
+                    )
+                }
             }
         }
     }
