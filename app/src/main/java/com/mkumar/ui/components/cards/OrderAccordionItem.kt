@@ -141,9 +141,9 @@ fun OrderAccordionItem(
                         }
                     )
 
-                    if (owner.isNotBlank()) {
-                        Spacer(modifier = Modifier.padding(top = 4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(modifier = Modifier.padding(top = 4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (owner.isNotBlank() && owner != productOwner) {
                             AssistChip(
                                 onClick = { /* no-op; header handles main click */ },
                                 leadingIcon = {
@@ -162,17 +162,24 @@ fun OrderAccordionItem(
                             )
                             if (selectedType != null) {
                                 Spacer(Modifier.width(6.dp))
-                                AssistChip(
-                                    onClick = { },
-                                    label = { selectedTypeAssistChip?.let { Text(it,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.Ellipsis) } },
-                                    modifier = Modifier
-                                        .wrapContentHeight()
-                                )
                             }
+                        }
+                        if (selectedType != null) {
+                            AssistChip(
+                                onClick = { },
+                                label = {
+                                    selectedTypeAssistChip?.let {
+                                        Text(
+                                            it,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.wrapContentHeight()
+                            )
                         }
                     }
                 }
