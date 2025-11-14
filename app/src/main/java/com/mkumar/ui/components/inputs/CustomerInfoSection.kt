@@ -3,14 +3,9 @@ package com.mkumar.ui.components.inputs
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-
 
 @Composable
 fun CustomerInfoSection(
@@ -20,23 +15,24 @@ fun CustomerInfoSection(
     onPhoneChange: (String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        OutlinedTextField(
+
+        OLTextField(
             value = name,
+            label = "Customer Name",
+            mode = FieldMode.TitleCase(),
             onValueChange = onNameChange,
-            label = { Text("Customer Name") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
-        OutlinedTextField(
+        OLTextField(
             value = phone,
+            label = "Phone Number",
+            mode = FieldMode.Phone(prefixCountryCode = false),
             onValueChange = onPhoneChange,
-            label = { Text("Phone Number") },
+            imeActionOverride = null,
             singleLine = true,
-            keyboardOptions = KeyboardOptions.Default.copy(
-                keyboardType = KeyboardType.Phone
-            ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
