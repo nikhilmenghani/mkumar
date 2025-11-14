@@ -6,7 +6,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,7 +51,6 @@ import com.mkumar.viewmodel.OrderRowAction
 import com.mkumar.viewmodel.OrderRowUi
 import java.time.Instant
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OrderListItem(
     row: OrderRowUi,
@@ -65,18 +63,16 @@ fun OrderListItem(
     val interaction = remember { MutableInteractionSource() }
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
-    val invoiceNumber = row.invoiceNumber//.padStart(5, '0')
-
+    val invoiceNumber = row.invoiceNumber
     val isPaid = row.remainingBalance == 0
     val containerColor = ledgerContainerColor(isPaid)
-
     val totalToShow = if ((row.adjustedTotal ?: 0) != 0) row.adjustedTotal!! else row.amount
 
     ElevatedCard(
         modifier = modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth()
-            .border(width = 1.dp, color = MaterialTheme.colorScheme.outline, shape = CardDefaults.elevatedShape),
+            .border(1.dp, MaterialTheme.colorScheme.outline, CardDefaults.elevatedShape),
         colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
@@ -116,7 +112,7 @@ fun OrderListItem(
             anchor = {
                 Column(
                     modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                         .clickable(interactionSource = interaction, role = Role.Button) {
                             if (menuExpanded) menuExpanded = false else onAction(OrderRowAction.Open(row.id))
                         }
@@ -128,13 +124,13 @@ fun OrderListItem(
                                 },
                                 onLongPress = { offset ->
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuOffsetPx = Offset(x = offset.x, y = offset.y - anchorHeightPx)
+                                    menuOffsetPx = Offset(offset.x, offset.y - anchorHeightPx)
                                     menuExpanded = true
                                 }
                             )
                         }
                 ) {
-                    // Top row: Invoice + Time Badge
+                    // Row 1: Invoice (left) + Total (right)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -145,34 +141,33 @@ fun OrderListItem(
                                 text = "#$invoiceNumber",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
+                                overflow = TextOverflow.Ellipsis
                             )
+                        } else {
+                            Spacer(Modifier.weight(1f))
                         }
-
-                        // Time badge in top right
-                        TimeBadges(row)
+                        LedgerRowCompact(
+                            label = "Total",
+                            value = "₹$totalToShow",
+                            emphasize = (row.adjustedTotal ?: 0) != 0
+                        )
                     }
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(6.dp))
 
-                    // Bottom row: Ledger amounts
+                    // Row 2: Last Updated (left) + Remaining (right if > 0)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            horizontalAlignment = Alignment.End
-                        ) {
-                            LedgerRowCompact(label = "Total", value = "₹$totalToShow", emphasize = (row.adjustedTotal ?: 0) != 0)
-                            if (row.remainingBalance > 0) {
-                                LedgerRowCompact(
-                                    label = "Remaining",
-                                    value = "₹${row.remainingBalance}",
-                                    valueColor = MaterialTheme.colorScheme.error
-                                )
-                            }
+                        TimeBadges(row)
+                        if (row.remainingBalance > 0) {
+                            LedgerRowCompact(
+                                label = "Remaining",
+                                value = "₹${row.remainingBalance}",
+                                valueColor = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                 }
@@ -210,70 +205,37 @@ private fun LedgerRowCompact(
 @Composable
 private fun ledgerContainerColor(isPaid: Boolean): Color {
     val surface = MaterialTheme.colorScheme.surface
-    val tint = if (isPaid) {
-        MaterialTheme.colorScheme.tertiaryContainer // greenish
-    } else {
-        MaterialTheme.colorScheme.errorContainer    // reddish
-    }
-    // Strong enough to clearly read status, but not screaming
+    val tint = if (isPaid) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer
     val alpha = if (isPaid) 0.26f else 0.28f
     return tint.copy(alpha = alpha).compositeOver(surface)
 }
 
 @Composable
 private fun TimeBadges(row: OrderRowUi) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        AssistChip(
-            onClick = {},
-            label = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Last Updated:",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = row.lastUpdatedAt.formatAsDate(DateFormat.SHORT_DATE_TIME),
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
+    AssistChip(
+        onClick = {},
+        label = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Last Updated:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = row.lastUpdatedAt.formatAsDate(DateFormat.SHORT_DATE_TIME),
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
-        )
-//        // Updated badge (only show if different from created)
-//        if (row.lastUpdatedAt != row.occurredAt) {
-//            AssistChip(
-//                onClick = {},
-//                label = {
-//                    Row(
-//                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-//                        verticalAlignment = Alignment.CenterVertically
-//                    ) {
-//                        Text(
-//                            text = "Created:",
-//                            style = MaterialTheme.typography.labelSmall,
-//                            color = MaterialTheme.colorScheme.onSurfaceVariant
-//                        )
-//                        Text(
-//                            text = row.occurredAt.formatAsDate(DateFormat.SHORT_DATE_TIME),
-//                            style = MaterialTheme.typography.labelMedium
-//                        )
-//                    }
-//                }
-//            )
-//        }
-    }
+        }
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun OrderListItem4Preview() {
+private fun OrderListItemPreview() {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OrderListItem(
             row = OrderRowUi(
@@ -285,7 +247,6 @@ private fun OrderListItem4Preview() {
                 lastUpdatedAt = Instant.now().toLong(),
                 adjustedTotal = 1200
             ),
-//            productTypeCounts = listOf("Lens" to 2, "Frame" to 1),
             onAction = {}
         )
         OrderListItem(
@@ -298,7 +259,6 @@ private fun OrderListItem4Preview() {
                 lastUpdatedAt = Instant.now().toLong(),
                 adjustedTotal = 1200
             ),
-//            productTypeCounts = listOf("Lens" to 1, "Frame" to 1, "Accessories" to 2),
             onAction = {}
         )
     }
