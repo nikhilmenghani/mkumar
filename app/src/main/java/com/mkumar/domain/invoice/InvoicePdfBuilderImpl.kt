@@ -471,7 +471,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                     val phoneLabel = "Phone: "
                     c.drawText(phoneLabel, leftColX, leftY, boldLabel)
                     c.drawText(
-                        data.customerPhone,
+                        data.ownerPhone,
                         leftColX + boldLabel.measureText(phoneLabel),
                         leftY,
                         normalText
