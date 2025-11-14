@@ -16,11 +16,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.components.cards.OrderAccordionItem
 import com.mkumar.ui.components.cards.OrderHeaderCardPro
+import com.mkumar.ui.components.dialogs.DeleteProductConfirmDialog
 import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsUiState
@@ -38,6 +42,9 @@ fun OrderSheet(
     val safeProducts = state.draft.items.orEmpty()
     val justAddedId = state.draft.justAddedItemId
 
+    // NEW: hold which product is pending deletion
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(justAddedId) {
         if (justAddedId != null) {
             viewModel.onNewOrderIntent(NewOrderIntent.ConsumeJustAdded)
@@ -47,17 +54,15 @@ fun OrderSheet(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),         // keep alignment tidy
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Header stays aligned with same padding as other rows
         OrderHeaderCardPro(
             customerName = state.customer?.name ?: "Test Customer",
             mobile = state.customer?.phone ?: "1234567890",
             displayedDate = today,
-            isDateReadOnly = false,               // or true if readonly
+            isDateReadOnly = false,
             onPickDateTime = { picked ->
-                // if you already handle date via ViewModel, call that here instead
                 viewModel.onIntent(CustomerDetailsIntent.UpdateOccurredAt(picked))
             }
         )
@@ -120,10 +125,13 @@ fun OrderSheet(
                             selectedProduct = product,
                             selectedType = product.productType,
                             onFormSave = { productId, updated ->
-                                viewModel.onNewOrderIntent(NewOrderIntent.FormUpdate(productId, updated))
+                                viewModel.onNewOrderIntent(
+                                    NewOrderIntent.FormUpdate(productId, updated)
+                                )
                             },
                             onDelete = { productId ->
-                                viewModel.onNewOrderIntent(NewOrderIntent.FormDelete(productId))
+                                // <- instead of deleting immediately, ask for confirmation
+                                pendingDeleteId = productId
                             },
                             initiallyExpanded = (product.id == justAddedId),
                             grouped = true,
@@ -143,4 +151,19 @@ fun OrderSheet(
             }
         }
     }
+
+    if (pendingDeleteId != null) {
+        DeleteProductConfirmDialog(
+            onConfirm = {
+                pendingDeleteId?.let { id ->
+                    viewModel.onNewOrderIntent(NewOrderIntent.FormDelete(id))
+                }
+                pendingDeleteId = null
+            },
+            onDismiss = {
+                pendingDeleteId = null
+            }
+        )
+    }
 }
+

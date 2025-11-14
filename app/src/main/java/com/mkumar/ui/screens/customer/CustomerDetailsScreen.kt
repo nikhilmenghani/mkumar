@@ -27,12 +27,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.mkumar.R
@@ -58,8 +58,6 @@ fun CustomerDetailsScreen(
     onBack: () -> Unit = { navController.popBackStack() },
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-    // Bottom sheet state driven by ui.isOrderSheetOpen
     val context = LocalContext.current
     val drawable = androidx.core.content.ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
     requireNotNull(drawable) { "Launcher icon drawable missing" }
@@ -68,7 +66,7 @@ fun CustomerDetailsScreen(
         else -> {
             val w = drawable.intrinsicWidth.takeIf { it > 0 } ?: 256
             val h = drawable.intrinsicHeight.takeIf { it > 0 } ?: 256
-            val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+            val bmp = createBitmap(w, h)
             val canvas = android.graphics.Canvas(bmp)
             drawable.setBounds(0, 0, canvas.width, canvas.height)
             drawable.draw(canvas)
