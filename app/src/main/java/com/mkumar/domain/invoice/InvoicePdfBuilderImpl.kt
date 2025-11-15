@@ -791,14 +791,17 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             val c = pager.canvas
 
             val paddingTop = 18f
-            val paddingBottom = 12f
-            val paddingLeft = 16f
-            val paddingRight = 16f
-            val bulletIndent = 20f
-            val lineSpacing = 6f
+            val paddingBottom = 2f
+            val paddingLeft = 14f
+            val paddingRight = 14f
+
+            val bulletIndent = 18f
+            val betweenTerms = 4f
+            val wrapLineSpacing = 12f
+            val firstLineHeight = 14f
 
             val headingPaint = Paint(typo.title).apply {
-                textSize = 13.5f
+                textSize = 12.5f
                 textAlign = Paint.Align.LEFT
             }
 
@@ -812,36 +815,40 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 textAlign = Paint.Align.LEFT
             }
 
-            // -------------------------------
-            // 1. Compute height REQUIRED
-            // -------------------------------
-            val maxTextWidth = pager.contentWidth - paddingLeft - paddingRight - bulletIndent
-            var requiredHeight = paddingTop + paddingBottom + 22f + 20f   // heading + heading gap
+            // Space before table
+            pager.space(14f)
 
-            terms.forEachIndexed { index, term ->
-                val lines = wrapText(term, textPaint, maxTextWidth)
-
-                // First bullet line
-                requiredHeight += 16f
-
-                // Wrapped lines
-                requiredHeight += (lines.size - 1) * 16f
-
-                // Spacing between items except last
-                if (index != terms.lastIndex) requiredHeight += lineSpacing
-            }
-
-            // -------------------------------
-            // 2. Ensure page space for box
-            // -------------------------------
-            pager.ensure(requiredHeight + 10f)
-
-            // -------------------------------
-            // 3. Draw box FIRST (fixed height)
-            // -------------------------------
             val boxLeft = pager.contentLeft
             val boxRight = pager.contentLeft + pager.contentWidth
             val boxTop = pager.y
+
+            // --- Measure required height ---
+            val maxWidth = pager.contentWidth - paddingLeft - paddingRight - bulletIndent
+            var requiredHeight = paddingTop
+
+            // heading height
+            requiredHeight += 14f          // actual heading height
+            requiredHeight += 10f          // small gap under heading
+
+            terms.forEachIndexed { index, term ->
+                val lines = wrapText(term, textPaint, maxWidth)
+
+                // first bullet line
+                requiredHeight += firstLineHeight
+
+                // wrapped lines
+                requiredHeight += (lines.size - 1) * wrapLineSpacing
+
+                if (index != terms.lastIndex)
+                    requiredHeight += betweenTerms
+            }
+
+            requiredHeight += paddingBottom
+
+            // Ensure page space
+            pager.ensure(requiredHeight)
+
+            // --- Draw border first ---
             val boxBottom = pager.y + requiredHeight
 
             c.drawRect(
@@ -852,37 +859,38 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 rules.tableBorder
             )
 
-            // -------------------------------
-            // 4. Draw content INSIDE fixed box
-            // -------------------------------
+            // --- Draw content inside ---
             var yCursor = boxTop + paddingTop
 
-            // Heading
+            // heading
             c.drawText("Terms & Conditions", boxLeft + paddingLeft, yCursor, headingPaint)
-            yCursor += 20f + 20f
+            yCursor += 10f + 14f   // small, compact gap
 
-            // Terms
+            // terms
             terms.forEachIndexed { index, term ->
-                val lines = wrapText(term, textPaint, maxTextWidth)
+
+                val lines = wrapText(term, textPaint, maxWidth)
 
                 // First line with bullet
                 c.drawText("• ${lines[0]}", boxLeft + paddingLeft, yCursor, bulletPaint)
-                yCursor += 16f
+                yCursor += firstLineHeight
 
-                // Additional lines
+                // Wrapped lines, indented
                 lines.drop(1).forEach { ln ->
-                    c.drawText(ln, boxLeft + paddingLeft + bulletIndent, yCursor, textPaint)
-                    yCursor += 16f
+                    c.drawText(
+                        ln,
+                        boxLeft + paddingLeft + bulletIndent,
+                        yCursor,
+                        textPaint
+                    )
+                    yCursor += wrapLineSpacing
                 }
 
-                // Spacing between items (except last)
-                if (index != terms.lastIndex) yCursor += lineSpacing
+                if (index != terms.lastIndex)
+                    yCursor += betweenTerms
             }
 
-            // -------------------------------
-            // 5. Move pager.y BELOW box
-            // -------------------------------
-            pager.y = boxBottom + 10f
+            pager.y = boxBottom + 8f
         }
     }
 
