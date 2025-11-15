@@ -942,14 +942,26 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
                 // Draw row of chips
                 row.forEachIndexed { i, label ->
+                    val isLastProduct = (rowIndex == rows.lastIndex && i == row.lastIndex)
+                    val bgPaint = if (isLastProduct) {
+                        Paint().apply {
+                            color = Color.rgb(66, 133, 244) // Highlight blue
+                            style = Paint.Style.FILL
+                        }
+                    } else chipPaint
+
+                    val txtPaint = if (isLastProduct) {
+                        Paint(textPaint).apply { color = Color.WHITE }
+                    } else textPaint
+
                     val w = chipWidths[i]
 
-                    c.drawRoundRect(x, top, x + w, bottom, 12f, 12f, chipPaint)
+                    c.drawRoundRect(x, top, x + w, bottom, 12f, 12f, bgPaint)
 
                     val textBaseline = top + chipHeight / 2f -
                             (textPaint.descent() + textPaint.ascent()) / 2f
 
-                    c.drawText(label, x + chipPaddingX, textBaseline, textPaint)
+                    c.drawText(label, x + chipPaddingX, textBaseline, txtPaint)
 
                     x += w + chipSpacing
                 }
