@@ -403,7 +403,8 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             "Contact Lenses",
             "Sunglasses",
             "Watches",
-            "Wall Clocks"
+            "Wall Clocks",
+            "Free Computerized Eye Checkup"
         )
 
         @SuppressLint("UseKtx")
@@ -896,10 +897,15 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
     private object ProductsChipsSection {
 
         fun drawChips(pager: Pager, items: List<String>, typo: Typography) {
+            if (items.isEmpty()) return
+
             val c = pager.canvas
+
+            // Visuals
             val chipPaddingX = 12f
             val chipPaddingY = 6f
             val chipSpacing = 8f
+            val rowGap = 8f
 
             val textPaint = Paint(typo.text).apply {
                 textSize = 10.5f
@@ -907,39 +913,75 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 textAlign = Paint.Align.LEFT
             }
 
-            // Light Gray Chip Background
             val chipPaint = Paint().apply {
-                color = Color.rgb(235, 235, 235)   // << light gray chips
+                color = Color.rgb(235, 235, 235) // soft light gray chip background
                 style = Paint.Style.FILL
             }
 
+            // Split into rows per the requested rules
+            val rows = splitIntoRows(items)
+
+            // Draw each row centered
             val centerX = pager.contentLeft + pager.contentWidth / 2f
+            var y = pager.y
 
-            val chipWidths = items.map { item ->
-                val textWidth = textPaint.measureText(item)
-                textWidth + chipPaddingX * 2
+            rows.forEachIndexed { rowIndex, row ->
+                val chipWidths = row.map { item ->
+                    textPaint.measureText(item) + chipPaddingX * 2f
+                }
+                val totalRowWidth = chipWidths.sum() + chipSpacing * (chipWidths.size - 1)
+                var x = centerX - totalRowWidth / 2f
+
+                // Row height is based on chip height
+                val chipHeight = textPaint.textSize + chipPaddingY * 2f
+                val top = y
+                val bottom = y + chipHeight
+
+                // Ensure space for this row
+                pager.ensure(chipHeight)
+
+                // Draw row of chips
+                row.forEachIndexed { i, label ->
+                    val w = chipWidths[i]
+
+                    c.drawRoundRect(x, top, x + w, bottom, 12f, 12f, chipPaint)
+
+                    val textBaseline = top + chipHeight / 2f -
+                            (textPaint.descent() + textPaint.ascent()) / 2f
+
+                    c.drawText(label, x + chipPaddingX, textBaseline, textPaint)
+
+                    x += w + chipSpacing
+                }
+
+                // Advance Y for next row or exit
+                y = bottom
+                if (rowIndex != rows.lastIndex) {
+                    y += rowGap
+                }
             }
 
-            val totalWidth = chipWidths.sum() + chipSpacing * (chipWidths.size - 1)
+            // Move pager cursor below chip block with a little breathing room
+            pager.y = y + 14f
+        }
 
-            var x = centerX - totalWidth / 2f
-            val y = pager.y
+        /** Returns a list of rows, where each row is a list of labels. */
+        private fun splitIntoRows(items: List<String>): List<List<String>> {
+            val n = items.size
+            if (n <= 5) return listOf(items)
 
-            chipWidths.forEachIndexed { i, chipW ->
-                val chipH = textPaint.textSize + chipPaddingY * 2
-                val bottom = y + chipH
-
-                c.drawRoundRect(x, y, x + chipW, bottom, 12f, 12f, chipPaint)
-
-                val textY =
-                    y + chipH / 2 - (textPaint.descent() + textPaint.ascent()) / 2
-
-                c.drawText(items[i], x + chipPaddingX, textY, textPaint)
-
-                x += chipW + chipSpacing
+            val firstRowCount = when (n) {
+                6 -> 4
+                7 -> 4
+                8 -> 5
+                else -> (n + 1) / 2 // default: ceil half for 9,10,...
             }
+            val secondRowCount = n - firstRowCount
 
-            pager.y += (textPaint.textSize + chipPaddingY * 2) + 14f
+            val firstRow = items.take(firstRowCount)
+            val secondRow = items.drop(firstRowCount).take(secondRowCount)
+
+            return listOf(firstRow, secondRow)
         }
     }
 
