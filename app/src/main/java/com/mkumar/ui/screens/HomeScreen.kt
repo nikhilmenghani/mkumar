@@ -223,14 +223,26 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     name = name,
                     phone = phone,
                     onNameChange = { name = it },
-                    onPhoneChange = { phone = it }
+                    onPhoneChange = { phone = it },
+                    onSubmit = {
+                        if (name.isNotBlank() && phone.isNotBlank()) {
+                            if (sheetMode == CustomerSheetMode.Add) {
+                                val customerId = vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
+                                vm.selectCustomer(customerId)
+                                navController.navigate(Routes.customerDetail(customerId))
+                            } else {
+                                editingCustomerId?.let { vm.updateCustomer(it, name.trim(), phone.trim()) }
+                            }
+                            showCustomerSheet = false
+                        }
+                    }
                 )
             },
             onDismiss = { showCustomerSheet = false },
             showDismiss = true,
             showDone = true,
             onDoneClick = {
-                if (name.isNotBlank()) {
+                if (name.isNotBlank() && phone.isNotBlank()) {
                     if (sheetMode == CustomerSheetMode.Add) {
                         val customerId = vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
                         vm.selectCustomer(customerId)

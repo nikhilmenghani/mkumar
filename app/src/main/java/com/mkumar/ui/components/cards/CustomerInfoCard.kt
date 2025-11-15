@@ -21,7 +21,8 @@ fun CustomerInfoCard(
     name: String,
     phone: String,
     onNameChange: (String) -> Unit,
-    onPhoneChange: (String) -> Unit
+    onPhoneChange: (String) -> Unit,
+    onSubmit: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -42,7 +43,8 @@ fun CustomerInfoCard(
                 name = name,
                 phone = phone,
                 onNameChange = onNameChange,
-                onPhoneChange = onPhoneChange
+                onPhoneChange = onPhoneChange,
+                onSubmit = onSubmit
             )
         }
     }

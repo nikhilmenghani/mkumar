@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -14,7 +15,8 @@ fun CustomerInfoSection(
     name: String,
     phone: String,
     onNameChange: (String) -> Unit,
-    onPhoneChange: (String) -> Unit
+    onPhoneChange: (String) -> Unit,
+    onSubmit: () -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -35,9 +37,10 @@ fun CustomerInfoSection(
             label = "Phone Number",
             mode = FieldMode.Phone(prefixCountryCode = false),
             onValueChange = onPhoneChange,
-            imeActionOverride = null,
+            imeActionOverride = ImeAction.Done,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+            onDone = onSubmit
         )
     }
 }
