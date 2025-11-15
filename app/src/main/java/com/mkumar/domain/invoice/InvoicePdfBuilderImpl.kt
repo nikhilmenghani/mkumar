@@ -946,12 +946,13 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                     val bgPaint = if (isLastProduct) {
                         Paint().apply {
                             color = Color.rgb(66, 133, 244) // Highlight blue
-                            style = Paint.Style.FILL
+                            style = Paint.Style.STROKE
+                            strokeWidth = 2f
                         }
                     } else chipPaint
 
                     val txtPaint = if (isLastProduct) {
-                        Paint(textPaint).apply { color = Color.WHITE }
+                        Paint(textPaint).apply { textSize = 11.5f }
                     } else textPaint
 
                     val w = chipWidths[i]
