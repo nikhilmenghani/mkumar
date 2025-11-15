@@ -12,6 +12,7 @@ const val emptyString = ""
 class PreferencesManager {
     val displayPrefs = DisplayPrefs
     val githubPrefs = GithubPrefs
+    val invoicePrefs = InvoicePrefs
 }
 
 enum class ThemePreference {
@@ -39,5 +40,13 @@ object GithubPrefs {
         keyName = "token",
         defaultValue = emptyString,
         getPreferencesKey = { stringPreferencesKey(it) }
+    )
+}
+
+object InvoicePrefs {
+    var productHighlightIntensity by dataStoreMutableState(
+        keyName = "productHighlightIntensity",
+        defaultValue = 70,
+        getPreferencesKey = { intPreferencesKey(it) }
     )
 }

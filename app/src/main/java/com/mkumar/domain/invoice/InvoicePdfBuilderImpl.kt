@@ -7,6 +7,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import com.mkumar.App.Companion.globalClass
 import com.mkumar.common.constant.CustomerDetailsConstants
 import java.io.ByteArrayOutputStream
 import java.text.NumberFormat
@@ -943,9 +944,10 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 // Draw row of chips
                 row.forEachIndexed { i, label ->
                     val isLastProduct = (rowIndex == rows.lastIndex && i == row.lastIndex)
+                    val intensity = globalClass.preferencesManager.invoicePrefs.productHighlightIntensity
                     val bgPaint = if (isLastProduct) {
                         Paint().apply {
-                            color = Color.rgb(66, 133, 244) // Highlight blue
+                            color = Color.rgb(100-intensity, 100-intensity, 100-intensity)
                             style = Paint.Style.FILL
                         }
                     } else chipPaint

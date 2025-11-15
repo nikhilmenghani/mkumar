@@ -15,8 +15,10 @@ import com.mkumar.ui.components.items.PreferenceItem
 fun DisplayContainer() {
     val dialog = globalClass.singleChoiceDialog
     val textDialog = globalClass.singleTextDialog
+    val sliderDialog = globalClass.singleSliderDialog
     val preferences = globalClass.preferencesManager.displayPrefs
     val githubPreference = globalClass.preferencesManager.githubPrefs
+    val invoicePreference = globalClass.preferencesManager.invoicePrefs
 
     Container(title = stringResource(R.string.display)) {
         PreferenceItem(
@@ -64,6 +66,24 @@ fun DisplayContainer() {
                     description = "Enter your Github token",
                     text = githubPreference.token,
                     onConfirm = { githubPreference.token = it }
+                )
+            }
+        )
+    }
+
+    Container(title = "Invoice") {
+        PreferenceItem(
+            label = "Product Highlight Intensity",
+            supportingText = invoicePreference.productHighlightIntensity.toString(),
+            icon = Icons.AutoMirrored.Rounded.Label,
+            onClick = {
+                sliderDialog.show(
+                    title = "Product Highlight Intensity",
+                    sliderTitle = "Intensity",
+                    description = "Controls the product highlights intensity in invoice",
+                    value = invoicePreference.productHighlightIntensity,
+                    onConfirm = { invoicePreference.productHighlightIntensity = it },
+                    onDismiss = sliderDialog::dismiss
                 )
             }
         )

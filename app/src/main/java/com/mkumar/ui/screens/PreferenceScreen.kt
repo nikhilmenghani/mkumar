@@ -21,6 +21,7 @@ import com.mkumar.common.extension.Space
 import com.mkumar.ui.components.containers.DisplayContainer
 import com.mkumar.ui.components.dialogs.SingleChoiceDialog
 import com.mkumar.ui.components.dialogs.SingleTextDialog
+import com.mkumar.ui.components.dialogs.SliderDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +41,7 @@ fun PreferenceScreen(navController: NavHostController) {
         content = { paddingValues ->
             SingleChoiceDialog()
             SingleTextDialog()
+            SliderDialog()
             Column(
                 Modifier
                     .fillMaxSize()
