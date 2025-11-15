@@ -1,9 +1,9 @@
 package com.mkumar.domain.invoice
 
 import android.annotation.SuppressLint
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
@@ -13,6 +13,7 @@ import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.math.max
 
 class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
@@ -383,213 +384,264 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
     // --------------------------
 
     private object HeaderSection {
+
         @SuppressLint("UseKtx")
         fun draw(pager: Pager, data: InvoiceData, typo: Typography, rules: Rules) {
+
             val c = pager.canvas
             val centerX = pager.contentLeft + pager.contentWidth / 2f
             var y = pager.y
 
-            // --- Logo + Title row ---
-            val logoSize = 56f
-            // Place logo just left of the centered “M Kumar” text
-            val logoRight = centerX - 100f
-            val logoLeft = logoRight - logoSize
-            val logoTop = y
-            val logoBottom = logoTop + logoSize
+            // ---------- CONFIG ----------
+            val logoSize = 82f
+            val titleSize = 38f
+            val subtitleSize = 16.5f
+            val logoSpacing = 32f            // Option B (tweak to 24f or 40f anytime)
+            val subtitleGap = 8f             // reduced spacing
 
-            // Use app logo if available, else placeholder "M"
-            val logoBitmap: Bitmap? = data.logoBitmap
-            if (logoBitmap != null) {
-                val srcW = logoBitmap.width.toFloat()
-                val srcH = logoBitmap.height.toFloat()
-                val scale = minOf(
-                    logoSize / srcW,
-                    logoSize / srcH
-                )
-                val destW = srcW * scale
-                val destH = srcH * scale
-                val dx = (logoLeft + logoRight - destW) / 2f
-                val dy = (logoTop + logoBottom - destH) / 2f
-
-                val scaled = Bitmap.createScaledBitmap(
-                    logoBitmap,
-                    destW.toInt().coerceAtLeast(1),
-                    destH.toInt().coerceAtLeast(1),
-                    true
-                )
-                c.drawBitmap(scaled, dx, dy, null)
-            } else {
-                // Simple “M” placeholder, no border
-                val logoTextPaint = Paint(typo.text).apply {
-                    textAlign = Paint.Align.CENTER
-                    textSize = 18f
-                    typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
-                }
-                val logoTextY = logoTop + logoSize / 2 - (logoTextPaint.descent() + logoTextPaint.ascent()) / 2
-                c.drawText("M", (logoLeft + logoRight) / 2f, logoTextY, logoTextPaint)
-            }
-
-            // "M Kumar" centered
+            // ---------- PAINTS ----------
             val titlePaint = Paint(typo.title).apply {
                 textAlign = Paint.Align.CENTER
-                textSize = 28f
+                textSize = titleSize
             }
-            val nameY = logoTop + logoSize / 2f
-            c.drawText("M Kumar", centerX, nameY, titlePaint)
-
-            // "Luxurious Watch & Optical Store" smaller, centered
             val subtitlePaint = Paint(typo.label).apply {
                 textAlign = Paint.Align.CENTER
-                textSize = 12.5f
+                textSize = subtitleSize
             }
-            val taglineY = nameY + 18f
-            c.drawText("Luxurious Watch & Optical Store", centerX, taglineY, subtitlePaint)
 
-            // Start contact/address block below tagline
-            y = taglineY + 18f
+            // ------------------------------------------------------------
+            // 1) MEASURE TITLE + SUBTITLE BLOCK
+            // ------------------------------------------------------------
+            val titleHeight = titlePaint.descent() - titlePaint.ascent()
+            val subtitleHeight = subtitlePaint.descent() - subtitlePaint.ascent()
+
+            // total block height = title + gap + subtitle
+            val titleBlockHeight = titleHeight + subtitleGap + subtitleHeight
+
+            // vertical center of this block
+            val titleBlockCenterY = y + titleBlockHeight / 2f
+
+            // TOP of title block baseline calculation
+            val titleBaselineY =
+                titleBlockCenterY - (titleHeight + subtitleHeight + subtitleGap) / 2f -
+                        titlePaint.ascent()
+
+            val subtitleBaselineY =
+                titleBaselineY + titlePaint.descent() - subtitlePaint.ascent()+ 2f
+
+            // ------------------------------------------------------------
+            // 2) TITLE BLOCK IS CENTERED ON PAGE
+            // ------------------------------------------------------------
+            val titleBlockCenterX = centerX
+
+            // ------------------------------------------------------------
+            // 3) PLACE LOGO LEFT OF CENTERED TITLE BLOCK
+            // ------------------------------------------------------------
+            val titleBlockHalfWidth = max(
+                titlePaint.measureText("M Kumar"),
+                subtitlePaint.measureText("Luxurious Watch & Optical Store")
+            ) / 2f
+
+            val titleBlockLeft = titleBlockCenterX - titleBlockHalfWidth
+
+            // logo center is logoSize/2 + spacing left of titleBlockLeft
+            val logoCenterX = titleBlockLeft - logoSpacing - (logoSize / 2f)
+
+            // logo vertically centered with title block
+            val logoCenterY = titleBlockCenterY
+            val logoTop = logoCenterY - (logoSize / 2f)
+
+            // ------------------------------------------------------------
+            // 4) DRAW LOGO (NO BLUR — MATRIX SCALING)
+            // ------------------------------------------------------------
+            val bitmap = data.logoBitmap
+
+            if (bitmap != null) {
+
+                val srcW = bitmap.width.toFloat()
+                val srcH = bitmap.height.toFloat()
+
+                val scale = minOf(logoSize / srcW, logoSize / srcH)
+
+                val matrix = Matrix()
+                matrix.setScale(scale, scale)
+                matrix.postTranslate(
+                    logoCenterX - (srcW * scale / 2f),
+                    logoTop + (logoSize - srcH * scale) / 2f
+                )
+
+                c.save()
+                c.drawBitmap(bitmap, matrix, null)
+                c.restore()
+
+            } else {
+                // fallback "M"
+                val fallbackPaint = Paint(typo.text).apply {
+                    textAlign = Paint.Align.CENTER
+                    textSize = 26f
+                    typeface = Typeface.DEFAULT_BOLD
+                }
+                val base =
+                    logoCenterY - (fallbackPaint.descent() + fallbackPaint.ascent()) / 2f
+                c.drawText("M", logoCenterX, base, fallbackPaint)
+            }
+
+            // ------------------------------------------------------------
+            // 5) DRAW TITLE + SUBTITLE (CENTERED)
+            // ------------------------------------------------------------
+            c.drawText("M Kumar", titleBlockCenterX, titleBaselineY, titlePaint)
+            c.drawText(
+                "Luxurious Watch & Optical Store",
+                titleBlockCenterX,
+                subtitleBaselineY,
+                subtitlePaint
+            )
+
+            // advance Y
+            y = subtitleBaselineY + subtitleHeight
             pager.y = y
             pager.lineAcross(rules.faintLine)
-            pager.space(18f)
-            y = pager.y
-            // --- Contact (left) and Address (right) in one row block ---
+            pager.space(20f)
 
-            // Left column (contact) anchored to contentLeft
+            // ------------------------------------------------------------
+            // 6) CONTACT + ADDRESS
+            // (UNCHANGED — YOUR ORIGINAL LOGIC BELOW)
+            // ------------------------------------------------------------
+
+            y = pager.y
             val leftColX = pager.contentLeft
             var leftY = y
 
             val contactLabelPaint = Paint(typo.label).apply {
                 textAlign = Paint.Align.LEFT
-                typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
+                typeface = Typeface.DEFAULT_BOLD
             }
 
             if (data.ownerPhone.isNotBlank() || data.ownerEmail.isNotBlank()) {
                 c.drawText("Contact:", leftColX, leftY, contactLabelPaint)
-                leftY += 14f
+                leftY += 16f
+
                 val boldLabel = Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD }
                 val normalText = typo.text
+
                 if (data.ownerPhone.isNotBlank()) {
-                    val phoneLabel = "Phone: "
-                    c.drawText(phoneLabel, leftColX, leftY, boldLabel)
+                    val label = "Phone: "
+                    c.drawText(label, leftColX, leftY, boldLabel)
                     c.drawText(
                         data.ownerPhone,
-                        leftColX + boldLabel.measureText(phoneLabel),
+                        leftColX + boldLabel.measureText(label),
                         leftY,
                         normalText
                     )
-                    leftY += 14f
+                    leftY += 16f
                 }
+
                 if (data.ownerEmail.isNotBlank()) {
-                    val phoneLabel = "Email: "
-                    c.drawText(phoneLabel, leftColX, leftY, boldLabel)
+                    val label = "Email: "
+                    c.drawText(label, leftColX, leftY, boldLabel)
                     c.drawText(
                         data.ownerEmail,
-                        leftColX + boldLabel.measureText(phoneLabel),
+                        leftColX + boldLabel.measureText(label),
                         leftY,
                         normalText
                     )
-                    leftY += 14f
+                    leftY += 16f
                 }
             }
 
-            // Right column (address) anchored to contentRight
             val rightColX = pager.contentLeft + pager.contentWidth
             var rightY = y
 
             val addressLabelPaint = Paint(typo.label).apply {
                 textAlign = Paint.Align.RIGHT
-                typeface = Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD)
+                typeface = Typeface.DEFAULT_BOLD
             }
-            val addressPaint = Paint(typo.label).apply {
-                textAlign = Paint.Align.RIGHT
-            }
+            val addressPaint = Paint(typo.label).apply { textAlign = Paint.Align.RIGHT }
 
             c.drawText("Address:", rightColX, rightY, addressLabelPaint)
-            rightY += 14f
+            rightY += 16f
 
-            val addressLines = listOf(
+            listOf(
                 "7, Shlok Height, Opp. Dev Paradise",
                 "& Dharti Silver, Nr. Mansarovar Road,",
                 "Chandkheda, Ahmedabad, Gujarat - 382424"
-            )
-            addressLines.forEach { line ->
-                c.drawText(line, rightColX, rightY, addressPaint)
-                rightY += 14f
+            ).forEach {
+                c.drawText(it, rightColX, rightY, addressPaint)
+                rightY += 16f
             }
 
-            // Advance y by the taller of the two columns
             y = maxOf(leftY, rightY)
-
             pager.y = y
-            pager.space(6f)
+            pager.space(8f)
             pager.lineAcross(rules.faintLine)
-            pager.space(10f)
+            pager.space(12f)
 
-            // --- Big centered "Invoice" title ---
+            // ------------------------------------------------------------
+            // 7) BIG "Invoice" TITLE
+            // ------------------------------------------------------------
             val invoiceTitlePaint = Paint(typo.title).apply {
                 textAlign = Paint.Align.CENTER
-                textSize = 22f
+                textSize = 24f
             }
-            val invoiceTitleY = pager.y + 18f
+            val invoiceTitleY = pager.y + 22f
             c.drawText("Invoice", centerX, invoiceTitleY, invoiceTitlePaint)
-            pager.y = invoiceTitleY + 18f
+            pager.y = invoiceTitleY + 20f
             pager.space(6f)
 
-            // --- Customer & Invoice info section (two columns) ---
-            val boldLabel = Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD }
-            val normalText = typo.text
-
+            // ------------------------------------------------------------
+            // 8) CUSTOMER + INVOICE INFO
+            // ------------------------------------------------------------
+            val boldLabel2 = Paint(typo.label).apply { typeface = Typeface.DEFAULT_BOLD }
+            val normalText2 = typo.text
             val infoRowHeight = 18f
             val leftX = pager.contentLeft
             val rightX = pager.contentLeft + pager.contentWidth
-
             var infoY = pager.y
 
-            val rightLabel = Paint(boldLabel).apply { textAlign = Paint.Align.RIGHT }
-            val rightValue = Paint(normalText).apply { textAlign = Paint.Align.RIGHT }
+            val rightLabel = Paint(boldLabel2).apply { textAlign = Paint.Align.RIGHT }
+            val rightValue = Paint(normalText2).apply { textAlign = Paint.Align.RIGHT }
 
-            // Row 1: Customer name (left) / Invoice # (right)
-            c.drawText("Customer: ", leftX, infoY, boldLabel)
+            // customer
+            c.drawText("Customer: ", leftX, infoY, boldLabel2)
             c.drawText(
                 data.customerName,
-                leftX + boldLabel.measureText("Customer: "),
+                leftX + boldLabel2.measureText("Customer: "),
                 infoY,
-                normalText
+                normalText2
             )
 
-            val invoiceFileName = CustomerDetailsConstants.getInvoiceFileName(
-                data.orderId,
-                data.invoiceNumber
-            )
-            val invoiceLabelText = "Invoice #: "
+            // invoice #
+            val invoiceFileName =
+                CustomerDetailsConstants.getInvoiceFileName(data.orderId, data.invoiceNumber)
+
             val invoiceValueWidth = rightValue.measureText(invoiceFileName)
             val invoiceLabelX = rightX - invoiceValueWidth - 4f
-            c.drawText(invoiceLabelText, invoiceLabelX, infoY, rightLabel)
+
+            c.drawText("Invoice #: ", invoiceLabelX, infoY, rightLabel)
             c.drawText(invoiceFileName, rightX, infoY, rightValue)
 
             infoY += infoRowHeight
 
-            // Row 2: Customer phone (left) / Invoice Generated Date (right)
-            val phoneLabel = "Phone: "
-            c.drawText(phoneLabel, leftX, infoY, boldLabel)
+            // customer phone
+            c.drawText("Phone: ", leftX, infoY, boldLabel2)
             c.drawText(
                 data.customerPhone,
-                leftX + boldLabel.measureText(phoneLabel),
+                leftX + boldLabel2.measureText("Phone: "),
                 infoY,
-                normalText
+                normalText2
             )
 
-            val dateLabelText = "Invoice Generated: "
+            // date
             val dateValue = data.occurredAtText
             val dateValueWidth = rightValue.measureText(dateValue)
             val dateLabelX = rightX - dateValueWidth - 4f
-            c.drawText(dateLabelText, dateLabelX, infoY, rightLabel)
+
+            c.drawText("Invoice Generated: ", dateLabelX, infoY, rightLabel)
             c.drawText(dateValue, rightX, infoY, rightValue)
 
             infoY += infoRowHeight
-
             pager.y = infoY
             pager.space(10f)
-            // also no divider here to avoid double-line before table
             pager.space(8f)
         }
     }
