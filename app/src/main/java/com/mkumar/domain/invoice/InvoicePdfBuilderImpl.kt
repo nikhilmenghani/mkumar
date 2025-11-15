@@ -971,7 +971,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             if (n <= 5) return listOf(items)
 
             val firstRowCount = when (n) {
-                6 -> 4
+                6 -> 5
                 7 -> 4
                 8 -> 5
                 else -> (n + 1) / 2 // default: ceil half for 9,10,...
