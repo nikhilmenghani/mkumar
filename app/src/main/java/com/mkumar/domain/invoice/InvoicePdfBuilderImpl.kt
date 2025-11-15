@@ -42,7 +42,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         ItemsSection.drawRows(pager, data, money, typo, rules)
 
         // Totals
-        TotalsSection.draw(pager, data, money, typo, rules)
+        TotalsSection.draw(pager, data, money, typo)
 
         // Terms & Conditions (boxed)
         TermsSection.drawBoxed(
@@ -737,7 +737,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
     }
 
     private object TotalsSection {
-        fun draw(pager: Pager, data: InvoiceData, money: NumberFormat, typo: Typography, rules: Rules) {
+        fun draw(pager: Pager, data: InvoiceData, money: NumberFormat, typo: Typography) {
             // Some space before totals
             pager.ensure(28f)
             pager.space(12f)
@@ -758,7 +758,6 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 x += w
             }
 
-            val valueX = totalColRight - 4f
             val labelX = totalColLeft - 8f
 
             fun totalRow(label: String, value: Double, bold: Boolean = false) {
@@ -924,17 +923,16 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             val totalWidth = chipWidths.sum() + chipSpacing * (chipWidths.size - 1)
 
             var x = centerX - totalWidth / 2f
-            var y = pager.y
+            val y = pager.y
 
             chipWidths.forEachIndexed { i, chipW ->
                 val chipH = textPaint.textSize + chipPaddingY * 2
-                val top = y
                 val bottom = y + chipH
 
-                c.drawRoundRect(x, top, x + chipW, bottom, 12f, 12f, chipPaint)
+                c.drawRoundRect(x, y, x + chipW, bottom, 12f, 12f, chipPaint)
 
                 val textY =
-                    top + chipH / 2 - (textPaint.descent() + textPaint.ascent()) / 2
+                    y + chipH / 2 - (textPaint.descent() + textPaint.ascent()) / 2
 
                 c.drawText(items[i], x + chipPaddingX, textY, textPaint)
 
@@ -975,7 +973,9 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
     private object MoneyFormatter {
         fun inr(twoDecimals: Boolean): NumberFormat {
-            return NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
+            val locale = Locale.forLanguageTag("en-IN")
+
+            return NumberFormat.getCurrencyInstance(locale).apply {
                 currency = Currency.getInstance("INR")
                 maximumFractionDigits = if (twoDecimals) 2 else 0
                 minimumFractionDigits = maximumFractionDigits
@@ -983,13 +983,12 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         }
     }
 
+
     private fun hasCents(data: InvoiceData): Boolean {
         if (data.subtotal % 1.0 != 0.0) return true
         return data.items.any { (it.unitPrice % 1.0 != 0.0) || (it.total % 1.0 != 0.0) }
     }
 }
-
-private const val COLUMN_GUTTER = 24f
 
 private fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {
     val words = text.split(" ")
