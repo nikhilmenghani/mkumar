@@ -44,14 +44,27 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         // Totals
         TotalsSection.draw(pager, data, money, typo, rules)
 
-        // Footer rule
-        pager.space(8f)
-        pager.lineAcross(rules.faintLine)
+        // Terms & Conditions (boxed)
+        TermsSection.drawBoxed(
+            pager,
+            termsList,      // configurable list
+            typo,
+            rules
+        )
 
         pager.finishAndWrite(out)
         doc.close()
         return out.toByteArray()
     }
+
+    // Configurable, grammatically-correct terms
+    private val termsList = listOf(
+        "Advance payment is mandatory.",
+        "Once an order is placed, it cannot be cancelled.",
+        "No guarantee on frames or frame color.",
+        "No scratch guarantee on lenses."
+    )
+
 
     // --------------------------
     // Primitives & styling
@@ -385,6 +398,14 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
     private object HeaderSection {
 
+        private val advertisedProducts = listOf(
+            "Spectacles",
+            "Contact Lenses",
+            "Sunglasses",
+            "Watches",
+            "Wall Clocks"
+        )
+
         @SuppressLint("UseKtx")
         fun draw(pager: Pager, data: InvoiceData, typo: Typography, rules: Rules) {
 
@@ -497,9 +518,16 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 subtitlePaint
             )
 
-            // advance Y
-            y = subtitleBaselineY + subtitleHeight
-            pager.y = y
+            // move cursor below subtitle
+            pager.y = subtitleBaselineY + subtitleHeight + 8f
+
+// Draw product chips under subtitle
+            ProductsChipsSection.drawChips(
+                pager,
+                advertisedProducts,   // bind from outer list
+                typo
+            )
+
             pager.lineAcross(rules.faintLine)
             pager.space(20f)
 
@@ -752,6 +780,163 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         }
     }
 
+    private object TermsSection {
+
+        fun drawBoxed(
+            pager: Pager,
+            terms: List<String>,
+            typo: Typography,
+            rules: Rules
+        ) {
+            val c = pager.canvas
+
+            val paddingTop = 18f
+            val paddingBottom = 12f
+            val paddingLeft = 16f
+            val paddingRight = 16f
+            val bulletIndent = 20f
+            val lineSpacing = 6f
+
+            val headingPaint = Paint(typo.title).apply {
+                textSize = 13.5f
+                textAlign = Paint.Align.LEFT
+            }
+
+            val bulletPaint = Paint(typo.text).apply {
+                textSize = 10f
+                textAlign = Paint.Align.LEFT
+            }
+
+            val textPaint = Paint(typo.text).apply {
+                textSize = 10f
+                textAlign = Paint.Align.LEFT
+            }
+
+            // -------------------------------
+            // 1. Compute height REQUIRED
+            // -------------------------------
+            val maxTextWidth = pager.contentWidth - paddingLeft - paddingRight - bulletIndent
+            var requiredHeight = paddingTop + paddingBottom + 22f + 20f   // heading + heading gap
+
+            terms.forEachIndexed { index, term ->
+                val lines = wrapText(term, textPaint, maxTextWidth)
+
+                // First bullet line
+                requiredHeight += 16f
+
+                // Wrapped lines
+                requiredHeight += (lines.size - 1) * 16f
+
+                // Spacing between items except last
+                if (index != terms.lastIndex) requiredHeight += lineSpacing
+            }
+
+            // -------------------------------
+            // 2. Ensure page space for box
+            // -------------------------------
+            pager.ensure(requiredHeight + 10f)
+
+            // -------------------------------
+            // 3. Draw box FIRST (fixed height)
+            // -------------------------------
+            val boxLeft = pager.contentLeft
+            val boxRight = pager.contentLeft + pager.contentWidth
+            val boxTop = pager.y
+            val boxBottom = pager.y + requiredHeight
+
+            c.drawRect(
+                boxLeft,
+                boxTop,
+                boxRight,
+                boxBottom,
+                rules.tableBorder
+            )
+
+            // -------------------------------
+            // 4. Draw content INSIDE fixed box
+            // -------------------------------
+            var yCursor = boxTop + paddingTop
+
+            // Heading
+            c.drawText("Terms & Conditions", boxLeft + paddingLeft, yCursor, headingPaint)
+            yCursor += 20f + 20f
+
+            // Terms
+            terms.forEachIndexed { index, term ->
+                val lines = wrapText(term, textPaint, maxTextWidth)
+
+                // First line with bullet
+                c.drawText("• ${lines[0]}", boxLeft + paddingLeft, yCursor, bulletPaint)
+                yCursor += 16f
+
+                // Additional lines
+                lines.drop(1).forEach { ln ->
+                    c.drawText(ln, boxLeft + paddingLeft + bulletIndent, yCursor, textPaint)
+                    yCursor += 16f
+                }
+
+                // Spacing between items (except last)
+                if (index != terms.lastIndex) yCursor += lineSpacing
+            }
+
+            // -------------------------------
+            // 5. Move pager.y BELOW box
+            // -------------------------------
+            pager.y = boxBottom + 10f
+        }
+    }
+
+    private object ProductsChipsSection {
+
+        fun drawChips(pager: Pager, items: List<String>, typo: Typography) {
+            val c = pager.canvas
+            val chipPaddingX = 12f
+            val chipPaddingY = 6f
+            val chipSpacing = 8f
+
+            val textPaint = Paint(typo.text).apply {
+                textSize = 10.5f
+                color = Color.BLACK
+                textAlign = Paint.Align.LEFT
+            }
+
+            // Light Gray Chip Background
+            val chipPaint = Paint().apply {
+                color = Color.rgb(235, 235, 235)   // << light gray chips
+                style = Paint.Style.FILL
+            }
+
+            val centerX = pager.contentLeft + pager.contentWidth / 2f
+
+            val chipWidths = items.map { item ->
+                val textWidth = textPaint.measureText(item)
+                textWidth + chipPaddingX * 2
+            }
+
+            val totalWidth = chipWidths.sum() + chipSpacing * (chipWidths.size - 1)
+
+            var x = centerX - totalWidth / 2f
+            var y = pager.y
+
+            chipWidths.forEachIndexed { i, chipW ->
+                val chipH = textPaint.textSize + chipPaddingY * 2
+                val top = y
+                val bottom = y + chipH
+
+                c.drawRoundRect(x, top, x + chipW, bottom, 12f, 12f, chipPaint)
+
+                val textY =
+                    top + chipH / 2 - (textPaint.descent() + textPaint.ascent()) / 2
+
+                c.drawText(items[i], x + chipPaddingX, textY, textPaint)
+
+                x += chipW + chipSpacing
+            }
+
+            pager.y += (textPaint.textSize + chipPaddingY * 2) + 14f
+        }
+    }
+
     // --------------------------
     // Text helpers
     // --------------------------
@@ -794,4 +979,25 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         if (data.subtotal % 1.0 != 0.0) return true
         return data.items.any { (it.unitPrice % 1.0 != 0.0) || (it.total % 1.0 != 0.0) }
     }
+}
+
+private const val COLUMN_GUTTER = 24f
+
+private fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {
+    val words = text.split(" ")
+    val lines = mutableListOf<String>()
+    var line = ""
+
+    for (word in words) {
+        val test = if (line.isEmpty()) word else "$line $word"
+        if (paint.measureText(test) <= maxWidth) {
+            line = test
+        } else {
+            lines += line
+            line = word
+        }
+    }
+    if (line.isNotEmpty()) lines += line
+
+    return lines
 }
