@@ -49,7 +49,7 @@ fun SliderDialog() {
                     value = v,
                     onValueChange = { v = it },
                     defaultValue = dialog.defaultProductHighlightIntensity,
-                    range = 0..100,
+                    range = 0..235,
                     step = 1,
                     unit = "%",
                     onConfirm = {

@@ -947,7 +947,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                     val intensity = globalClass.preferencesManager.invoicePrefs.productHighlightIntensity
                     val bgPaint = if (isLastProduct) {
                         Paint().apply {
-                            color = Color.rgb(100-intensity, 100-intensity, 100-intensity)
+                            color = Color.rgb(235-intensity, 235-intensity, 235-intensity)
                             style = Paint.Style.FILL
                         }
                     } else chipPaint
