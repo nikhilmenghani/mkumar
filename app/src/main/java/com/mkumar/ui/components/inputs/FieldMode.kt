@@ -25,19 +25,20 @@ sealed interface FieldMode {
     }
 
     data class Phone(
-        val prefixCountryCode: Boolean = false   // set true for +91 autostart
+        val prefixCountryCode: Boolean = false,
+        val maxDigits: Int = 10
     ) : FieldMode {
 
         override val keyboardType = KeyboardType.Phone
         override val defaultIme = ImeAction.Next
 
         override fun sanitizeOnChange(input: String): String {
-            // Allow only digits
-            val digits = input.filter { it.isDigit() }
+            // Allow only digits, clamp to maxDigits
+            val digits = input.filter { it.isDigit() }.take(maxDigits)
 
             return if (prefixCountryCode) {
                 when {
-                    digits.startsWith("91") -> "+$digits"       // user typed 91…
+                    digits.startsWith("91") -> "+$digits"
                     digits.startsWith("0") -> "+91" + digits.drop(1)
                     digits.isNotEmpty() -> "+91$digits"
                     else -> ""
@@ -48,21 +49,14 @@ sealed interface FieldMode {
         }
 
         override fun formatOnCommit(input: String): String {
-            // Standardize on digits only at commit time
-            val digits = input.filter { it.isDigit() }
+            val digits = input.filter { it.isDigit() }.take(maxDigits)
 
-            return if (prefixCountryCode) {
-                when {
-                    digits.startsWith("91") -> "+$digits"
-                    digits.length >= 10 -> "+91$digits"
-                    digits.isNotEmpty() -> "+91$digits"
-                    else -> ""
-                }
-            } else {
-                digits
-            }
+            return if (digits.length == maxDigits) {
+                if (prefixCountryCode) "+91$digits" else digits
+            } else digits // keep partially typed number while editing
         }
     }
+
 
     /** e.g. SPH/CYL/ADD: +1.00, -0.50 (scale padded), optional + on positive */
     data class SignedDecimal(
