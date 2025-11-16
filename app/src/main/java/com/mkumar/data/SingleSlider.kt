@@ -17,7 +17,7 @@ object SingleSlider {
     var onDismiss: () -> Unit = {}
         private set
     var value = 0
-    var defaultProductHighlightIntensity = 165
+    var defaultProductHighlightIntensity = 65
 
     fun dismiss() {
         show = false

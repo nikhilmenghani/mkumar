@@ -47,7 +47,7 @@ object GithubPrefs {
 object InvoicePrefs {
     var productHighlightIntensity by dataStoreMutableState(
         keyName = "productHighlightIntensity",
-        defaultValue = 70,
+        defaultValue = 65,
         getPreferencesKey = { intPreferencesKey(it) }
     )
     var invoicePrefix by dataStoreMutableState(
