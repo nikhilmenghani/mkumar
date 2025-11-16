@@ -434,7 +434,7 @@ class CustomerDetailsViewModel @Inject constructor(
             customerName = uiCustomer?.name ?: "Customer",
             ownerName = "Mahendra Menghani",
             customerPhone = uiCustomer?.phone ?: "-",
-            ownerPhone = "9427956490",
+            ownerPhone = "942795 6490",
             ownerEmail = "menghani.mahendra@gmail.com",
             orderId = order.id,
             invoiceNumber = order.invoiceSeq.toString(),

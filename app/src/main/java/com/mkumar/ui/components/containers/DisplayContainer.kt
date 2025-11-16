@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.mkumar.App.Companion.globalClass
 import com.mkumar.R
+import com.mkumar.common.extension.DateFormat
 import com.mkumar.data.ThemePreference
 import com.mkumar.data.emptyString
 import com.mkumar.ui.components.items.PreferenceItem
@@ -84,6 +85,35 @@ fun DisplayContainer() {
                     value = invoicePreference.productHighlightIntensity,
                     onConfirm = { invoicePreference.productHighlightIntensity = it },
                     onDismiss = sliderDialog::dismiss
+                )
+            }
+        )
+
+        PreferenceItem(
+            label = "Invoice Prefix",
+            supportingText = invoicePreference.invoicePrefix,
+            icon = Icons.AutoMirrored.Rounded.Label,
+            onClick = {
+                textDialog.show(
+                    title = "Invoice Prefix",
+                    description = "Enter your invoice prefix",
+                    text = invoicePreference.invoicePrefix,
+                    onConfirm = { invoicePreference.invoicePrefix = it }
+                )
+            }
+        )
+
+        PreferenceItem(
+            label = "Invoice Date Format",
+            supportingText = DateFormat.entries[invoicePreference.invoiceDateFormat].pattern,
+            icon = Icons.Rounded.Nightlight,
+            onClick = {
+                dialog.show(
+                    title = "Invoice Date Format",
+                    description = "Select your preferred date format for invoices",
+                    choices = DateFormat.entries.map { it.pattern },
+                    selectedChoice = invoicePreference.invoiceDateFormat,
+                    onSelect = { invoicePreference.invoiceDateFormat = it }
                 )
             }
         )

@@ -1,5 +1,6 @@
 package com.mkumar.viewmodel
 
+import com.mkumar.App.Companion.globalClass
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
@@ -27,7 +28,7 @@ fun CustomerWithOrders.toUi(
     pricing: PricingService,
     itemsOf: (orderId: String) -> List<UiOrderItem> = { emptyList() },
     adjustedOf: (order: OrderEntity) -> Int = { 0 },
-    advanceOf:  (order: OrderEntity) -> Int = { 0 }
+    advanceOf: (order: OrderEntity) -> Int = { 0 }
 ): UiBundle {
     val uiCustomer = UiCustomer(customer.id, customer.name, customer.phone, customer.createdAt)
 
@@ -39,7 +40,7 @@ fun CustomerWithOrders.toUi(
             uiItems.toPricingInput(
                 orderId = order.id,
                 adjustedAmount = adjustedOf(order).coerceAtLeast(0),
-                advanceTotal   = advanceOf(order).coerceAtLeast(0)
+                advanceTotal = advanceOf(order).coerceAtLeast(0)
             )
         )
         order.toUiOrder(uiItems, priced.subtotalBeforeAdjust)
@@ -112,7 +113,7 @@ fun OrderItemEntity.toUiItem(): UiOrderItem {
     )
 }
 
-fun OrderEntity.toUiOrder(items: List<UiOrderItem> = emptyList(), subtotalBeforeAdjust: Int = 0 ): UiOrder =
+fun OrderEntity.toUiOrder(items: List<UiOrderItem> = emptyList(), subtotalBeforeAdjust: Int = 0): UiOrder =
     UiOrder(
         id = id,
         occurredAt = occurredAt,
@@ -123,5 +124,6 @@ fun OrderEntity.toUiOrder(items: List<UiOrderItem> = emptyList(), subtotalBefore
         advanceTotal = advanceTotal,
         remainingBalance = remainingBalance,
         lastUpdatedAt = updatedAt,
-        invoiceNumber = invoiceSeq?.let { "INV-%d".format(it) } ?: ("INV-" + id.takeLast(6).uppercase(Locale.getDefault()))
+        invoiceNumber = invoiceSeq?.let { globalClass.preferencesManager.invoicePrefs.invoicePrefix + "%d".format(it) } ?: (globalClass.preferencesManager.invoicePrefs.invoicePrefix + id.takeLast(6)
+            .uppercase(Locale.getDefault()))
     )

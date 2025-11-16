@@ -12,6 +12,7 @@ enum class DateFormat(val pattern: String) {
     SHORT_DATE_TIME("MMM d, h:mm a"),
     FULL_DATE_TIME("MMM d, yyyy h:mm a"),
     DATE_ONLY("MMM d, yyyy"),
+    DEFAULT_DATE_ONLY("dd-MMM-yyyy"),
     TIME_ONLY("h:mm a"),
     ISO_DATE_TIME("yyyy-MM-dd'T'HH:mm:ss")
 }

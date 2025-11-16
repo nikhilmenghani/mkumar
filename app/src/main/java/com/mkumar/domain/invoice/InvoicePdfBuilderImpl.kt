@@ -8,7 +8,6 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import com.mkumar.App.Companion.globalClass
-import com.mkumar.common.constant.CustomerDetailsConstants
 import java.io.ByteArrayOutputStream
 import java.text.NumberFormat
 import java.util.Currency
@@ -592,7 +591,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             rightY += 16f
 
             listOf(
-                "7, Shlok Height, Opp. Dev Paradise",
+                "7, Shlok Heights, Opp. Dev Paradise",
                 "& Dharti Silver, Nr. Mansarovar Road,",
                 "Chandkheda, Ahmedabad, Gujarat - 382424"
             ).forEach {
@@ -641,14 +640,14 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             )
 
             // invoice #
-            val invoiceFileName =
-                CustomerDetailsConstants.getInvoiceFileName(data.orderId, data.invoiceNumber)
+            val invoiceNumber = data.invoiceNumber
+//                CustomerDetailsConstants.getInvoiceFileName(data.orderId, data.invoiceNumber)
 
-            val invoiceValueWidth = rightValue.measureText(invoiceFileName)
+            val invoiceValueWidth = rightValue.measureText(invoiceNumber)
             val invoiceLabelX = rightX - invoiceValueWidth - 4f
 
             c.drawText("Invoice #: ", invoiceLabelX, infoY, rightLabel)
-            c.drawText(invoiceFileName, rightX, infoY, rightValue)
+            c.drawText(invoiceNumber, rightX, infoY, rightValue)
 
             infoY += infoRowHeight
 

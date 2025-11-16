@@ -5,6 +5,7 @@ import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.mkumar.common.extension.DateFormat
 import com.mkumar.common.util.dataStoreMutableState
 
 const val emptyString = ""
@@ -47,6 +48,16 @@ object InvoicePrefs {
     var productHighlightIntensity by dataStoreMutableState(
         keyName = "productHighlightIntensity",
         defaultValue = 70,
+        getPreferencesKey = { intPreferencesKey(it) }
+    )
+    var invoicePrefix by dataStoreMutableState(
+        keyName = "invoicePrefix",
+        defaultValue = "INV- M Kumar -",
+        getPreferencesKey = { stringPreferencesKey(it) }
+    )
+    var invoiceDateFormat by dataStoreMutableState(
+        keyName = "invoiceDateFormat",
+        defaultValue = DateFormat.DEFAULT_DATE_ONLY.ordinal,
         getPreferencesKey = { intPreferencesKey(it) }
     )
 }
