@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -142,7 +143,16 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "M Kumar") },
+                title = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(text = "M Kumar")
+                        Text(
+                            text = "v$currentVersion",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 actions = {
                     IconButton(onClick = { context.restartActivity() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
@@ -162,7 +172,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     fabBlockHeight = with(density) { coords.size.height.toDp() }
                 }) {
                 StandardFab(
-                    text = "Add a new Customer",
+                    text = "",
                     icon = { Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(24.dp)) },
                     onClick = {
                         sheetMode = CustomerSheetMode.Add
@@ -173,7 +183,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     },
                 )
                 StandardFab(
-                    text = "Search Customer",
+                    text = "",
                     icon = { Icon(Icons.Default.PersonSearch, contentDescription = "Search", modifier = Modifier.size(24.dp)) },
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -188,7 +198,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 )
                 if (!isLatestVersion) {
                     StandardFab(
-                        text = "MKumar v$latestVersion Available",
+                        text = "",
                         icon = { Icon(Icons.Default.Refresh, contentDescription = "Update", modifier = Modifier.size(24.dp)) },
                         loading = isDownloading,
                         onClick = {
