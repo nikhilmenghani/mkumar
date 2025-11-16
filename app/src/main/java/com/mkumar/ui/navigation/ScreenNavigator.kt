@@ -167,7 +167,7 @@ fun ScreenNavigator(
 ) {
     val navController = rememberNavController()
     Scaffold(
-        bottomBar = { Material3BottomNavigationBar(navController) },
+//        bottomBar = { Material3BottomNavigationBar(navController) },
         contentWindowInsets = WindowInsets(0.dp)
     ) { innerPadding ->
         NavigationHost(

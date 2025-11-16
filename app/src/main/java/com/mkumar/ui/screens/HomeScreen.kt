@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -20,6 +22,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -40,13 +43,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
@@ -66,7 +75,9 @@ import com.mkumar.ui.components.cards.CustomerInfoCard
 import com.mkumar.ui.components.cards.CustomerListCard2
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.components.fabs.StandardFab
+import com.mkumar.ui.navigation.Material3BottomNavigationBar
 import com.mkumar.ui.navigation.Routes
+import com.mkumar.ui.navigation.Screen
 import com.mkumar.ui.navigation.Screens
 import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.worker.DownloadWorker
@@ -102,6 +113,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     var editingCustomerId by remember { mutableStateOf<String?>(null) }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    val haptic = LocalHapticFeedback.current
 
     var deleteTarget by remember { mutableStateOf<CustomerFormState?>(null) }
 
@@ -158,6 +170,20 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                         name = ""
                         phone = ""
                         showCustomerSheet = true
+                    },
+                )
+                StandardFab(
+                    text = "Search Customer",
+                    icon = { Icon(Icons.Default.PersonSearch, contentDescription = "Search", modifier = Modifier.size(24.dp)) },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        navController.navigate(Screen.Search.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     },
                 )
                 if (!isLatestVersion) {
@@ -346,6 +372,47 @@ fun CustomerList(
                 onEdit = onEdit,
                 onDelete = onDelete
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(
+    name = "Nord 3 Portrait",
+    showSystemUi = true,
+    device = "spec:width=1240px,height=2772px,dpi=450"
+)
+@PreviewFontScale()
+@Composable
+fun HomeScreenPreview() {
+    MaterialTheme {
+        val navController = rememberNavController()
+
+        Scaffold(
+            topBar = {
+                TopAppBar(title = { Text("M Kumar") })
+            },
+            bottomBar = { Material3BottomNavigationBar(navController) },
+            contentWindowInsets = WindowInsets(0.dp)
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                CustomerList(
+                    customers = listOf(
+                        CustomerFormState(id = "1", name = "John Doe", phone = "9876543210"),
+                        CustomerFormState(id = "2", name = "Jane Smith", phone = "8765432109"),
+                        CustomerFormState(id = "3", name = "Bob Wilson", phone = "7654321098")
+                    ),
+                    onClick = {},
+                    onUpdateCustomer = { _, _, _ -> },
+                    onDelete = {},
+                    onEdit = {},
+                    extraBottomPadding = 0.dp
+                )
+            }
         }
     }
 }
