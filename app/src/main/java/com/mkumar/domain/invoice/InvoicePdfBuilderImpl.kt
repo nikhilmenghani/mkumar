@@ -62,7 +62,8 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         "Advance payment is mandatory.",
         "Once an order is placed, it cannot be cancelled.",
         "No guarantee on frames or frame color.",
-        "No scratch guarantee on lenses."
+        "No scratch guarantee on lenses.",
+        "Subject to Ahmedabad jurisdiction only."
     )
 
 
