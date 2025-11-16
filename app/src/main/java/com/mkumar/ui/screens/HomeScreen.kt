@@ -105,6 +105,11 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
 
     var deleteTarget by remember { mutableStateOf<CustomerFormState?>(null) }
 
+    val canSubmit by remember(name, phone) {
+        val digits = phone.count { it.isDigit() }
+        mutableStateOf(name.isNotBlank() && digits == 10)
+    }
+
     LaunchedEffect(currentCustomerId) {
         // Whenever the VM's openForms map changes, push only the current customer's set
         vm.openForms.collect { map ->
@@ -224,34 +229,39 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     phone = phone,
                     onNameChange = { name = it },
                     onPhoneChange = { phone = it },
+
                     onSubmit = {
-                        if (name.isNotBlank() && phone.isNotBlank()) {
-                            if (sheetMode == CustomerSheetMode.Add) {
-                                val customerId = vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
-                                vm.selectCustomer(customerId)
-                                navController.navigate(Routes.customerDetail(customerId))
-                            } else {
-                                editingCustomerId?.let { vm.updateCustomer(it, name.trim(), phone.trim()) }
-                            }
-                            showCustomerSheet = false
+                        if (!canSubmit) {
+                            // optional feedback:
+                            // scope.launch { snackbarHostState.showSnackbar("Enter at least 9 digits") }
+                            return@CustomerInfoCard
                         }
+                        if (sheetMode == CustomerSheetMode.Add) {
+                            val customerId = vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
+                            vm.selectCustomer(customerId)
+                            navController.navigate(Routes.customerDetail(customerId))
+                        } else {
+                            editingCustomerId?.let { vm.updateCustomer(it, name.trim(), phone.trim()) }
+                        }
+                        showCustomerSheet = false
                     }
                 )
             },
             onDismiss = { showCustomerSheet = false },
+
             showDismiss = true,
-            showDone = true,
+            showDone = canSubmit,
+
             onDoneClick = {
-                if (name.isNotBlank() && phone.isNotBlank()) {
-                    if (sheetMode == CustomerSheetMode.Add) {
-                        val customerId = vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
-                        vm.selectCustomer(customerId)
-                        navController.navigate(Routes.customerDetail(customerId))
-                    } else {
-                        editingCustomerId?.let { vm.updateCustomer(it, name.trim(), phone.trim()) }
-                    }
-                    showCustomerSheet = false
+                if (!canSubmit) return@ShortBottomSheet
+                if (sheetMode == CustomerSheetMode.Add) {
+                    val customerId = vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
+                    vm.selectCustomer(customerId)
+                    navController.navigate(Routes.customerDetail(customerId))
+                } else {
+                    editingCustomerId?.let { vm.updateCustomer(it, name.trim(), phone.trim()) }
                 }
+                showCustomerSheet = false
             }
         )
     }
