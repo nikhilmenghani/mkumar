@@ -1,8 +1,12 @@
 package com.mkumar.ui.components.containers
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Label
+import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.Nightlight
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.mkumar.App.Companion.globalClass
@@ -25,7 +29,7 @@ fun DisplayContainer() {
         PreferenceItem(
             label = stringResource(R.string.use_dynamic_color),
             supportingText = emptyString,
-            icon = Icons.AutoMirrored.Rounded.Label,
+            icon = Icons.Rounded.Palette,
             switchState = preferences.useDynamicColor,
             onSwitchChange = { preferences.useDynamicColor = it }
         )
@@ -60,7 +64,7 @@ fun DisplayContainer() {
         PreferenceItem(
             label = "Github Token",
             supportingText = githubPreference.token,
-            icon = Icons.AutoMirrored.Rounded.Label,
+            icon = Icons.Rounded.VpnKey,
             onClick = {
                 textDialog.show(
                     title = "Github Token",
@@ -76,7 +80,7 @@ fun DisplayContainer() {
         PreferenceItem(
             label = "Product Highlight Intensity",
             supportingText = invoicePreference.productHighlightIntensity.toString(),
-            icon = Icons.AutoMirrored.Rounded.Label,
+            icon = Icons.Rounded.Tune,
             onClick = {
                 sliderDialog.show(
                     title = "Product Highlight Intensity",
@@ -92,7 +96,7 @@ fun DisplayContainer() {
         PreferenceItem(
             label = "Invoice Prefix",
             supportingText = invoicePreference.invoicePrefix,
-            icon = Icons.AutoMirrored.Rounded.Label,
+            icon = Icons.Rounded.LocalOffer,
             onClick = {
                 textDialog.show(
                     title = "Invoice Prefix",
@@ -106,7 +110,7 @@ fun DisplayContainer() {
         PreferenceItem(
             label = "Invoice Date Format",
             supportingText = DateFormat.entries[invoicePreference.invoiceDateFormat].pattern,
-            icon = Icons.Rounded.Nightlight,
+            icon = Icons.Rounded.Event,
             onClick = {
                 dialog.show(
                     title = "Invoice Date Format",
