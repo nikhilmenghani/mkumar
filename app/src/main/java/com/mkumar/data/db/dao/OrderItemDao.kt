@@ -63,4 +63,17 @@ interface OrderItemDao {
 
     @Query("SELECT COUNT(*) FROM order_items WHERE orderId = :orderId")
     fun countForOrder(orderId: String): Int
+
+    @Query("""
+SELECT productTypeLabel FROM order_items
+WHERE orderId = :orderId
+""")
+    suspend fun getCategoriesForOrder(orderId: String): List<String>
+
+    @Query("""
+SELECT productOwnerName FROM order_items
+WHERE orderId = :orderId
+""")
+    suspend fun getOwnersForOrder(orderId: String): List<String>
+
 }

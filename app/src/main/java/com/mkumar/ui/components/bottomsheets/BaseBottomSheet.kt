@@ -38,8 +38,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mkumar.model.ProductType
 import com.mkumar.ui.components.fabs.AddProductSpeedMenuButton
-import com.mkumar.viewmodel.ProductType
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

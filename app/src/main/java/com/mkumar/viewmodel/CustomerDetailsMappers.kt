@@ -7,6 +7,11 @@ import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.domain.pricing.PricingInput
 import com.mkumar.domain.pricing.PricingResult
 import com.mkumar.domain.pricing.PricingService
+import com.mkumar.model.OrderRowUi
+import com.mkumar.model.ProductType
+import com.mkumar.model.UiCustomer
+import com.mkumar.model.UiOrder
+import com.mkumar.model.UiOrderItem
 import java.util.Locale
 import java.util.UUID
 

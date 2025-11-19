@@ -66,4 +66,35 @@ LIMIT :limit
 """
     )
     fun observeSearchCustomerIds(match: String, limit: Int = 50): Flow<List<String>>
+
+    @Query("""
+SELECT orderId FROM search_fts
+WHERE search_fts MATCH :match
+LIMIT :limit
+""")
+    suspend fun searchOrderIds(match: String, limit: Int = 50): List<String>
+
+    @Query("""
+    UPDATE search_fts
+    SET name = :name,
+        phone = :phone,
+        name3 = :name3,
+        phone3 = :phone3
+    WHERE customerId = :customerId
+""")
+    suspend fun updateCustomerFields(
+        customerId: String,
+        name: String,
+        phone: String?,
+        name3: String?,
+        phone3: String?
+    )
+
+    @Query("""
+    UPDATE search_fts
+    SET content = :content
+    WHERE orderId = :orderId
+""")
+    suspend fun updateOrderContent(orderId: String, content: String)
+
 }

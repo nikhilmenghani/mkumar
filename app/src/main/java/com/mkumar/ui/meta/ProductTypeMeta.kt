@@ -5,7 +5,7 @@ import androidx.compose.material.icons.outlined.Lens
 import androidx.compose.material.icons.outlined.ProductionQuantityLimits
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.mkumar.viewmodel.ProductType
+import com.mkumar.model.ProductType
 
 data class ProductTypeMeta(
     val displayName: String,

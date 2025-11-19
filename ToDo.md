@@ -14,6 +14,11 @@ _Last updated: 2025-11-15_
 - [x] PDF – Center align banner & address, add logo, and “Invoice” title  #high
 - [ ] Dashboard screen with summary of customers/orders added  #high
 - [ ] GitHub sync (cloud implementation)  #high
+- [ ] Search and Sort Capability #high 
+	- [ ] Search by Invoice #high 
+	- [ ] Search by has pending order #high 
+	- [ ] Sort by Created #high 
+	- [ ] Sort by Updated #high 
 
 ---
 
@@ -35,11 +40,11 @@ _Last updated: 2025-11-15_
 - [x] Add confirmation dialog when deleting an item from order  #low
 - [ ] Add toast/snackbar notification for add/update/delete actions  #low
 - [ ] Code cleanup — remove redundant code  #low
-- [ ] Show app version in header (“M Kumar vX.Y”)  #low
-- [ ] Add setting to choose invoice date format  #low
-- [ ] Make phone number text field accept exactly 10 digits  #low
+- [x] Show app version in header (“M Kumar vX.Y”)  #low
+- [x] Add setting to choose invoice date format  #low
+- [x] Make phone number text field accept exactly 10 digits  #low
 - [ ] Update Terms & Conditions with last-change date  #low
-- [ ] Change the name of the invoice file
+- [x] Change the name of the invoice file
 - [ ] Make the row with dismiss and confirm buttons generic
 
 ---
@@ -48,5 +53,6 @@ _Last updated: 2025-11-15_
 - [ ] Consider dashboard analytics (optional)
 - [ ] Add dark-mode adjustments for Material 3 expressive UI
 - [ ] Automate PDF generation & GitHub cloud sync together
+- [ ] Invoice Counter Control - through preference
 
 ---

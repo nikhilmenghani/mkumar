@@ -26,8 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mkumar.model.ProductType
 import com.mkumar.ui.meta.productTypeMeta
-import com.mkumar.viewmodel.ProductType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

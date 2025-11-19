@@ -67,4 +67,53 @@ interface OrderDao {
     @Query("SELECT * FROM orders WHERE id = :orderId")
     fun observeOrder(orderId: String): Flow<OrderEntity?>
 
+    @Query("""
+SELECT * FROM orders
+WHERE customerId = :customerId
+AND invoiceSeq LIKE '%' || :invoice || '%'
+ORDER BY occurredAt DESC
+""")
+    suspend fun searchOrdersByInvoice(customerId: String, invoice: String): List<OrderEntity>
+
+    @Query("""
+SELECT * FROM orders
+WHERE customerId = :customerId
+AND remainingBalance > 0
+ORDER BY occurredAt DESC
+""")
+
+    suspend fun getPendingOrders(customerId: String): List<OrderEntity>
+    @Query("""
+SELECT * FROM orders
+WHERE customerId = :customerId
+AND (:category IS NULL OR :category IN (productCategories))
+ORDER BY occurredAt DESC
+""")
+    suspend fun getOrdersByCategory(customerId: String, category: String?): List<OrderEntity>
+
+    @Query("""
+SELECT * FROM orders
+WHERE customerId = :customerId
+AND (:owner IS NULL OR :owner IN (owners))
+ORDER BY occurredAt DESC
+""")
+    suspend fun getOrdersByOwner(customerId: String, owner: String?): List<OrderEntity>
+
+    @Query("""
+SELECT * FROM orders
+WHERE customerId = :customerId
+AND (:remainingOnly = 0 OR remainingBalance > 0)
+AND (:category IS NULL OR :category IN (productCategories))
+AND (:owner IS NULL OR :owner IN (owners))
+ORDER BY occurredAt DESC
+""")
+    suspend fun filterOrders(
+        customerId: String,
+        remainingOnly: Int,
+        category: String?,
+        owner: String?
+    ): List<OrderEntity>
+
+
+
 }

@@ -28,48 +28,70 @@ class SearchViewModel @Inject constructor(
 
     data class UiState(
         val query: String = "",
+        val invoiceQuery: String = "",
+        val remainingOnly: Boolean = false,
         val mode: SearchMode = SearchMode.QUICK,
         val results: List<UiCustomerMini> = emptyList(),
         val isSearching: Boolean = false
-    )
+    ) {
+        val hasFilters: Boolean get() = invoiceQuery.isNotBlank() || remainingOnly
+        val filterCount: Int get() =
+            (if (invoiceQuery.isNotBlank()) 1 else 0) +
+                    (if (remainingOnly) 1 else 0)
+    }
 
     private val _ui = MutableStateFlow(UiState())
     val ui: StateFlow<UiState> = _ui.asStateFlow()
 
-    fun updateQuery(value: String) { _ui.update { it.copy(query = value) } }
-    fun updateMode(mode: SearchMode) { _ui.update { it.copy(mode = mode) } }
+    fun updateQuery(value: String) {
+        _ui.update { it.copy(query = value) }
+    }
 
-    private val _query = MutableStateFlow("")
-    val query: StateFlow<String> = _query.asStateFlow()
+    fun updateInvoiceQuery(value: String) {
+        _ui.update { it.copy(invoiceQuery = value) }
+    }
 
+    fun updateRemainingOnly(value: Boolean) {
+        _ui.update { it.copy(remainingOnly = value) }
+    }
 
-    private val _results = MutableStateFlow<List<UiCustomerMini>>(emptyList())
-    val results: StateFlow<List<UiCustomerMini>> = _results.asStateFlow()
+    fun updateMode(mode: SearchMode) {
+        _ui.update { it.copy(mode = mode) }
+    }
 
-
-    private val _isSearching = MutableStateFlow(false)
-    val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
-
-
-    private val _recent = MutableStateFlow<List<UiCustomerMini>>(emptyList())
-    val recent: StateFlow<List<UiCustomerMini>> = _recent.asStateFlow()
-
-    init { observe() }
-
+    init {
+        observe()
+    }
 
     @OptIn(FlowPreview::class)
     private fun observe() {
         combine(
             _ui.map { it.query },
+            _ui.map { it.invoiceQuery },
+            _ui.map { it.remainingOnly },
             _ui.map { it.mode }
-        ) { q, m -> q to m }
+        ) { q, invoice, remaining, mode ->
+            Quad(q, invoice, remaining, mode)
+        }
             .debounce(200)
             .distinctUntilChanged()
-            .onEach { (q, m) ->
-                if (q.isBlank()) { _ui.update { it.copy(results = emptyList(), isSearching = false) }; return@onEach }
+            .onEach { (q, invoice, remaining, mode) ->
+                if (q.isBlank() && invoice.isBlank() && !remaining) {
+                    _ui.update { it.copy(results = emptyList(), isSearching = false) }
+                    return@onEach
+                }
+
                 _ui.update { it.copy(isSearching = true) }
-                val items = runCatching { repo.searchCustomers(q, m, 50) }.getOrDefault(emptyList())
-                _ui.update { it.copy(results = items, isSearching = false) }
+
+                val results = runCatching {
+                    repo.searchCustomersAdvanced(
+                        nameOrPhone = q.takeIf { it.isNotBlank() },
+                        invoice = invoice.takeIf { it.isNotBlank() },
+                        remainingOnly = remaining
+                    )
+                }.getOrDefault(emptyList())
+
+                _ui.update { it.copy(results = results, isSearching = false) }
             }
             .launchIn(viewModelScope)
     }
@@ -79,3 +101,5 @@ class SearchViewModel @Inject constructor(
         return emptyList()
     }
 }
+
+private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)

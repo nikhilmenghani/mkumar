@@ -19,8 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mkumar.viewmodel.CustomerHeaderUi
-import com.mkumar.viewmodel.UiCustomer
+import com.mkumar.model.CustomerHeaderUi
+import com.mkumar.model.UiCustomer
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 

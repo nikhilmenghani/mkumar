@@ -38,15 +38,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.mkumar.R
 import com.mkumar.common.constant.CustomerDetailsConstants
+import com.mkumar.model.CustomerDetailsEffect
+import com.mkumar.model.CustomerDetailsIntent
+import com.mkumar.model.CustomerHeaderUi
+import com.mkumar.model.OrderRowAction
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderList
-import com.mkumar.viewmodel.CustomerDetailsEffect
-import com.mkumar.viewmodel.CustomerDetailsIntent
 import com.mkumar.viewmodel.CustomerDetailsViewModel
-import com.mkumar.viewmodel.CustomerHeaderUi
-import com.mkumar.viewmodel.OrderRowAction
 import com.mkumar.viewmodel.toOrderRowUi
 import kotlinx.coroutines.flow.collectLatest
 

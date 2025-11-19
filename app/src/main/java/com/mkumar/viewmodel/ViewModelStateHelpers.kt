@@ -1,5 +1,6 @@
 package com.mkumar.viewmodel
 
+import com.mkumar.model.CustomerDetailsUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 
 

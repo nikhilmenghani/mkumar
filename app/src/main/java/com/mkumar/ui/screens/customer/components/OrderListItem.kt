@@ -48,10 +48,10 @@ import com.mkumar.common.extension.DateFormat
 import com.mkumar.common.extension.formatAsDate
 import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.common.extension.toLong
+import com.mkumar.model.OrderRowAction
+import com.mkumar.model.OrderRowUi
 import com.mkumar.ui.components.ProMenuItem
 import com.mkumar.ui.components.ProOverflowMenuIcons
-import com.mkumar.viewmodel.OrderRowAction
-import com.mkumar.viewmodel.OrderRowUi
 import java.time.Instant
 
 @OptIn(ExperimentalLayoutApi::class)

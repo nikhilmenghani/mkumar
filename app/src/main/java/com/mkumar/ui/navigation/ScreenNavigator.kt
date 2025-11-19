@@ -87,6 +87,7 @@ import com.mkumar.ui.screens.customer.OrderEditorScreen
 import com.mkumar.ui.screens.search.SearchScreen
 import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.CustomerViewModel
+import com.mkumar.viewmodel.OrderEditorViewModel
 
 
 private const val SharedAxisDuration = 300
@@ -616,7 +617,7 @@ fun NavigationHost(
                 val parentEntry = remember(customerId) {
                     navController.getBackStackEntry(Routes.customerGraph(customerId))
                 }
-                val vm: CustomerDetailsViewModel = hiltViewModel(parentEntry)
+                val vm: OrderEditorViewModel = hiltViewModel(parentEntry)
 
                 OrderEditorScreen(
                     navController = navController,

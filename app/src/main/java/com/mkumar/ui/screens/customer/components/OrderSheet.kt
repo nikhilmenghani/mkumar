@@ -24,20 +24,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mkumar.model.NewOrderIntent
+import com.mkumar.model.OrderEditorIntent
+import com.mkumar.model.OrderEditorUi
 import com.mkumar.ui.components.cards.OrderAccordionItem
 import com.mkumar.ui.components.cards.OrderHeaderCardPro
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.theme.AppColors
-import com.mkumar.viewmodel.CustomerDetailsIntent
-import com.mkumar.viewmodel.CustomerDetailsUiState
-import com.mkumar.viewmodel.CustomerDetailsViewModel
-import com.mkumar.viewmodel.NewOrderIntent
+import com.mkumar.viewmodel.OrderEditorViewModel
 import java.time.LocalDate
 
 @Composable
 fun OrderSheet(
-    state: CustomerDetailsUiState,
-    viewModel: CustomerDetailsViewModel,
+    state: OrderEditorUi,
+    viewModel: OrderEditorViewModel,
     modifier: Modifier = Modifier
 ) {
     val today = remember { LocalDate.now().toString() }
@@ -65,7 +65,7 @@ fun OrderSheet(
             displayedDate = today,
             isDateReadOnly = false,
             onPickDateTime = { picked ->
-                viewModel.onIntent(CustomerDetailsIntent.UpdateOccurredAt(picked))
+                viewModel.onIntent(OrderEditorIntent.UpdateOccurredAt(picked))
             }
         )
 

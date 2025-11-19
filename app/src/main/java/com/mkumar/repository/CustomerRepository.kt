@@ -7,6 +7,7 @@ import com.mkumar.repository.impl.UiCustomerMini
 import kotlinx.coroutines.flow.Flow
 
 interface CustomerRepository {
+
     suspend fun upsert(customer: CustomerEntity)
     suspend fun deleteById(customerId: String)
     fun observeAll(): Flow<List<CustomerEntity>>
@@ -14,5 +15,17 @@ interface CustomerRepository {
     fun observeWithOrders(customerId: String): Flow<CustomerWithOrders?>
     suspend fun getWithOrders(customerId: String): CustomerWithOrders?
     suspend fun reindexCustomerForSearch(customer: CustomerEntity)
-    suspend fun searchCustomers(q: String, mode: SearchMode, limit: Int = 50): List<UiCustomerMini>
+    suspend fun searchCustomers(
+        q: String,
+        mode: SearchMode,
+        limit: Int = 50
+    ): List<UiCustomerMini>
+    // --- NEW ---
+    suspend fun searchCustomersByInvoice(invoice: String): List<UiCustomerMini>
+    suspend fun searchCustomersWithPendingBalance(): List<UiCustomerMini>
+    suspend fun searchCustomersAdvanced(
+        nameOrPhone: String?,
+        invoice: String?,
+        remainingOnly: Boolean
+    ): List<UiCustomerMini>
 }

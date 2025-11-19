@@ -44,21 +44,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.mkumar.model.OrderEditorEffect
+import com.mkumar.model.OrderEditorIntent
+import com.mkumar.model.ProductType
 import com.mkumar.ui.components.accordions.OrderSummaryAccordion
 import com.mkumar.ui.components.bottomsheets.ProductPickerSheet
 import com.mkumar.ui.components.fabs.AddProductSpeedMenuButton
 import com.mkumar.ui.screens.customer.components.OrderSheet
-import com.mkumar.viewmodel.CustomerDetailsEffect
-import com.mkumar.viewmodel.CustomerDetailsIntent
-import com.mkumar.viewmodel.CustomerDetailsViewModel
-import com.mkumar.viewmodel.ProductType
+import com.mkumar.viewmodel.OrderEditorViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderEditorScreen(
     navController: NavHostController,
-    viewModel: CustomerDetailsViewModel, // or a dedicated OrderEditorViewModel
+    viewModel: OrderEditorViewModel,
     customerId: String,
     editingOrderId: String
 ) {
@@ -71,30 +71,20 @@ fun OrderEditorScreen(
 
     // Kick off draft load/create once on enter
     LaunchedEffect(customerId, editingOrderId) {
-        viewModel.onIntent(
-            if (editingOrderId.isBlank())
-                CustomerDetailsIntent.NewSale
-            else
-//                CustomerDetailsIntent.NewSale
-                CustomerDetailsIntent.OpenOrder(editingOrderId)
-        )
+        viewModel.load(customerId, editingOrderId)
     }
 
-    // Handle toasts/messages you already emit
     LaunchedEffect(Unit) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
-                is CustomerDetailsEffect.ShowMessage ->
-                    snackbarHostState.showSnackbar(effect.message)
-                // If you previously used CloseOrderSheet after save, now signal result + pop:
-                CustomerDetailsEffect.CloseOrderSheet -> {
-                    // Pass result back to previous screen
-                    navController.previousBackStackEntry
-                        ?.savedStateHandle?.set("orderSaved", ui.draft.editingOrderId)
+                OrderEditorEffect.CloseEditor -> {
+//                    navController.previousBackStackEntry
+//                        ?.savedStateHandle?.set("orderSaved", ui.draft.orderId)
                     navController.popBackStack()
                 }
-                // Invoice effects can also be handled here if you want them accessible from editor
-                else -> Unit
+
+                is OrderEditorEffect.ShowMessage ->
+                    snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
@@ -104,7 +94,7 @@ fun OrderEditorScreen(
         onDismiss = { showProductPicker = false },
         allTypes = ProductType.entries.toList(),
         onAddClick = { type ->
-            viewModel.onIntent(CustomerDetailsIntent.AddItem(type))
+            viewModel.onIntent(OrderEditorIntent.AddItem(type))
             showProductPicker = false
         }
     )
@@ -148,14 +138,14 @@ fun OrderEditorScreen(
                             commonTypes = ProductType.entries.toList(),
                             lastUsed = null,
                             onAddClick = { type ->
-                                viewModel.onIntent(CustomerDetailsIntent.AddItem(type))
+                                viewModel.onIntent(OrderEditorIntent.AddItem(type))
                             },
                             onOpenPicker = { showProductPicker = true }
                         )
                         if (ui.draft.items.isNotEmpty()) {
                             Spacer(modifier = Modifier.width(12.dp))
                             FloatingActionButton(
-                                onClick = { viewModel.onIntent(CustomerDetailsIntent.SaveDraftAsOrder) },
+                                onClick = { viewModel.onIntent(OrderEditorIntent.SaveOrder) },
                                 containerColor = MaterialTheme.colorScheme.surface,
                                 contentColor = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(56.dp)
@@ -211,11 +201,11 @@ fun OrderEditorScreen(
                             totalAmount = ui.draft.totalAmount,
                             adjustedAmount = ui.draft.adjustedAmount,
                             onAdjustedAmountChange = {
-                                viewModel.onIntent(CustomerDetailsIntent.UpdateAdjustedAmount(it))
+                                viewModel.onIntent(OrderEditorIntent.UpdateAdjustedAmount(it))
                             },
                             advanceTotal = ui.draft.advanceTotal,
                             onAdvanceTotalChange = {
-                                viewModel.onIntent(CustomerDetailsIntent.UpdateAdvanceTotal(it))
+                                viewModel.onIntent(OrderEditorIntent.UpdateAdvanceTotal(it))
                             },
                             remainingBalance = ui.draft.remainingBalance,
                             initiallyExpanded = false
@@ -225,15 +215,4 @@ fun OrderEditorScreen(
             }
         }
     }
-
-    // Same product picker you had before, now owned by this screen
-    ProductPickerSheet(
-        isOpen = showProductPicker,
-        onDismiss = { showProductPicker = false },
-        allTypes = com.mkumar.viewmodel.ProductType.entries.toList(),
-        onAddClick = { type ->
-            viewModel.onIntent(CustomerDetailsIntent.AddItem(type))
-            showProductPicker = false
-        }
-    )
 }

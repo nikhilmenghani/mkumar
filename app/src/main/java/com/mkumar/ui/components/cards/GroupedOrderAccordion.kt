@@ -15,10 +15,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductFormData
+import com.mkumar.model.ProductType
+import com.mkumar.model.UiOrderItem
 import com.mkumar.ui.components.forms.defaultFormFor
 import com.mkumar.ui.theme.AppColors
-import com.mkumar.viewmodel.ProductType
-import com.mkumar.viewmodel.UiOrderItem
 
 @Composable
 fun GroupedOrderAccordion(

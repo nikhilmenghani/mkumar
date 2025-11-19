@@ -18,9 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.validation.ValidationResult
+import com.mkumar.model.ProductType
+import com.mkumar.model.UiOrderItem
 import com.mkumar.ui.components.buttons.ProductActionButtons
-import com.mkumar.viewmodel.ProductType
-import com.mkumar.viewmodel.UiOrderItem
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable

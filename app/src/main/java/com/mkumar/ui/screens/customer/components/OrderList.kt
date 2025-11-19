@@ -8,8 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.toLong
-import com.mkumar.viewmodel.OrderRowAction
-import com.mkumar.viewmodel.OrderRowUi
+import com.mkumar.model.OrderRowAction
+import com.mkumar.model.OrderRowUi
 import java.time.Instant
 
 @Composable

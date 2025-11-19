@@ -5,15 +5,9 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.mkumar.model.OrderStatus
 import java.util.UUID
 
-/**
- * Orders table — one row per order for a customer.
- * NOTE: No tax per your requirement.
- *  - subtotal: sum(items.subtotal)
- *  - discountAmount: absolute discount applied to subtotal (in minor units)
- *  - grandTotal = subtotal - discountAmount
- */
 @Entity(
     tableName = "orders",
     foreignKeys = [
@@ -27,29 +21,54 @@ import java.util.UUID
     ],
     indices = [
         Index(value = ["customerId"]),
-        Index(value = ["occurredAt"])
+        Index(value = ["occurredAt"]),
+        Index(value = ["remainingBalance"]),
+        Index(value = ["invoiceSeq"]),
+        Index(value = ["orderStatus"]),
+        Index(value = ["customerId", "orderStatus"]),
+        Index(value = ["customerId", "remainingBalance"]),
+        Index(value = ["productCategories"]),
+        Index(value = ["owners"])
     ]
 )
 data class OrderEntity(
     @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
 
-    @ColumnInfo
     val customerId: String,
 
-    /** When the order occurred (epoch millis) */
     val occurredAt: Long = System.currentTimeMillis(),
+    val createdAt: Long = System.currentTimeMillis(),
 
-    /** For recalculating summary values */
+    /** Single numeric invoice identity */
+    @ColumnInfo(name = "invoiceSeq")
+    val invoiceSeq: Long? = null,
+
+    /** Pricing data */
     val adjustedAmount: Int = 0,
     val totalAmount: Int = 0,
     val remainingBalance: Int = 0,
     val advanceTotal: Int = 0,
 
-    /** Invoice sequence number, if any */
-    @ColumnInfo(name = "invoice_seq")
-    val invoiceSeq: Long? = null,
+    /**
+     * For searching/filtering:
+     * - “orders containing frame”
+     * - “orders containing lens”
+     */
+    val productCategories: List<String> = emptyList(),
 
-    /** Updated time — always overwrite when updating */
-    val updatedAt: Long = System.currentTimeMillis()
+    /**
+     * For searching by owner:
+     * - “owner A's orders”
+     */
+    val owners: List<String> = emptyList(),
+
+    val updatedAt: Long = System.currentTimeMillis(),
+
+    /** String-stored enum: DRAFT / ACTIVE / COMPLETED */
+    val orderStatus: String = OrderStatus.DRAFT.value,
+
+    // Future fields
+    val deliveryDate: Long? = System.currentTimeMillis(),
+    val warrantyMonths: Int? = 12
 )

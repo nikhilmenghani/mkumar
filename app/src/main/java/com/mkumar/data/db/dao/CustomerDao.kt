@@ -11,9 +11,6 @@ import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.repository.impl.UiCustomerMini
 import kotlinx.coroutines.flow.Flow
 
-
-interface UiCustomerMiniDto { val id: String; val name: String; val phone: String? }
-
 @Dao
 interface CustomerDao {
 
@@ -59,5 +56,26 @@ LIMIT :limit
 """
     )
     suspend fun containsCustomerIds(q: String, digits: String, limit: Int): List<String>
+
+    @Query("""
+SELECT c.id FROM customers c
+JOIN orders o ON o.customerId = c.id
+WHERE o.invoiceSeq LIKE '%' || :invoice || '%'
+""")
+    suspend fun findCustomerIdsByInvoice(invoice: String): List<String>
+
+    @Query("""
+SELECT DISTINCT c.id FROM customers c
+JOIN orders o ON o.customerId = c.id
+WHERE o.remainingBalance > 0
+""")
+    suspend fun findCustomerIdsWithPendingBalance(): List<String>
+
+    @Query("""
+SELECT DISTINCT c.id FROM customers c
+JOIN orders o ON o.customerId = c.id
+WHERE (:remainingOnly == 0 OR o.remainingBalance > 0)
+""")
+    suspend fun filterCustomers(remainingOnly: Int = 0): List<String>
 
 }
