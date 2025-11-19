@@ -239,7 +239,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     vm.selectCustomer(customer.id)
                     navController.navigate(Routes.customerDetail(customer.id))
                 },
-                onUpdateCustomer = { id, n, p -> vm.updateCustomer(id, n, p) },
                 onDelete = { customer -> deleteTarget = customer }, // changed
                 onEdit = { customer ->
                     sheetMode = CustomerSheetMode.Edit
@@ -360,7 +359,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
 fun CustomerList(
     customers: List<CustomerFormState>,
     onClick: (CustomerFormState) -> Unit = {},
-    onUpdateCustomer: (id: String, name: String, phone: String) -> Unit = { _, _, _ -> },
     onDelete: (CustomerFormState) -> Unit = {},
     onEdit: (CustomerFormState) -> Unit = {},
     extraBottomPadding: Dp = 0.dp
@@ -417,7 +415,6 @@ fun HomeScreenPreview() {
                         CustomerFormState(id = "3", name = "Bob Wilson", phone = "7654321098")
                     ),
                     onClick = {},
-                    onUpdateCustomer = { _, _, _ -> },
                     onDelete = {},
                     onEdit = {},
                     extraBottomPadding = 0.dp

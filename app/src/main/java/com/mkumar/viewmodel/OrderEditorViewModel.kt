@@ -382,8 +382,6 @@ class OrderEditorViewModel @Inject constructor(
             orderRepo.upsert(entity)
             for (item in newEntities) productRepo.upsert(item)
 
-            orderRepo.reindexOrder(draft.orderId)
-
             _effects.emit(OrderEditorEffect.CloseEditor)
         }
     }
