@@ -52,7 +52,7 @@ object InvoicePrefs {
     )
     var invoicePrefix by dataStoreMutableState(
         keyName = "invoicePrefix",
-        defaultValue = "INV- M Kumar -",
+        defaultValue = "MKumar-",
         getPreferencesKey = { stringPreferencesKey(it) }
     )
     var invoiceDateFormat by dataStoreMutableState(
