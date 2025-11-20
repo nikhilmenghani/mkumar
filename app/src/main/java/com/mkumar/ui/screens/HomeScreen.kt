@@ -266,6 +266,14 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                         onCustomerClick = { customer ->
                             vm.selectCustomer(customer.id)
                             navController.navigate(Routes.customerDetail(customer.id))
+                        },
+                        onDelete = { customer -> deleteTarget = customer },
+                        onEdit = { customer ->
+                            sheetMode = CustomerSheetMode.Edit
+                            editingCustomerId = customer.id
+                            name = customer.name
+                            phone = customer.phone
+                            showCustomerSheet = true
                         }
                     )
                 }
@@ -275,6 +283,14 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                         onCustomerClick = { customer ->
                             vm.selectCustomer(customer.id)
                             navController.navigate(Routes.customerDetail(customer.id))
+                        },
+                        onDelete = { customer -> deleteTarget = customer },
+                        onEdit = { customer ->
+                            sheetMode = CustomerSheetMode.Edit
+                            editingCustomerId = customer.id
+                            name = customer.name
+                            phone = customer.phone
+                            showCustomerSheet = true
                         }
                     )
                 }
