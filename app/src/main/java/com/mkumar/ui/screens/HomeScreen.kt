@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
@@ -105,7 +108,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     val density = LocalDensity.current
     var fabBlockHeight by remember { mutableStateOf(0.dp) }
 
-    // Auto-focus when search panel opens
+    // Auto-focus on open
     LaunchedEffect(isSearchPanelOpen) {
         if (isSearchPanelOpen) {
             focusRequester.requestFocus()
@@ -147,7 +150,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
             )
         },
 
-        // DO NOT adjust main UI for keyboard (AppsTab also does this)
         contentWindowInsets = WindowInsets(0.dp),
 
         floatingActionButton = {
@@ -158,16 +160,12 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                         fabBlockHeight = with(density) { coords.size.height.toDp() }
                     }
                 ) {
-                    // Add customer
                     StandardFab(
                         text = "",
                         icon = { Icon(Icons.Default.Add, null, modifier = Modifier.size(24.dp)) },
-                        onClick = {
-                            // your add logic unchanged...
-                        }
+                        onClick = { }
                     )
 
-                    // Search FAB — opens panel
                     StandardFab(
                         text = "",
                         icon = { Icon(Icons.Default.PersonSearch, null, modifier = Modifier.size(24.dp)) },
@@ -178,15 +176,12 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                         }
                     )
 
-                    // Update FAB
                     if (!isLatestVersion) {
                         StandardFab(
                             text = "",
                             icon = { Icon(Icons.Default.Refresh, "Update", modifier = Modifier.size(24.dp)) },
                             loading = isDownloading,
-                            onClick = {
-                                // update worker logic unchanged...
-                            }
+                            onClick = { }
                         )
                     }
                 }
@@ -210,7 +205,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     onDelete = { customer -> deleteTarget = customer },
                     onEdit = { customer ->
                         vm.selectCustomer(customer.id)
-                        // Your edit logic...
                     },
                     extraBottomPadding = fabBlockHeight + 16.dp
                 )
@@ -234,8 +228,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
         )
     }
 
-    // ⭐ SUPER IMPORTANT ⭐
-    // This is your AppsTab-style bottom anchored search input.
+    // ⭐ UPDATED SEARCH PANEL ⭐
     if (isSearchPanelOpen) {
         Dialog(
             onDismissRequest = {
@@ -246,14 +239,17 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.ime),
                 contentAlignment = Alignment.BottomCenter
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 24.dp) // fixed gap above keyboard
+                        .navigationBarsPadding()
+                        .padding(bottom = 16.dp)  // Aesthetics only
                 ) {
+
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -291,7 +287,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                                             } else {
                                                 searchQuery = ""
                                                 isSearching = false
-//                                                vm.search("")
                                             }
                                         }
                                     ) {
@@ -307,7 +302,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                             keyboardActions = KeyboardActions(
                                 onSearch = {
                                     isSearching = true
-//                                    vm.search(searchQuery)
                                 }
                             ),
 
@@ -325,7 +319,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
         }
     }
 }
-
 
 @Composable
 fun CustomerList(
