@@ -14,12 +14,18 @@ class PreferencesManager {
     val displayPrefs = DisplayPrefs
     val githubPrefs = GithubPrefs
     val invoicePrefs = InvoicePrefs
+    val dashboardPrefs = DashboardPrefs
 }
 
 enum class ThemePreference {
     LIGHT,
     DARK,
     SYSTEM
+}
+
+enum class DashboardAlignment {
+    HORIZONTAL,
+    VERTICAL
 }
 
 object DisplayPrefs {
@@ -58,6 +64,34 @@ object InvoicePrefs {
     var invoiceDateFormat by dataStoreMutableState(
         keyName = "invoiceDateFormat",
         defaultValue = DateFormat.DEFAULT_DATE_ONLY.ordinal,
+        getPreferencesKey = { intPreferencesKey(it) }
+    )
+}
+
+object DashboardPrefs {
+    var showCustomerCount by dataStoreMutableState(
+        keyName = "showCustomerCount",
+        defaultValue = true,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+    var showTotalSales by dataStoreMutableState(
+        keyName = "showTotalSales",
+        defaultValue = true,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+    var showTotalPayments by dataStoreMutableState(
+        keyName = "showTotalPayments",
+        defaultValue = true,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+    var showTotalOutstanding by dataStoreMutableState(
+        keyName = "showTotalOutstanding",
+        defaultValue = true,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+    var dashboardAlignment by dataStoreMutableState(
+        keyName = "dashboardAlignment",
+        defaultValue = DashboardAlignment.VERTICAL.ordinal,
         getPreferencesKey = { intPreferencesKey(it) }
     )
 }

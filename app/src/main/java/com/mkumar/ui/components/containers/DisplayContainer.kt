@@ -6,12 +6,14 @@ import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.Nightlight
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.ViewColumn
 import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.mkumar.App.Companion.globalClass
 import com.mkumar.R
 import com.mkumar.common.extension.DateFormat
+import com.mkumar.data.DashboardAlignment
 import com.mkumar.data.ThemePreference
 import com.mkumar.data.emptyString
 import com.mkumar.ui.components.items.PreferenceItem
@@ -24,6 +26,7 @@ fun DisplayContainer() {
     val preferences = globalClass.preferencesManager.displayPrefs
     val githubPreference = globalClass.preferencesManager.githubPrefs
     val invoicePreference = globalClass.preferencesManager.invoicePrefs
+    val dashboardPreference = globalClass.preferencesManager.dashboardPrefs
 
     Container(title = stringResource(R.string.display)) {
         PreferenceItem(
@@ -118,6 +121,27 @@ fun DisplayContainer() {
                     choices = DateFormat.entries.map { it.pattern },
                     selectedChoice = invoicePreference.invoiceDateFormat,
                     onSelect = { invoicePreference.invoiceDateFormat = it }
+                )
+            }
+        )
+    }
+
+    Container(title = "Dashboard") {
+        PreferenceItem(
+            label = "Dashboard Items Alignment",
+            supportingText = when (dashboardPreference.dashboardAlignment) {
+                DashboardAlignment.VERTICAL.ordinal -> "Vertical"
+                DashboardAlignment.HORIZONTAL.ordinal -> "Horizontal"
+                else -> "Vertical"
+            },
+            icon = Icons.Rounded.ViewColumn,
+            onClick = {
+                dialog.show(
+                    title = "Dashboard Items Alignment",
+                    description = "Select dashboard items alignment",
+                    choices = DashboardAlignment.entries.map { it.toString() },
+                    selectedChoice = dashboardPreference.dashboardAlignment,
+                    onSelect = { dashboardPreference.dashboardAlignment = it }
                 )
             }
         )

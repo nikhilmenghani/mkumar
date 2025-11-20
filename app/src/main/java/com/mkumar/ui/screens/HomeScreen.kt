@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -57,6 +58,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.mkumar.App.Companion.globalClass
 import com.mkumar.MainActivity
 import com.mkumar.common.constant.AppConstants.getAppDownloadUrl
 import com.mkumar.common.constant.AppConstants.getExternalStorageDir
@@ -64,6 +66,7 @@ import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.data.CustomerFormState
+import com.mkumar.data.DashboardAlignment
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.cards.CustomerInfoCard
@@ -232,30 +235,55 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
 
             // RECENT ORDERS SECTION (fixed height + scroll)
             DashboardSection(title = "Recent Orders") {
-                RecentOrdersList(
-                    orders = vm.recentOrders.collectAsStateWithLifecycle().value,
-                    onOrderClick = { orderId, customerId ->
-                        vm.selectCustomer(customerId)
-                        navController.navigate(Routes.orderEditor(customerId, orderId))
-                    }
-                )
+                if (globalClass.preferencesManager.dashboardPrefs.dashboardAlignment == DashboardAlignment.HORIZONTAL.ordinal){
+                    RecentOrdersHorizontalList(
+                        orders = vm.recentOrders.collectAsStateWithLifecycle().value,
+                        onOrderClick = { orderId, customerId ->
+                            vm.selectCustomer(customerId)
+                            navController.navigate(Routes.orderEditor(customerId, orderId))
+                        }
+                    )
+                }
+                else {
+                    RecentOrdersList(
+                        orders = vm.recentOrders.collectAsStateWithLifecycle().value,
+                        onOrderClick = { orderId, customerId ->
+                            vm.selectCustomer(customerId)
+                            navController.navigate(Routes.orderEditor(customerId, orderId))
+                        }
+                    )
+                }
             }
 
+            Spacer(Modifier.height(20.dp))
+
             DashboardSection(title = "Recent Customers") {
-                RecentCustomersList(
-                    customers = vm.recentCustomers.collectAsStateWithLifecycle().value,
-                    onCustomerClick = { customer ->
-                        vm.selectCustomer(customer.id)
-                        navController.navigate(Routes.customerDetail(customer.id))
-                    }
-                )
+                if (globalClass.preferencesManager.dashboardPrefs.dashboardAlignment == DashboardAlignment.HORIZONTAL.ordinal){
+                    RecentCustomersHorizontalList(
+                        customers = vm.recentCustomers.collectAsStateWithLifecycle().value,
+                        onCustomerClick = { customer ->
+                            vm.selectCustomer(customer.id)
+                            navController.navigate(Routes.customerDetail(customer.id))
+                        }
+                    )
+                }
+                else {
+                    RecentCustomersList(
+                        customers = vm.recentCustomers.collectAsStateWithLifecycle().value,
+                        onCustomerClick = { customer ->
+                            vm.selectCustomer(customer.id)
+                            navController.navigate(Routes.customerDetail(customer.id))
+                        }
+                    )
+                }
             }
+
 
             // FUTURE WIDGETS GO HERE
             // DashboardSection("Sales Summary") { SalesSummaryWidget() }
             // DashboardSection("Pending Payments") { PendingPaymentsWidget() }
 
-            Spacer(modifier = Modifier.size(20.dp))
+//            Spacer(modifier = Modifier.size(20.dp))
         }
     }
 
