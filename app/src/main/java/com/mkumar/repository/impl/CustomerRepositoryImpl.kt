@@ -5,13 +5,17 @@ import com.mkumar.common.search.buildFtsTrigramMatch
 import com.mkumar.common.search.digitsOnly
 import com.mkumar.common.search.foldName
 import com.mkumar.common.search.ngrams
+import com.mkumar.data.CustomerFormState
 import com.mkumar.data.db.dao.CustomerDao
+import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.SearchDao
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.repository.CustomerRepository
+import com.mkumar.viewmodel.toUiModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,6 +23,7 @@ import javax.inject.Singleton
 @Singleton
 class CustomerRepositoryImpl @Inject constructor(
     private val customerDao: CustomerDao,
+    private val orderDao: OrderDao,
     private val searchDao: SearchDao
 ) : CustomerRepository {
 
@@ -42,6 +47,14 @@ class CustomerRepositoryImpl @Inject constructor(
 
     override suspend fun getWithOrders(customerId: String): CustomerWithOrders? =
         customerDao.getWithOrders(customerId)
+
+    override fun getRecentCustomers(limit: Int): Flow<List<CustomerFormState>> =
+        customerDao.getRecentCustomers(limit).map { list ->
+            list.map { it.toUiModel() }   // same mapper used everywhere else
+        }
+
+    override fun getRecentOrders(limit: Int) =
+        orderDao.getRecentOrdersWithCustomer(limit)
 
     override suspend fun reindexCustomerForSearch(customer: CustomerEntity) =
         withContext(Dispatchers.IO) {

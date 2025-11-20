@@ -31,6 +31,13 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
 
     private val _formState = MutableStateFlow(CustomerFormState())
 
+    val recentCustomers = repository.getRecentCustomers(limit = 10)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+
+    val recentOrders = repository.getRecentOrders(limit = 10)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+
+
     val editingBuffer: MutableMap<String, MutableMap<String, ProductFormData?>> = mutableMapOf()
     private val _openForms = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
     val openForms: StateFlow<Map<String, Set<String>>> = _openForms

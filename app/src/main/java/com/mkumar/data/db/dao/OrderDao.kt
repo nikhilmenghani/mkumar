@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import com.mkumar.data.db.entities.OrderEntity
+import com.mkumar.model.OrderWithCustomerInfo
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 
@@ -31,6 +32,16 @@ interface OrderDao {
     // --- Reads ---
     @Query("SELECT * FROM orders WHERE id = :orderId LIMIT 1")
     suspend fun getById(orderId: String): OrderEntity?
+
+    @Query("""
+    SELECT o.id, o.invoiceSeq AS invoiceNumber, o.occurredAt, o.totalAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
+    FROM orders o
+    JOIN customers c ON c.id = o.customerId
+    ORDER BY o.occurredAt DESC
+    LIMIT :limit
+""")
+    fun getRecentOrdersWithCustomer(limit: Int): Flow<List<OrderWithCustomerInfo>>
+
 
     @Query("""
         SELECT * FROM orders 

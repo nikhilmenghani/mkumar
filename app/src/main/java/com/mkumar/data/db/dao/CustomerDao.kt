@@ -28,6 +28,10 @@ interface CustomerDao {
     @Query("SELECT * FROM customers ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<CustomerEntity>>
 
+    @Query("SELECT * FROM customers ORDER BY createdAt DESC LIMIT :limit")
+    fun getRecentCustomers(limit: Int): Flow<List<CustomerEntity>>
+
+
     @Query("SELECT * FROM customers ORDER BY updatedAt DESC")
     suspend fun getAll(): List<CustomerEntity>
 

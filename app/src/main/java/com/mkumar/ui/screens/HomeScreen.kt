@@ -220,23 +220,40 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
             }
         }
     ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues)) {
-            CustomerList(
-                customers = customers,
-                onClick = { customer ->
-                    vm.selectCustomer(customer.id)
-                    navController.navigate(Routes.customerDetail(customer.id))
-                },
-                onDelete = { customer -> deleteTarget = customer }, // changed
-                onEdit = { customer ->
-                    sheetMode = CustomerSheetMode.Edit
-                    editingCustomerId = customer.id
-                    name = customer.name
-                    phone = customer.phone
-                    showCustomerSheet = true
-                },
-                extraBottomPadding = fabBlockHeight + 16.dp
-            )
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                DashboardSection(title = "Recent Orders") {
+                    DashboardRecentOrdersSection(
+                        orders = vm.recentOrders.collectAsStateWithLifecycle().value,
+                        onOrderClick = { orderId, customerId ->
+                            vm.selectCustomer(customerId)
+                            navController.navigate(Routes.orderEditor(customerId, orderId))
+                        }
+                    )
+                }
+            }
+
+            item {
+                DashboardSection(title = "Recent Customers") {
+                    DashboardRecentCustomersSection(
+                        customers = vm.recentCustomers.collectAsStateWithLifecycle().value,
+                        onCustomerClick = { customer ->
+                            vm.selectCustomer(customer.id)
+                            navController.navigate(Routes.customerDetail(customer.id))
+                        }
+                    )
+                }
+            }
+
+            // Future widgets:
+            // item { DashboardSection("Sales Summary") { ... } }
+            // item { DashboardSection("Pending Payments") { ... } }
         }
     }
 
@@ -304,6 +321,23 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
         )
     }
 }
+
+@Composable
+fun DashboardSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        content()
+    }
+}
+
 
 @Composable
 fun CustomerList(
