@@ -47,7 +47,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -331,20 +330,18 @@ fun DashboardSection(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    Column(modifier = modifier.padding(vertical = 12.dp)) {
+    Column(modifier = modifier.padding(vertical = 8.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 1.2.sp
+            style = MaterialTheme.typography.titleSmall.copy(
+                color = MaterialTheme.colorScheme.primary
             ),
-            modifier = Modifier
-                .padding(bottom = 4.dp)
+            modifier = Modifier.padding(bottom = 2.dp)
         )
         Divider(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-            thickness = 2.dp,
-            modifier = Modifier.padding(bottom = 8.dp)
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+            thickness = 1.dp,
+            modifier = Modifier.padding(bottom = 6.dp)
         )
         content()
     }
