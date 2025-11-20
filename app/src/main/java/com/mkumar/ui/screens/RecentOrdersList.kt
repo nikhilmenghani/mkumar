@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.mkumar.model.OrderWithCustomerInfo
 
@@ -29,10 +29,13 @@ fun RecentOrdersList(
     orders: List<OrderWithCustomerInfo>,
     onOrderClick: (orderId: String, customerId: String) -> Unit
 ) {
+    val config = LocalConfiguration.current
+    val screenHeight = config.screenHeightDp.dp
+    val ordersSectionHeight = screenHeight * 0.35f
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.4f)
+            .height(ordersSectionHeight)
             .clip(MaterialTheme.shapes.medium)
     ) {
         LazyColumn(
@@ -62,19 +65,17 @@ fun RecentOrderCard(
             .fillMaxWidth()
             .clickable { onClick() }
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(Modifier.padding(16.dp)) {
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(Modifier.weight(1f)) {
+                    Text(order.customerName, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = order.customerName,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = order.customerPhone,
+                        order.customerPhone,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -103,5 +104,4 @@ fun RecentOrderCard(
         }
     }
 }
-
 

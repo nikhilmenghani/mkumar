@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,11 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -220,40 +225,38 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Column(
+            modifier = Modifier.padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp)
         ) {
-            item {
-                DashboardSection(title = "Recent Orders") {
-                    DashboardRecentOrdersSection(
-                        orders = vm.recentOrders.collectAsStateWithLifecycle().value,
-                        onOrderClick = { orderId, customerId ->
-                            vm.selectCustomer(customerId)
-                            navController.navigate(Routes.orderEditor(customerId, orderId))
-                        }
-                    )
-                }
+
+            // RECENT ORDERS SECTION (fixed height + scroll)
+            DashboardSection(title = "Recent Orders") {
+                RecentOrdersList(
+                    orders = vm.recentOrders.collectAsStateWithLifecycle().value,
+                    onOrderClick = { orderId, customerId ->
+                        vm.selectCustomer(customerId)
+                        navController.navigate(Routes.orderEditor(customerId, orderId))
+                    }
+                )
             }
 
-            item {
-                DashboardSection(title = "Recent Customers") {
-                    DashboardRecentCustomersSection(
-                        customers = vm.recentCustomers.collectAsStateWithLifecycle().value,
-                        onCustomerClick = { customer ->
-                            vm.selectCustomer(customer.id)
-                            navController.navigate(Routes.customerDetail(customer.id))
-                        }
-                    )
-                }
+            DashboardSection(title = "Recent Customers") {
+                RecentCustomersList(
+                    customers = vm.recentCustomers.collectAsStateWithLifecycle().value,
+                    onCustomerClick = { customer ->
+                        vm.selectCustomer(customer.id)
+                        navController.navigate(Routes.customerDetail(customer.id))
+                    }
+                )
             }
 
-            // Future widgets:
-            // item { DashboardSection("Sales Summary") { ... } }
-            // item { DashboardSection("Pending Payments") { ... } }
+            // FUTURE WIDGETS GO HERE
+            // DashboardSection("Sales Summary") { SalesSummaryWidget() }
+            // DashboardSection("Pending Payments") { PendingPaymentsWidget() }
+
+            Spacer(modifier = Modifier.size(20.dp))
         }
     }
 
@@ -328,10 +331,19 @@ fun DashboardSection(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(vertical = 12.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 1.2.sp
+            ),
+            modifier = Modifier
+                .padding(bottom = 4.dp)
+        )
+        Divider(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+            thickness = 2.dp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         content()

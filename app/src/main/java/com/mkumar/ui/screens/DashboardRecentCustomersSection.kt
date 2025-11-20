@@ -18,24 +18,23 @@ fun DashboardRecentCustomersSection(
     customers: List<CustomerFormState>,
     onCustomerClick: (CustomerFormState) -> Unit
 ) {
-    if (customers.isEmpty()) {
-        Text(
-            text = "No recent customers",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        return
-    }
+    if (customers.isEmpty()) return
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Text(
+        text = "Recent Customers",
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         customers.forEach { customer ->
-            RecentCustomerCard(customer = customer) {
-                onCustomerClick(customer)
-            }
+            DashboardCustomerCard(
+                customer = customer,
+                onClick = { onCustomerClick(customer) }
+            )
         }
     }
 }
-
 
 
 @Composable

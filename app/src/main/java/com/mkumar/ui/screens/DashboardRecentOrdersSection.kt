@@ -21,20 +21,20 @@ fun DashboardRecentOrdersSection(
     orders: List<OrderWithCustomerInfo>,
     onOrderClick: (orderId: String, customerId: String) -> Unit
 ) {
-    if (orders.isEmpty()) {
-        Text(
-            text = "No recent orders",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        return
-    }
+    if (orders.isEmpty()) return
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Text(
+        text = "Recent Orders",
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         orders.forEach { order ->
-            RecentOrderCard(order = order) {
-                onOrderClick(order.id, order.customerId)
-            }
+            DashboardOrderCard(
+                order = order,
+                onClick = { onOrderClick(order.id, order.customerId) }
+            )
         }
     }
 }
