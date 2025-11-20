@@ -34,7 +34,7 @@ interface OrderDao {
     suspend fun getById(orderId: String): OrderEntity?
 
     @Query("""
-    SELECT o.id, o.invoiceSeq AS invoiceNumber, o.occurredAt, o.totalAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
+    SELECT o.id, o.invoiceSeq AS invoiceNumber, o.createdAt, o.totalAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
     FROM orders o
     JOIN customers c ON c.id = o.customerId
     ORDER BY o.occurredAt DESC

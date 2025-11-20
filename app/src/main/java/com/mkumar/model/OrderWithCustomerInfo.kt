@@ -3,7 +3,7 @@ package com.mkumar.model
 data class OrderWithCustomerInfo(
     val id: String,
     val invoiceNumber: String,
-    val occurredAt: Long,
+    val createdAt: Long,
     val totalAmount: Int,
     val remainingBalance: Int,
     val customerId: String,

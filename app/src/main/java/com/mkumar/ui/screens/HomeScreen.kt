@@ -7,17 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PersonSearch
@@ -58,7 +54,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.mkumar.App.Companion.globalClass
 import com.mkumar.MainActivity
 import com.mkumar.common.constant.AppConstants.getAppDownloadUrl
 import com.mkumar.common.constant.AppConstants.getExternalStorageDir
@@ -66,7 +61,6 @@ import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.data.CustomerFormState
-import com.mkumar.data.DashboardAlignment
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.cards.CustomerInfoCard
@@ -229,79 +223,17 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     ) { paddingValues ->
         Column(
             modifier = Modifier.padding(paddingValues)
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 12.dp)
         ) {
 
-            // RECENT ORDERS SECTION (fixed height + scroll)
             DashboardSection(title = "Recent Orders") {
-                if (globalClass.preferencesManager.dashboardPrefs.dashboardAlignment == DashboardAlignment.HORIZONTAL.ordinal){
-                    RecentOrdersHorizontalList(
-                        orders = vm.recentOrders.collectAsStateWithLifecycle().value,
-                        onOrderClick = { orderId, customerId ->
-                            vm.selectCustomer(customerId)
-                            navController.navigate(Routes.orderEditor(customerId, orderId))
-                        }
-                    )
-                }
-                else {
-                    RecentOrdersList(
-                        orders = vm.recentOrders.collectAsStateWithLifecycle().value,
-                        onOrderClick = { orderId, customerId ->
-                            vm.selectCustomer(customerId)
-                            navController.navigate(Routes.orderEditor(customerId, orderId))
-                        }
-                    )
-                }
-            }
-
-            if (globalClass.preferencesManager.dashboardPrefs.dashboardAlignment == DashboardAlignment.HORIZONTAL.ordinal){
-                Spacer(Modifier.height(20.dp))
-            }
-
-            DashboardSection(title = "Recent Customers") {
-                if (globalClass.preferencesManager.dashboardPrefs.dashboardAlignment == DashboardAlignment.HORIZONTAL.ordinal){
-                    RecentCustomersHorizontalList(
-                        customers = vm.recentCustomers.collectAsStateWithLifecycle().value,
-                        onCustomerClick = { customer ->
-                            vm.selectCustomer(customer.id)
-                            navController.navigate(Routes.customerDetail(customer.id))
-                        },
-                        onDelete = { customer -> deleteTarget = customer },
-                        onEdit = { customer ->
-                            sheetMode = CustomerSheetMode.Edit
-                            editingCustomerId = customer.id
-                            name = customer.name
-                            phone = customer.phone
-                            showCustomerSheet = true
-                        }
-                    )
-                }
-                else {
-                    RecentCustomersList(
-                        customers = vm.recentCustomers.collectAsStateWithLifecycle().value,
-                        onCustomerClick = { customer ->
-                            vm.selectCustomer(customer.id)
-                            navController.navigate(Routes.customerDetail(customer.id))
-                        },
-                        onDelete = { customer -> deleteTarget = customer },
-                        onEdit = { customer ->
-                            sheetMode = CustomerSheetMode.Edit
-                            editingCustomerId = customer.id
-                            name = customer.name
-                            phone = customer.phone
-                            showCustomerSheet = true
-                        }
-                    )
-                }
-            }
-
-
-            // FUTURE WIDGETS GO HERE
-            // DashboardSection("Sales Summary") { SalesSummaryWidget() }
-            // DashboardSection("Pending Payments") { PendingPaymentsWidget() }
-            if (globalClass.preferencesManager.dashboardPrefs.dashboardAlignment == DashboardAlignment.VERTICAL.ordinal){
-                Spacer(modifier = Modifier.size(20.dp))
+                RecentOrdersList(
+                    orders = vm.recentOrders.collectAsStateWithLifecycle().value,
+                    onOrderClick = { orderId, customerId ->
+                        vm.selectCustomer(customerId)
+                        navController.navigate(Routes.orderEditor(customerId, orderId))
+                    }
+                )
             }
         }
     }
