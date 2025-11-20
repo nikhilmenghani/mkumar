@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -112,10 +113,9 @@ fun SearchScreen(
                 isSearching = ui.isSearching,
                 onBackClick = onBack,
                 onQueryChange = vm::updateQuery,
-                onSearchClick = { vm.triggerSearch() },
-                onStopClick = { vm.stopSearch() },
-                focusRequester = focusRequester,
-                onAdvancedToggle = { showAdvancedOptions = !showAdvancedOptions }
+                onStopClick = vm::stopSearch,
+                onAdvancedToggle = { showAdvancedOptions = !showAdvancedOptions },
+                focusRequester = focusRequester
             )
 
             // Advanced Options (Mode Toggle)
@@ -156,19 +156,21 @@ fun SearchScreen(
 // Header
 // -------------------------------------------------------------------------------------
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchHeader(
     query: String,
     isSearching: Boolean,
     onBackClick: () -> Unit,
     onQueryChange: (String) -> Unit,
-    onSearchClick: () -> Unit,
     onStopClick: () -> Unit,
-    focusRequester: FocusRequester,
-    onAdvancedToggle: () -> Unit
+    onAdvancedToggle: () -> Unit,
+    focusRequester: FocusRequester
 ) {
     Column(
-        modifier = Modifier.padding(12.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp)
     ) {
         TextField(
             value = query,
@@ -181,32 +183,44 @@ private fun SearchHeader(
             shape = CircleShape,
             placeholder = {
                 Text(
-                    "Search name or phone…",
+                    text = "Search name or phone…",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             },
             leadingIcon = {
                 IconButton(onClick = onBackClick) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, null)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "Back"
+                    )
                 }
             },
             trailingIcon = {
-                Row {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     when {
                         isSearching -> {
                             IconButton(onClick = onStopClick) {
-                                Icon(Icons.Rounded.Stop, null)
+                                Icon(
+                                    imageVector = Icons.Rounded.Stop,
+                                    contentDescription = "Stop search"
+                                )
                             }
                         }
                         query.isNotEmpty() -> {
                             IconButton(onClick = { onQueryChange("") }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Clear"
+                                )
                             }
                         }
                     }
 
                     IconButton(onClick = onAdvancedToggle) {
-                        Icon(Icons.Rounded.Tune, null)
+                        Icon(
+                            imageVector = Icons.Rounded.Tune,
+                            contentDescription = "Advanced options"
+                        )
                     }
                 }
             },
@@ -214,14 +228,20 @@ private fun SearchHeader(
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
             ),
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Search,
                 capitalization = KeyboardCapitalization.Words
             ),
-            keyboardActions = KeyboardActions(onSearch = { onSearchClick() })
+            keyboardActions = KeyboardActions(
+                // Search is already debounced on every change.
+                // Use IME action just to keep focus/keyboard behavior if you want later.
+                onSearch = { /* no-op; search is automatic */ }
+            )
         )
     }
 }
