@@ -100,6 +100,28 @@ class SearchViewModel @Inject constructor(
 // Optional: implement in repo (e.g., lastOrderAt DESC)
         return emptyList()
     }
+
+    fun triggerSearch() {
+        // Setting the same query value will NOT trigger debounce
+        // So force-search by toggling isSearching flag
+        val current = _ui.value
+        if (current.query.isBlank() && current.invoiceQuery.isBlank() && !current.remainingOnly) {
+            return
+        }
+
+        _ui.update { it.copy(isSearching = true) }
+    }
+
+    fun stopSearch() {
+        // Just flip the searching flag
+        _ui.update { it.copy(isSearching = false) }
+    }
+
+    fun clearResults() {
+        _ui.update { it.copy(results = emptyList(), isSearching = false) }
+    }
+
+
 }
 
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)

@@ -58,7 +58,7 @@ class CustomerRepositoryImpl @Inject constructor(
             }
 
             // UPDATE ONLY CUSTOMER FIELDS — do NOT touch content/orderId
-            searchDao.updateCustomerFields(
+            searchDao.upsertCustomerFields(
                 customerId = customer.id,
                 name = foldedName,
                 phone = digits,

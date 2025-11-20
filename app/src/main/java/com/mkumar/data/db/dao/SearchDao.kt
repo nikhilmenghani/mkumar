@@ -38,6 +38,29 @@ interface SearchDao {
         insert(entry)
     }
 
+    @Transaction
+    suspend fun upsertCustomerFields(
+        customerId: String,
+        name: String,
+        phone: String?,
+        name3: String?,
+        phone3: String?
+    ) {
+        val updated = updateCustomerFields(customerId, name, phone, name3, phone3)
+        if (updated == 0) {
+            insert(
+                SearchFts(
+                    customerId = customerId,
+                    name = name,
+                    phone = phone,
+                    name3 = name3,
+                    phone3 = phone3,
+                    content = "",
+                    orderId = null
+                )
+            )
+        }
+    }
 
     @Transaction
     suspend fun upsertAll(entries: List<SearchFts>) {
@@ -88,7 +111,7 @@ LIMIT :limit
         phone: String?,
         name3: String?,
         phone3: String?
-    )
+    ): Int
 
     @Query("""
     UPDATE search_fts
