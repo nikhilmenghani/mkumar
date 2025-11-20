@@ -255,7 +255,9 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            if (globalClass.preferencesManager.dashboardPrefs.dashboardAlignment == DashboardAlignment.HORIZONTAL.ordinal){
+                Spacer(Modifier.height(20.dp))
+            }
 
             DashboardSection(title = "Recent Customers") {
                 if (globalClass.preferencesManager.dashboardPrefs.dashboardAlignment == DashboardAlignment.HORIZONTAL.ordinal){
@@ -282,8 +284,9 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
             // FUTURE WIDGETS GO HERE
             // DashboardSection("Sales Summary") { SalesSummaryWidget() }
             // DashboardSection("Pending Payments") { PendingPaymentsWidget() }
-
-//            Spacer(modifier = Modifier.size(20.dp))
+            if (globalClass.preferencesManager.dashboardPrefs.dashboardAlignment == DashboardAlignment.VERTICAL.ordinal){
+                Spacer(modifier = Modifier.size(20.dp))
+            }
         }
     }
 
