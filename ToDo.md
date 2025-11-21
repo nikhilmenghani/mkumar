@@ -12,8 +12,9 @@ _Last updated: 2025-11-15_
 - [x] Share the PDF with application  #high
 - [x] Search the customer  #high
 - [x] PDF – Center align banner & address, add logo, and “Invoice” title  #high
-- [ ] Dashboard screen with summary of customers/orders added  #high
+- [x] Dashboard screen with summary of customers/orders added  #high
 - [ ] GitHub sync (cloud implementation)  #high
+- [ ] Add TableExtendedData column for future perspective
 - [ ] Search and Sort Capability #high 
 	- [x] Search by Invoice #high 
 	- [ ] Search by has pending order #high 
@@ -33,7 +34,7 @@ _Last updated: 2025-11-15_
 - [x] Add required fields in product forms and align multiple fields per row  #medium
 - [ ] Move ConfirmActionDialog to delete the customer on Search Screen
 - [ ] Add Menu Items for Orders and Customers on Search Screen
-- [ ] Fix the Menu Items for Orders on Dashboard/Home Screen
+- [x] Fix the Menu Items for Orders on Dashboard/Home Screen
 - [ ] Add Filter on Customer Details Screen
 - [ ] Store actual Product type when General Product is selected in content column of search_fts
 
@@ -51,6 +52,8 @@ _Last updated: 2025-11-15_
 - [ ] Update Terms & Conditions with last-change date  #low
 - [x] Change the name of the invoice file
 - [ ] Make the row with dismiss and confirm buttons generic
+- [x] when Orders is selected on Advanced Filter, force search by to Invoice
+- [ ] Check how we are storing multiple orderids in search_fts for one customer with multiple orders
 
 ---
 

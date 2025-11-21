@@ -520,8 +520,11 @@ private fun SearchAdvancedOptions(
             ReturnTypeChip(
                 label = "Orders",
                 selected = searchType == SearchType.ORDERS,
-                enabled = true, // always allowed
-                onClick = { onSearchTypeChange(SearchType.ORDERS) }
+                enabled = searchBy == SearchBy.INVOICE, // always allowed
+                onClick = {
+                    onSearchTypeChange(SearchType.ORDERS)
+                    onSearchByChange(SearchBy.INVOICE)
+                }
             )
         }
 
