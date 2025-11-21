@@ -30,6 +30,7 @@ interface CustomerRepository {
     suspend fun searchCustomersAdvanced(
         nameOrPhone: String?,
         invoice: String?,
-        remainingOnly: Boolean
+        remainingOnly: Boolean,
+        searchMode: SearchMode
     ): List<UiCustomerMini>
 }

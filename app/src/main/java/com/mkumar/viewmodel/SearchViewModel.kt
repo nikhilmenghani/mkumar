@@ -134,7 +134,8 @@ class SearchViewModel @Inject constructor(
                         repo.searchCustomersAdvanced(
                             nameOrPhone = q.takeIf { it.isNotBlank() },
                             invoice = invoice.takeIf { it.isNotBlank() },
-                            remainingOnly = remaining
+                            remainingOnly = remaining,
+                            searchMode = mode
                         )
                     }.getOrDefault(emptyList())
                     _ui.update { it.copy(results = results, isSearching = false) }

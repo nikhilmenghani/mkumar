@@ -142,14 +142,15 @@ class CustomerRepositoryImpl @Inject constructor(
     override suspend fun searchCustomersAdvanced(
         nameOrPhone: String?,
         invoice: String?,
-        remainingOnly: Boolean
+        remainingOnly: Boolean,
+        searchMode: SearchMode
     ): List<UiCustomerMini> {
 
         val idSets = mutableListOf<List<String>>()
 
         // 1. Basic search box
         if (!nameOrPhone.isNullOrBlank()) {
-            val base = searchCustomers(nameOrPhone, SearchMode.FLEXIBLE).map { it.id }
+            val base = searchCustomers(nameOrPhone, searchMode).map { it.id }
             idSets += base
         }
 
