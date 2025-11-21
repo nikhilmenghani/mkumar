@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +19,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material3.Badge
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -69,7 +74,6 @@ import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.worker.DownloadWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 enum class CustomerSheetMode { Add, Edit }
@@ -86,7 +90,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
 
     // UI flags
     val currentCustomerId by vm.currentCustomerId.collectAsStateWithLifecycle()
-    val openFormsForCurrentFlow = remember(currentCustomerId) { MutableStateFlow(emptySet<String>()) }
     val haptic = LocalHapticFeedback.current
 
     var deleteTarget by remember { mutableStateOf<UiCustomerMini?>(null) }
@@ -118,6 +121,64 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     IconButton(onClick = { context.restartActivity() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
+                    if (!isLatestVersion) {
+                        Box {
+                            IconButton(
+                                onClick = {
+                                    isDownloading = true
+                                    val downloadUrl = getAppDownloadUrl(latestVersion)
+                                    val destFilePath = "${getExternalStorageDir()}/Download/MKumar.apk"
+                                    val inputData = workDataOf(
+                                        DownloadWorker.DOWNLOAD_URL_KEY to downloadUrl,
+                                        DownloadWorker.DEST_FILE_PATH_KEY to destFilePath,
+                                        DownloadWorker.DOWNLOAD_TYPE_KEY to DownloadWorker.DOWNLOAD_TYPE_APK
+                                    )
+                                    val downloadRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
+                                        .setInputData(inputData)
+                                        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                                        .build()
+                                    workManager.enqueue(downloadRequest)
+                                    workManager.getWorkInfoByIdLiveData(downloadRequest.id).observeForever { info ->
+                                        if (info?.state == WorkInfo.State.SUCCEEDED) {
+                                            isDownloading = false
+                                            if (context.packageManager.canRequestPackageInstalls()) {
+                                                installApk(context, destFilePath)
+                                            }
+                                        } else if (info?.state == WorkInfo.State.FAILED) {
+                                            isDownloading = false
+                                            Toast.makeText(context, "Failed to download update", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                },
+                                enabled = !isDownloading
+                            ) {
+                                if (isDownloading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Default.SystemUpdate,
+                                        contentDescription = "Update",
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+
+                            Badge(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 4.dp, y = (-4).dp)   // fine-tuned overlap, not shifting the icon
+                            ) {
+                                Text(
+                                    text = latestVersion,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
                     IconButton(onClick = {
                         navController.navigateWithState(route = Screens.Settings.name)
                     }) {
@@ -140,44 +201,12 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                         navController.navigate(Screen.Search.route)
                     },
                 )
-                if (!isLatestVersion) {
-                    StandardFab(
-                        text = "",
-                        icon = { Icon(Icons.Default.Refresh, contentDescription = "Update", modifier = Modifier.size(24.dp)) },
-                        loading = isDownloading,
-                        onClick = {
-                            isDownloading = true
-                            val downloadUrl = getAppDownloadUrl(latestVersion)
-                            val destFilePath = "${getExternalStorageDir()}/Download/MKumar.apk"
-                            val inputData = workDataOf(
-                                DownloadWorker.DOWNLOAD_URL_KEY to downloadUrl,
-                                DownloadWorker.DEST_FILE_PATH_KEY to destFilePath,
-                                DownloadWorker.DOWNLOAD_TYPE_KEY to DownloadWorker.DOWNLOAD_TYPE_APK
-                            )
-                            val downloadRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
-                                .setInputData(inputData)
-                                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-                                .build()
-                            workManager.enqueue(downloadRequest)
-                            workManager.getWorkInfoByIdLiveData(downloadRequest.id).observeForever { info ->
-                                if (info?.state == WorkInfo.State.SUCCEEDED) {
-                                    isDownloading = false
-                                    if (context.packageManager.canRequestPackageInstalls()) {
-                                        installApk(context, destFilePath)
-                                    }
-                                } else if (info?.state == WorkInfo.State.FAILED) {
-                                    isDownloading = false
-                                    Toast.makeText(context, "Failed to download update", Toast.LENGTH_LONG).show()
-                                }
-                            }
-                        }
-                    )
-                }
             }
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier
+                .padding(paddingValues)
                 .padding(horizontal = 12.dp)
         ) {
 
@@ -231,7 +260,6 @@ fun DashboardSection(
         content()
     }
 }
-
 
 @Composable
 fun CustomerList(
