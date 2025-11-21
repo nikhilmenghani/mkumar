@@ -197,7 +197,7 @@ class CustomerRepositoryImpl @Inject constructor(
                     createdAt = order.createdAt,
                     totalAmount = order.totalAmount,
                     remainingBalance = order.remainingBalance,
-                    customerId = it.id,
+                    customerId = order.customerId,
                     customerName = it.name,
                     customerPhone = it.phone
                 )

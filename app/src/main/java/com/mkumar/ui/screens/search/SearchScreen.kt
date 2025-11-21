@@ -1,5 +1,6 @@
 package com.mkumar.ui.screens.search
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -76,6 +77,7 @@ import com.mkumar.ui.components.cards.CustomerInfoCard
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.CustomerSheetMode
 import com.mkumar.ui.screens.RecentCustomersSection
+import com.mkumar.ui.screens.RecentOrdersList
 import com.mkumar.viewmodel.SearchViewModel
 import kotlinx.coroutines.delay
 
@@ -178,7 +180,8 @@ fun SearchScreen(
                 isSearching = ui.isSearching,
                 query = ui.query,
                 onClear = vm::clearResults,
-                openOrder = { cid, orderId ->
+                openOrder = { orderId, cid ->
+                    Log.d("OrderNav", "Navigating to order: cid=$cid, orderId=$orderId")
                     navController.navigate(Routes.orderEditor(customerId = cid, orderId = orderId))
                 }
             )
@@ -622,19 +625,11 @@ fun SearchOrderResultsSection(
             }
             return
         }
-
-        // List --------------------------------------------------
-        LazyColumn(
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-        ) {
-            itemsIndexed(orderResults, key = { _, it -> it.id }) { _, o ->
-                OrderResultItem(
-                    order = o,
-                    onClick = { openOrder(o.customerId, o.id) }
-                )
-            }
+        Column(Modifier.padding(14.dp)) {
+            RecentOrdersList(
+                orders = orderResults,
+                onOrderClick = openOrder
+            )
         }
     }
 }

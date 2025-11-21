@@ -189,7 +189,7 @@ class OrderEditorViewModel @Inject constructor(
             val s = _ui.value
             val draft = s.draft
             val orderId = draft.editingOrderId
-            emitMessage("Saving $orderId")
+//            emitMessage("Saving $orderId")
             val current = draft.items.firstOrNull { it.id == productId } ?: return@launch
 
             // If order doesn't exist yet, keep it local only.
