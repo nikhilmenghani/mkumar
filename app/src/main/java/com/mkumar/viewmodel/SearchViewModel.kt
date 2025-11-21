@@ -40,7 +40,7 @@ class SearchViewModel @Inject constructor(
         val mode: SearchMode = SearchMode.QUICK,
 
         // NEW:
-        val searchBy: SearchBy = SearchBy.NAME,
+        val searchBy: SearchBy = SearchBy.PHONE,
         val searchType: SearchType = SearchType.CUSTOMERS,
         val recent: List<UiCustomerMini> = emptyList(),
 
@@ -112,7 +112,7 @@ class SearchViewModel @Inject constructor(
         ) { q, invoice, remaining, mode ->
             Quad(q, invoice, remaining, mode)
         }
-            .debounce(200)
+            .debounce(300)
             .distinctUntilChanged()
             .onEach { (q, invoice, remaining, mode) ->
 
@@ -129,15 +129,16 @@ class SearchViewModel @Inject constructor(
 
                 _ui.update { it.copy(isSearching = true) }
 
-                val results = runCatching {
-                    repo.searchCustomersAdvanced(
-                        nameOrPhone = q.takeIf { it.isNotBlank() },
-                        invoice = invoice.takeIf { it.isNotBlank() },
-                        remainingOnly = remaining
-                    )
-                }.getOrDefault(emptyList())
-
-                _ui.update { it.copy(results = results, isSearching = false) }
+                viewModelScope.launch(Dispatchers.IO) {
+                    val results = runCatching {
+                        repo.searchCustomersAdvanced(
+                            nameOrPhone = q.takeIf { it.isNotBlank() },
+                            invoice = invoice.takeIf { it.isNotBlank() },
+                            remainingOnly = remaining
+                        )
+                    }.getOrDefault(emptyList())
+                    _ui.update { it.copy(results = results, isSearching = false) }
+                }
             }
             .launchIn(viewModelScope)
     }

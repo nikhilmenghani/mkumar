@@ -60,6 +60,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -138,7 +139,8 @@ fun SearchScreen(
             onQueryChange = vm::updateQuery,
             onStopClick = vm::stopSearch,
             onAdvancedToggle = { showAdvancedOptions = !showAdvancedOptions },
-            focusRequester = focusRequester
+            focusRequester = focusRequester,
+            searchBy = ui.searchBy
         )
 
         // ADVANCED OPTIONS
@@ -247,7 +249,8 @@ private fun SearchHeader(
     onQueryChange: (String) -> Unit,
     onStopClick: () -> Unit,
     onAdvancedToggle: () -> Unit,
-    focusRequester: FocusRequester
+    focusRequester: FocusRequester,
+    searchBy: SearchBy
 ) {
     Column(
         modifier = Modifier
@@ -304,7 +307,11 @@ private fun SearchHeader(
             ),
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Search,
-                capitalization = KeyboardCapitalization.Words
+                capitalization = KeyboardCapitalization.Words,
+                keyboardType = when (searchBy) {
+                    SearchBy.PHONE -> KeyboardType.Phone
+                    else -> KeyboardType.Text
+                }
             ),
             keyboardActions = KeyboardActions(onSearch = {})
         )
@@ -494,7 +501,7 @@ private fun SearchResultsSection(
     Column(modifier = Modifier.fillMaxSize()) {
 
         val headerTitle =
-            if (query.isBlank()) "Recent customers"
+            if (query.isBlank()) "Recently Added Customers"
             else "Results (${results.size})"
 
         Row(
@@ -536,8 +543,7 @@ private fun SearchResultsSection(
             } else {
                 RecentCustomersSection(
                     customers = recent,
-                    openCustomer = openCustomer,
-                    onDismissRequest = {}
+                    openCustomer = openCustomer
                 )
             }
             return
