@@ -36,7 +36,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -341,102 +340,116 @@ private fun SearchAdvancedOptions(
                     )
                 )
             )
-            .padding(16.dp)
+            .padding(20.dp)
     ) {
+        // ------------------------------------------------------------
+        // Header
+        // ------------------------------------------------------------
         Text(
             "Advanced Options",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        Spacer(Modifier.height(12.dp))
-
-        // Mode
-        ModeToggle(mode, onModeChange)
-
-        Spacer(Modifier.height(16.dp))
-
-        // Search By
-        Text("Search by", color = MaterialTheme.colorScheme.primary)
+        // ------------------------------------------------------------
+        // Mode Section
+        // ------------------------------------------------------------
+        SectionHeader("Search speed")
         Spacer(Modifier.height(8.dp))
 
         Row {
-            SearchByChip("Name", SearchBy.NAME, searchBy, onSearchByChange)
+            OptionChip(
+                label = "Fast",
+                selected = mode == SearchMode.QUICK,
+                onClick = { onModeChange(SearchMode.QUICK) }
+            )
             Spacer(Modifier.width(8.dp))
-            SearchByChip("Phone", SearchBy.PHONE, searchBy, onSearchByChange)
-            Spacer(Modifier.width(8.dp))
-            SearchByChip("Invoice", SearchBy.INVOICE, searchBy, onSearchByChange)
+            OptionChip(
+                label = "Flexible",
+                selected = mode == SearchMode.FLEXIBLE,
+                onClick = { onModeChange(SearchMode.FLEXIBLE) }
+            )
         }
 
-        // Search Type
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Return results:", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.width(12.dp))
+        // ------------------------------------------------------------
+        // Search By Section
+        // ------------------------------------------------------------
+        SectionHeader("Search by")
+        Spacer(Modifier.height(8.dp))
 
-            Switch(
-                checked = searchType == SearchType.ORDERS,
-                onCheckedChange = {
-                    val newType = if (it) SearchType.ORDERS else SearchType.CUSTOMERS
-                    onSearchTypeChange(newType)
+        Row {
+            SearchByChip("Name", SearchBy.NAME, searchBy) {
+                onSearchByChange(SearchBy.NAME)
+                if (searchType == SearchType.ORDERS) {
+                    // auto-reset if switching to name/phone
+                    onSearchTypeChange(SearchType.CUSTOMERS)
                 }
-            )
-
+            }
             Spacer(Modifier.width(8.dp))
 
+            SearchByChip("Phone", SearchBy.PHONE, searchBy) {
+                onSearchByChange(SearchBy.PHONE)
+                if (searchType == SearchType.ORDERS) {
+                    onSearchTypeChange(SearchType.CUSTOMERS)
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+
+            SearchByChip("Invoice", SearchBy.INVOICE, searchBy) {
+                onSearchByChange(SearchBy.INVOICE)
+                // FORCE orders when invoice search
+                onSearchTypeChange(SearchType.ORDERS)
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // ------------------------------------------------------------
+        // Return results Section (Customers / Orders)
+        // ------------------------------------------------------------
+        SectionHeader("Return results")
+        Spacer(Modifier.height(8.dp))
+
+        val isForcedOrder = searchBy == SearchBy.INVOICE
+
+        Row {
+            ReturnTypeChip(
+                label = "Customers",
+                selected = searchType == SearchType.CUSTOMERS,
+                enabled = !isForcedOrder,
+                onClick = { onSearchTypeChange(SearchType.CUSTOMERS) }
+            )
+            Spacer(Modifier.width(8.dp))
+
+            ReturnTypeChip(
+                label = "Orders",
+                selected = searchType == SearchType.ORDERS,
+                enabled = true, // always allowed
+                onClick = { onSearchTypeChange(SearchType.ORDERS) }
+            )
+        }
+
+        if (isForcedOrder) {
             Text(
-                if (searchType == SearchType.ORDERS) "Orders"
-                else "Customers",
-                color = MaterialTheme.colorScheme.primary
+                "Invoice search always returns orders.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp)
             )
         }
     }
 }
 
 @Composable
-private fun SearchByChip(
-    label: String,
-    value: SearchBy,
-    selected: SearchBy,
-    onChange: (SearchBy) -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onChange(value) },
-        color = if (selected == value)
-            MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceContainer
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            color = if (selected == value)
-                MaterialTheme.colorScheme.onPrimaryContainer
-            else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun ModeToggle(mode: SearchMode, onChange: (SearchMode) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OptionChip(
-            label = "Fast",
-            selected = mode == SearchMode.QUICK,
-            onClick = { onChange(SearchMode.QUICK) }
-        )
-        Spacer(Modifier.width(8.dp))
-        OptionChip(
-            label = "Flexible",
-            selected = mode == SearchMode.FLEXIBLE,
-            onClick = { onChange(SearchMode.FLEXIBLE) }
-        )
-    }
+private fun SectionHeader(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable
@@ -451,10 +464,68 @@ private fun OptionChip(label: String, selected: Boolean, onClick: () -> Unit) {
     ) {
         Text(
             text = label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
             color = if (selected)
                 MaterialTheme.colorScheme.onPrimaryContainer
             else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SearchByChip(
+    label: String,
+    value: SearchBy,
+    selected: SearchBy,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() },
+        color = if (selected == value)
+            MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            color = if (selected == value)
+                MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun ReturnTypeChip(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val bg = when {
+        !enabled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        selected -> MaterialTheme.colorScheme.primaryContainer
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
+
+    val fg = when {
+        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+        selected -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(enabled = enabled) { onClick() },
+        color = bg
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            color = fg
         )
     }
 }
