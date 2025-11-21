@@ -137,7 +137,10 @@ fun SearchScreen(
             query = ui.query,
             isSearching = ui.isSearching,
             onBackClick = onBack,
-            onQueryChange = vm::updateQuery,
+            onQueryChange = {
+                vm.updateQuery(it)
+                showAdvancedOptions = false
+            },
             onStopClick = vm::stopSearch,
             onAdvancedToggle = { showAdvancedOptions = !showAdvancedOptions },
             focusRequester = focusRequester,
@@ -323,7 +326,8 @@ private fun SearchHeader(
                 imeAction = ImeAction.Search,
                 capitalization = KeyboardCapitalization.Words,
                 keyboardType = when (searchBy) {
-                    SearchBy.PHONE -> KeyboardType.Phone
+                    SearchBy.PHONE -> KeyboardType.Number
+                    SearchBy.INVOICE -> KeyboardType.Number
                     else -> KeyboardType.Text
                 }
             ),
