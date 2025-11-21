@@ -217,7 +217,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 RecentOrdersList(
                     orders = vm.recentOrders.collectAsStateWithLifecycle().value,
                     onOrderClick = { orderId, customerId ->
-                        vm.selectCustomer(customerId)
+//                        vm.selectCustomer(customerId)
                         navController.navigate(Routes.orderEditor(customerId, orderId))
                     }
                 )

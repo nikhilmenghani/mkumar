@@ -1,6 +1,7 @@
 package com.mkumar.repository
 
 import com.mkumar.data.db.entities.OrderEntity
+import com.mkumar.model.UiCustomerMini
 import kotlinx.coroutines.flow.Flow
 
 interface OrderRepository {
@@ -19,4 +20,6 @@ interface OrderRepository {
         owner: String? = null,
         remainingOnly: Boolean = false
     ): List<OrderEntity>
+
+    suspend fun getCustomerMiniForOrder(customerId: String): UiCustomerMini
 }

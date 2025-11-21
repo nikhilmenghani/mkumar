@@ -8,6 +8,7 @@ import com.mkumar.data.db.dao.OrderItemDao
 import com.mkumar.data.db.dao.SearchDao
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.services.InvoiceNumberService
+import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.OrderRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -97,6 +98,17 @@ class OrderRepositoryImpl @Inject constructor(
             remainingOnly = if (remainingOnly) 1 else 0,
             category = category,
             owner = owner
+        )
+    }
+
+    override suspend fun getCustomerMiniForOrder(customerId: String): UiCustomerMini {
+        val customer = customerDao.getById(customerId)
+            ?: throw IllegalArgumentException("Customer not found for customer: $customerId")
+
+        return UiCustomerMini(
+            id = customer.id,
+            name = customer.name,
+            phone = customer.phone,
         )
     }
 

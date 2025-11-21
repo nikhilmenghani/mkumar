@@ -22,10 +22,6 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
 @Inject constructor(
     private val repository: CustomerRepository
 ) : ViewModel() {
-
-    private val _currentCustomerId = MutableStateFlow<String?>(null)
-    val currentCustomerId: StateFlow<String?> = _currentCustomerId
-
     private val _orderSortBy = MutableStateFlow("Invoice")
     private val _orderSortAsc = MutableStateFlow(false)
 
@@ -59,11 +55,5 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
         viewModelScope.launch {
             repository.deleteById(customerID)
         }
-    }
-
-    fun selectCustomer(customerID: String?) {
-        _currentCustomerId.value = customerID
-        _formState.value = _customers.value.find { it.id == customerID }
-            ?: UiCustomerMini()
     }
 }

@@ -33,10 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.createBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.mkumar.R
 import com.mkumar.common.constant.CustomerDetailsConstants
 import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.CustomerDetailsIntent
@@ -60,20 +58,7 @@ fun CustomerDetailsScreen(
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val drawable = androidx.core.content.ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
-    requireNotNull(drawable) { "Launcher icon drawable missing" }
-    val logo = when (drawable) {
-        is android.graphics.drawable.BitmapDrawable -> drawable.bitmap
-        else -> {
-            val w = drawable.intrinsicWidth.takeIf { it > 0 } ?: 256
-            val h = drawable.intrinsicHeight.takeIf { it > 0 } ?: 256
-            val bmp = createBitmap(w, h)
-            val canvas = android.graphics.Canvas(bmp)
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-            drawable.draw(canvas)
-            bmp
-        }
-    }
+
     // Snackbar + one-off effects
     val snackbarHostState = remember { SnackbarHostState() }
     val (pendingDeleteOrderId, setPendingDeleteOrderId) = remember { mutableStateOf<String?>(null) }
@@ -113,8 +98,6 @@ fun CustomerDetailsScreen(
                             )
                         }
                 }
-
-                else -> {}
             }
         }
     }
@@ -202,8 +185,8 @@ fun CustomerDetailsScreen(
                             is OrderRowAction.Delete -> {
                                 setPendingDeleteOrderId(action.orderId)
                             }
-                            is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId, action.invoiceNumber, logo))
-                            is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId, action.invoiceNumber, logo))
+                            is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId, action.invoiceNumber))
+                            is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId, action.invoiceNumber))
                         }
                     },
                     modifier = Modifier.fillMaxSize()

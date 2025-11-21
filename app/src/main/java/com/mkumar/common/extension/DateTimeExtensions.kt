@@ -17,7 +17,8 @@ enum class DateFormat(val pattern: String) {
     DATE_ONLY("MMM d, yyyy"),
     DEFAULT_DATE_ONLY("dd-MMM-yyyy"),
     TIME_ONLY("h:mm a"),
-    ISO_DATE_TIME("yyyy-MM-dd'T'HH:mm:ss")
+    ISO_DATE_TIME("yyyy-MM-dd'T'HH:mm:ss"),
+    DEFAULT_DATE_TIME("dd-MM-yyyy HH:mm")
 }
 
 fun Instant.format(
