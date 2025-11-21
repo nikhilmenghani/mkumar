@@ -1,6 +1,5 @@
 package com.mkumar.ui.screens.search
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -67,6 +66,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.mkumar.common.extension.formatAsDate
+import com.mkumar.model.CustomerSheetMode
 import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.model.SearchBy
 import com.mkumar.model.SearchMode
@@ -75,7 +75,6 @@ import com.mkumar.model.UiCustomerMini
 import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.cards.CustomerInfoCard
 import com.mkumar.ui.navigation.Routes
-import com.mkumar.ui.screens.CustomerSheetMode
 import com.mkumar.ui.screens.RecentCustomersSection
 import com.mkumar.ui.screens.RecentOrdersList
 import com.mkumar.viewmodel.SearchViewModel
@@ -181,7 +180,6 @@ fun SearchScreen(
                 query = ui.query,
                 onClear = vm::clearResults,
                 openOrder = { orderId, cid ->
-                    Log.d("OrderNav", "Navigating to order: cid=$cid, orderId=$orderId")
                     navController.navigate(Routes.orderEditor(customerId = cid, orderId = orderId))
                 }
             )

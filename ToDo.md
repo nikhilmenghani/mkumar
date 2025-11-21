@@ -15,10 +15,10 @@ _Last updated: 2025-11-15_
 - [ ] Dashboard screen with summary of customers/orders added  #high
 - [ ] GitHub sync (cloud implementation)  #high
 - [ ] Search and Sort Capability #high 
-	- [ ] Search by Invoice #high 
+	- [x] Search by Invoice #high 
 	- [ ] Search by has pending order #high 
-	- [ ] Sort by Created #high 
-	- [ ] Sort by Updated #high 
+	- [x] Sort by Created #high 
+	- [x] Sort by Updated #high 
 
 ---
 

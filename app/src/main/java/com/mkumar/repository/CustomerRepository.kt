@@ -17,7 +17,7 @@ interface CustomerRepository {
     suspend fun getWithOrders(customerId: String): CustomerWithOrders?
     fun getRecentCustomers(limit: Int): Flow<List<UiCustomerMini>>
     fun getRecentCustomerList(limit: Int): List<UiCustomerMini>
-    fun getRecentOrders(limit: Int): Flow<List<OrderWithCustomerInfo>>
+    fun getRecentOrders(limit: Int, sortBy: String, ascending: Boolean): Flow<List<OrderWithCustomerInfo>>
     suspend fun reindexCustomerForSearch(customer: CustomerEntity)
     suspend fun searchCustomers(
         q: String,

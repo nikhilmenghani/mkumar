@@ -4,7 +4,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Upsert
+import androidx.sqlite.db.SimpleSQLiteQuery
+import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.model.OrderWithCustomerInfo
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +36,9 @@ interface OrderDao {
     @Query("SELECT * FROM orders WHERE id = :orderId LIMIT 1")
     suspend fun getById(orderId: String): OrderEntity?
 
+    @RawQuery(observedEntities = [OrderEntity::class, CustomerEntity::class])
+    fun getRecentOrdersWithCustomerRaw(query: SimpleSQLiteQuery): Flow<List<OrderWithCustomerInfo>>
+
     @Query("""
     SELECT o.id, o.invoiceSeq AS invoiceNumber, o.createdAt, o.totalAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
     FROM orders o
@@ -41,7 +47,6 @@ interface OrderDao {
     LIMIT :limit
 """)
     fun getRecentOrdersWithCustomer(limit: Int): Flow<List<OrderWithCustomerInfo>>
-
 
     @Query("""
         SELECT * FROM orders 

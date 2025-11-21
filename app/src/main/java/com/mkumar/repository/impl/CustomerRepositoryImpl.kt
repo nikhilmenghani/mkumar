@@ -1,5 +1,6 @@
 package com.mkumar.repository.impl
 
+import androidx.sqlite.db.SimpleSQLiteQuery
 import com.mkumar.common.search.buildFtsPrefixMatch
 import com.mkumar.common.search.buildFtsTrigramMatch
 import com.mkumar.common.search.digitsOnly
@@ -59,8 +60,30 @@ class CustomerRepositoryImpl @Inject constructor(
         customerDao.getRecentCustomerList(limit).map { it.toUiModel() }
 
 
-    override fun getRecentOrders(limit: Int) =
-        orderDao.getRecentOrdersWithCustomer(limit)
+    override fun getRecentOrders(limit: Int, sortBy: String, ascending: Boolean): Flow<List<OrderWithCustomerInfo>> {
+//        orderDao.getRecentOrdersWithCustomer(limit, sortBy, ascending)
+        return getRecentOrdersWithCustomer(limit, sortBy, ascending)
+    }
+
+    fun getRecentOrdersWithCustomer(limit: Int, sortBy: String, ascending: Boolean): Flow<List<OrderWithCustomerInfo>> {
+        val order = if (ascending) "ASC" else "DESC"
+        val validSortColumns = setOf("invoiceSeq", "updatedAt", "name") // whitelist allowed columns
+        val sortColumn = when (sortBy) {
+            "Invoice" -> "o.invoiceSeq"
+            "UpdatedAt" -> "o.updatedAt"
+            "Name" -> "c.name"
+            else -> "o.occurredAt"
+        }
+        val sql = """
+        SELECT o.id, o.invoiceSeq AS invoiceNumber, o.createdAt, o.totalAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
+        FROM orders o
+        JOIN customers c ON c.id = o.customerId
+        ORDER BY $sortColumn $order
+        LIMIT ?
+    """.trimIndent()
+        val query = SimpleSQLiteQuery(sql, arrayOf(limit))
+        return orderDao.getRecentOrdersWithCustomerRaw(query)
+    }
 
     override suspend fun reindexCustomerForSearch(customer: CustomerEntity) =
         withContext(Dispatchers.IO) {

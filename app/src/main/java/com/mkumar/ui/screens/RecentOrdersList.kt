@@ -181,7 +181,7 @@ fun RecentOrderCardCompact(
         // Menu anchor at top-right
         Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
+                .align(Alignment.Center)
         ) {
             ProOverflowMenuIcons(
                 expanded = menuExpanded,

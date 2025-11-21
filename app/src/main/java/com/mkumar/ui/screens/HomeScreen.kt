@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Badge
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,6 +65,7 @@ import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.cards.CustomerListCard2
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.components.fabs.StandardFab
+import com.mkumar.ui.components.sort.SortBar
 import com.mkumar.ui.navigation.Material3BottomNavigationBar
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.navigation.Screen
@@ -75,8 +75,6 @@ import com.mkumar.worker.DownloadWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
-enum class CustomerSheetMode { Add, Edit }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,7 +87,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     var isDownloading by remember { mutableStateOf(false) }
 
     // UI flags
-    val currentCustomerId by vm.currentCustomerId.collectAsStateWithLifecycle()
     val haptic = LocalHapticFeedback.current
 
     var deleteTarget by remember { mutableStateOf<UiCustomerMini?>(null) }
@@ -210,7 +207,13 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 .padding(horizontal = 12.dp)
         ) {
 
-            DashboardSection(title = "Recent Orders") {
+            DashboardSection(
+                title = "Recent Orders",
+                sortField = vm.orderSortBy.collectAsStateWithLifecycle().value,
+                sortOrderAsc = vm.orderSortAsc.collectAsStateWithLifecycle().value,
+                onSortFieldChange = { vm.setOrderSortBy(it) },
+                onSortOrderChange = { vm.setOrderSortAsc(it) }
+            ) {
                 RecentOrdersList(
                     orders = vm.recentOrders.collectAsStateWithLifecycle().value,
                     onOrderClick = { orderId, customerId ->
@@ -238,27 +241,26 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardSection(
     title: String,
     modifier: Modifier = Modifier,
+    sortField: String,
+    sortOrderAsc: Boolean,
+    onSortFieldChange: (String) -> Unit,
+    onSortOrderChange: (Boolean) -> Unit,
     content: @Composable () -> Unit
 ) {
-    Column(modifier = modifier.padding(vertical = 8.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall.copy(
-                color = MaterialTheme.colorScheme.primary
-            ),
-            modifier = Modifier.padding(bottom = 2.dp)
-        )
-        Divider(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-            thickness = 1.dp,
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
-        content()
-    }
+    SortBar(
+        title = title,
+        modifier = modifier,
+        sortField = sortField,
+        sortOrderAsc = sortOrderAsc,
+        onSortFieldChange = onSortFieldChange,
+        onSortOrderChange = onSortOrderChange
+    )
+    content()
 }
 
 @Composable

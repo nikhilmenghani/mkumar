@@ -2,18 +2,18 @@ package com.mkumar.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mkumar.data.ProductFormData
-import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.CustomerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
 import kotlin.time.ExperimentalTime
 
@@ -23,56 +23,36 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
     private val repository: CustomerRepository
 ) : ViewModel() {
 
-    private val _customers = MutableStateFlow<List<UiCustomerMini>>(emptyList())
-    private val uiStateByCustomer = MutableStateFlow<Map<String, UiCustomerMini>>(emptyMap())
-
     private val _currentCustomerId = MutableStateFlow<String?>(null)
     val currentCustomerId: StateFlow<String?> = _currentCustomerId
 
+    private val _orderSortBy = MutableStateFlow("Invoice")
+    private val _orderSortAsc = MutableStateFlow(false)
+
+    val orderSortBy: StateFlow<String> = _orderSortBy.asStateFlow()
+    val orderSortAsc: StateFlow<Boolean> = _orderSortAsc.asStateFlow()
+
     private val _formState = MutableStateFlow(UiCustomerMini())
 
-    val recentCustomers = repository.getRecentCustomers(limit = 10)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
-
-    val recentOrders = repository.getRecentOrders(limit = 10)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
-
-
-    val editingBuffer: MutableMap<String, MutableMap<String, ProductFormData?>> = mutableMapOf()
-    private val _openForms = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
-    val openForms: StateFlow<Map<String, Set<String>>> = _openForms
-
-    val customersUi: StateFlow<List<UiCustomerMini>> =
-        combine(repository.observeAll(), uiStateByCustomer) { entities, cache ->
-            entities
-                .map { e ->
-                    // Reuse any in-memory products/buffers if present
-                    cache[e.id]?.copy(
-                        // keep products/selectedProductId from cache
-                        name = e.name,
-                        phone = e.phone,
-                    ) ?: UiCustomerMini(
-                        id = e.id,
-                        name = e.name,
-                        phone = e.phone,
-//                        products = emptyList(),          // no products from DB here
-//                        selectedProductId = null,
-                    )
-                }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    fun createOrUpdateCustomerCard(name: String, phone: String, email: String? = null): String {
-        val customer = CustomerEntity(
-            id = UUID.randomUUID().toString(), // or ULID
-            name = name.trim(),
-            phone = phone.trim(),
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val recentOrders = combine(
+        _orderSortBy, _orderSortAsc
+    ) { sortBy, asc ->
+        Pair(sortBy, asc)
+    }.flatMapLatest { (sortBy, asc) ->
+        repository.getRecentOrders(
+            limit = 10,
+            sortBy = sortBy,
+            ascending = asc
         )
-        viewModelScope.launch {
-            // If you want "update if same phone exists", do a DAO lookup and reuse ID.
-            repository.upsert(customer)
-            // optional: update search index here if you wired SearchDao
-        }
-        return customer.id
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+
+    fun setOrderSortBy(sortBy: String) {
+        _orderSortBy.value = sortBy
+    }
+
+    fun setOrderSortAsc(asc: Boolean) {
+        _orderSortAsc.value = asc
     }
 
     fun removeCustomer(customerID: String) {
@@ -85,24 +65,5 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
         _currentCustomerId.value = customerID
         _formState.value = _customers.value.find { it.id == customerID }
             ?: UiCustomerMini()
-    }
-
-    fun updateCustomer(id: String, name: String, phone: String) {
-        viewModelScope.launch {
-            repository.upsert(
-                CustomerEntity(
-                    id = id,                // keep same id to update
-                    name = name.trim(),
-                    phone = phone.trim()
-                )
-            )
-            // If you maintain an in-memory cache (uiStateByCustomer), reflect it here if needed:
-            uiStateByCustomer.value = uiStateByCustomer.value.toMutableMap().apply {
-                val current = this[id]
-                if (current != null) {
-                    put(id, current.copy(name = name.trim(), phone = phone.trim()))
-                }
-            }
-        }
     }
 }
