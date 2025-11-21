@@ -65,6 +65,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.mkumar.common.extension.formatAsDate
+import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.model.SearchBy
 import com.mkumar.model.SearchMode
 import com.mkumar.model.SearchType
@@ -167,21 +169,34 @@ fun SearchScreen(
             SearchProgress()
         }
 
+        if (ui.searchType == SearchType.ORDERS) {
+            SearchOrderResultsSection(
+                orderResults = ui.orderResults,
+                isSearching = ui.isSearching,
+                query = ui.query,
+                onClear = vm::clearResults,
+                openOrder = { cid, orderId ->
+                    navController.navigate(Routes.orderEditor(customerId = cid, orderId = orderId))
+                }
+            )
+        } else {
+            SearchCustomerResultsSection(
+                results = ui.results,
+                recent = ui.recent,
+                searchBy = ui.searchBy,
+                isSearching = ui.isSearching,
+                query = ui.query,
+                onClear = vm::clearResults,
+                onAddCustomer = { prefillName, prefillPhone ->
+                    addName = prefillName ?: ""
+                    addPhone = prefillPhone ?: ""
+                    showCustomerSheet = true
+                },
+                openCustomer = openCustomer
+            )
+        }
         // RESULTS
-        SearchResultsSection(
-            results = ui.results,
-            recent = ui.recent,
-            searchBy = ui.searchBy,
-            isSearching = ui.isSearching,
-            query = ui.query,
-            onClear = vm::clearResults,
-            onAddCustomer = { prefillName, prefillPhone ->
-                addName = prefillName ?: ""
-                addPhone = prefillPhone ?: ""
-                showCustomerSheet = true
-            },
-            openCustomer = openCustomer
-        )
+
     }
 
     // ===========================================================
@@ -555,11 +570,132 @@ private fun SearchProgress() {
     }
 }
 
+@Composable
+fun SearchOrderResultsSection(
+    orderResults: List<OrderWithCustomerInfo>,
+    isSearching: Boolean,
+    query: String,
+    onClear: () -> Unit,
+    openOrder: (String, String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Header ----------------------------------------------
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Orders (${orderResults.size})",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            if (query.isNotBlank() && orderResults.isNotEmpty()) {
+                TextButton(onClick = onClear) {
+                    Text("Clear")
+                }
+            }
+        }
+
+        // Empty State ------------------------------------------
+        if (orderResults.isEmpty() && !isSearching) {
+            Box(
+                Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "No matching orders found.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            return
+        }
+
+        // List --------------------------------------------------
+        LazyColumn(
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+        ) {
+            itemsIndexed(orderResults, key = { _, it -> it.id }) { _, o ->
+                OrderResultItem(
+                    order = o,
+                    onClick = { openOrder(o.customerId, o.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun OrderResultItem(
+    order: OrderWithCustomerInfo,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .clickable { onClick() },
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(Modifier.padding(14.dp)) {
+
+            // Invoice Number + Date ------------------------------------------------
+            Text(
+                text = "Invoice: ${order.invoiceNumber}",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            Text(
+                text = order.customerName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "₹${order.totalAmount}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = order.createdAt.formatAsDate(),   // you can replace
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+
 // ================================================================
 // RESULTS + RECENT + ADD CUSTOMER BUTTON
 // ================================================================
 @Composable
-private fun SearchResultsSection(
+private fun SearchCustomerResultsSection(
     results: List<UiCustomerMini>,
     recent: List<UiCustomerMini>,
     searchBy: SearchBy,

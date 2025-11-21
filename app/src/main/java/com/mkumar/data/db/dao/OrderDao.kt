@@ -80,11 +80,10 @@ interface OrderDao {
 
     @Query("""
 SELECT * FROM orders
-WHERE customerId = :customerId
-AND invoiceSeq LIKE '%' || :invoice || '%'
+WHERE invoiceSeq LIKE '%' || :invoice || '%'
 ORDER BY occurredAt DESC
 """)
-    suspend fun searchOrdersByInvoice(customerId: String, invoice: String): List<OrderEntity>
+    suspend fun searchOrdersByInvoice(invoice: String): List<OrderEntity>
 
     @Query("""
 SELECT * FROM orders
@@ -124,7 +123,5 @@ ORDER BY occurredAt DESC
         category: String?,
         owner: String?
     ): List<OrderEntity>
-
-
 
 }

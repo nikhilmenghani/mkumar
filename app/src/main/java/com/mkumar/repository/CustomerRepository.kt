@@ -33,4 +33,8 @@ interface CustomerRepository {
         remainingOnly: Boolean,
         searchMode: SearchMode
     ): List<UiCustomerMini>
+
+    suspend fun searchOrdersAdvanced(
+        invoice: String?
+    ) : List<OrderWithCustomerInfo>
 }

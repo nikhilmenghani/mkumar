@@ -4,6 +4,7 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.data.db.entities.CustomerEntity
+import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.model.SearchBy
 import com.mkumar.model.SearchMode
 import com.mkumar.model.SearchType
@@ -45,6 +46,7 @@ class SearchViewModel @Inject constructor(
         val recent: List<UiCustomerMini> = emptyList(),
 
         val results: List<UiCustomerMini> = emptyList(),
+        val orderResults: List<OrderWithCustomerInfo> = emptyList(),
         val isSearching: Boolean = false
     ) {
         val hasFilters: Boolean get() = invoiceQuery.isNotBlank() || remainingOnly
@@ -108,19 +110,21 @@ class SearchViewModel @Inject constructor(
             _ui.map { it.query },
             _ui.map { it.invoiceQuery },
             _ui.map { it.remainingOnly },
-            _ui.map { it.mode }
-        ) { q, invoice, remaining, mode ->
-            Quad(q, invoice, remaining, mode)
+            _ui.map { it.mode },
+            _ui.map { it.searchType }
+        ) { q, invoice, remaining, mode, type ->
+            Quint(q, invoice, remaining, mode, type)
         }
             .debounce(300)
             .distinctUntilChanged()
-            .onEach { (q, invoice, remaining, mode) ->
+            .onEach { (q, invoice, remaining, mode, type) ->
 
-                // If no search text → show recent 5 customers
+                // No text → show recent customers only
                 if (q.isBlank() && invoice.isBlank() && !remaining) {
                     _ui.update {
                         it.copy(
                             results = emptyList(),
+                            orderResults = emptyList(),
                             isSearching = false
                         )
                     }
@@ -130,15 +134,27 @@ class SearchViewModel @Inject constructor(
                 _ui.update { it.copy(isSearching = true) }
 
                 viewModelScope.launch(Dispatchers.IO) {
-                    val results = runCatching {
-                        repo.searchCustomersAdvanced(
-                            nameOrPhone = q.takeIf { it.isNotBlank() },
-                            invoice = invoice.takeIf { it.isNotBlank() },
-                            remainingOnly = remaining,
-                            searchMode = mode
-                        )
-                    }.getOrDefault(emptyList())
-                    _ui.update { it.copy(results = results, isSearching = false) }
+                    when (type) {
+                        SearchType.CUSTOMERS -> {
+                            val results = runCatching {
+                                repo.searchCustomersAdvanced(
+                                    nameOrPhone = q.takeIf { it.isNotBlank() },
+                                    invoice = invoice.takeIf { it.isNotBlank() },
+                                    remainingOnly = remaining,
+                                    searchMode = mode
+                                )
+                            }.getOrDefault(emptyList())
+                            _ui.update { it.copy(results = results, isSearching = false) }
+                        }
+                        SearchType.ORDERS -> {
+                            val results = runCatching {
+                                repo.searchOrdersAdvanced(
+                                    invoice = q.takeIf { it.isNotBlank() },
+                                )
+                            }.getOrDefault(emptyList())
+                            _ui.update { it.copy(orderResults = results, isSearching = false) }
+                        }
+                    }
                 }
             }
             .launchIn(viewModelScope)
@@ -199,3 +215,4 @@ class SearchViewModel @Inject constructor(
 }
 
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
+private data class Quint<A, B, C, D, E>(val a: A, val b: B, val c: C, val d: D, val e: E)

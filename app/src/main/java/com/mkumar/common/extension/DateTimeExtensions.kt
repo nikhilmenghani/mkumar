@@ -1,8 +1,11 @@
 package com.mkumar.common.extension
 
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
 
 fun Long.toInstant(): Instant = Instant.ofEpochMilli(this)
 fun Instant.toEpochMillis(): Long = this.toEpochMilli()
@@ -45,3 +48,6 @@ fun Long.formatAsDateTime(
 ): String {
     return this.toInstant().format(format, zoneId)
 }
+
+fun Long.formatAsDate(): String =
+    SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(this))

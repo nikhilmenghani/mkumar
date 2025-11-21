@@ -10,6 +10,7 @@ import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.SearchDao
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
+import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.model.SearchMode
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.CustomerRepository
@@ -175,6 +176,34 @@ class CustomerRepositoryImpl @Inject constructor(
             .map { UiCustomerMini(it.id, it.name, it.phone) }
 
         return minis.orderByIds(finalIds)
+    }
+
+    override suspend fun searchOrdersAdvanced(
+        invoice: String?
+    ): List<OrderWithCustomerInfo> {
+        val orders = orderDao.searchOrdersByInvoice(invoice.toString())
+        if (orders.isEmpty()) return emptyList()
+
+        val customerIds = orders.map { it.customerId }.distinct()
+        val customers = customerDao.loadMiniByIds(customerIds)
+            .associateBy { it.id }
+
+        val result = orders.mapNotNull { order ->
+            val customer = customers[order.customerId]
+            customer?.let {
+                OrderWithCustomerInfo(
+                    id = order.id,
+                    invoiceNumber = order.invoiceSeq ?: 0L,
+                    createdAt = order.createdAt,
+                    totalAmount = order.totalAmount,
+                    remainingBalance = order.remainingBalance,
+                    customerId = it.id,
+                    customerName = it.name,
+                    customerPhone = it.phone
+                )
+            }
+        }
+        return result
     }
 
     // Preserve FTS/combined order
