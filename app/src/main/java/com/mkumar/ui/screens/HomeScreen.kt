@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -25,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -33,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -61,8 +58,6 @@ import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
-import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
-import com.mkumar.ui.components.cards.CustomerInfoCard
 import com.mkumar.ui.components.cards.CustomerListCard2
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.components.fabs.StandardFab
@@ -90,33 +85,11 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     var isDownloading by remember { mutableStateOf(false) }
 
     // UI flags
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    // ViewModel state
-    val customers by vm.customersUi.collectAsStateWithLifecycle()
     val currentCustomerId by vm.currentCustomerId.collectAsStateWithLifecycle()
     val openFormsForCurrentFlow = remember(currentCustomerId) { MutableStateFlow(emptySet<String>()) }
-    var sheetMode by remember { mutableStateOf(CustomerSheetMode.Add) }
-    var showCustomerSheet by remember { mutableStateOf(false) }
-    var editingCustomerId by remember { mutableStateOf<String?>(null) }
-    var name by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
     val haptic = LocalHapticFeedback.current
 
     var deleteTarget by remember { mutableStateOf<UiCustomerMini?>(null) }
-
-    val canSubmit by remember(name, phone) {
-        val digits = phone.count { it.isDigit() }
-        mutableStateOf(name.isNotBlank() && digits == 10)
-    }
-
-    LaunchedEffect(currentCustomerId) {
-        // Whenever the VM's openForms map changes, push only the current customer's set
-        vm.openForms.collect { map ->
-            openFormsForCurrentFlow.value = map[currentCustomerId].orEmpty()
-        }
-    }
 
     LaunchedEffect(Unit) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -159,17 +132,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 modifier = Modifier.onGloballyPositioned { coords ->
                     fabBlockHeight = with(density) { coords.size.height.toDp() }
                 }) {
-                StandardFab(
-                    text = "",
-                    icon = { Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(24.dp)) },
-                    onClick = {
-                        sheetMode = CustomerSheetMode.Add
-                        editingCustomerId = null
-                        name = ""
-                        phone = ""
-                        showCustomerSheet = true
-                    },
-                )
                 StandardFab(
                     text = "",
                     icon = { Icon(Icons.Default.PersonSearch, contentDescription = "Search", modifier = Modifier.size(24.dp)) },
@@ -229,55 +191,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 )
             }
         }
-    }
-
-    // --- Add Customer Sheet (local inputs; VM is multi-customer now) ---
-    if (showCustomerSheet) {
-        ShortBottomSheet(
-            title = if (sheetMode == CustomerSheetMode.Add) "Add Customer" else "Edit Customer",
-            showTitle = false,
-            sheetContent = {
-                CustomerInfoCard(
-                    title = if (sheetMode == CustomerSheetMode.Add) "Add Customer Information" else "Edit Customer Information",
-                    name = name,
-                    phone = phone,
-                    onNameChange = { name = it },
-                    onPhoneChange = { phone = it },
-
-                    onSubmit = {
-                        if (!canSubmit) {
-                            // optional feedback:
-                            // scope.launch { snackbarHostState.showSnackbar("Enter at least 9 digits") }
-                            return@CustomerInfoCard
-                        }
-                        if (sheetMode == CustomerSheetMode.Add) {
-                            val customerId = vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
-                            vm.selectCustomer(customerId)
-                            navController.navigate(Routes.customerDetail(customerId))
-                        } else {
-                            editingCustomerId?.let { vm.updateCustomer(it, name.trim(), phone.trim()) }
-                        }
-                        showCustomerSheet = false
-                    }
-                )
-            },
-            onDismiss = { showCustomerSheet = false },
-
-            showDismiss = true,
-            showDone = canSubmit,
-
-            onDoneClick = {
-                if (!canSubmit) return@ShortBottomSheet
-                if (sheetMode == CustomerSheetMode.Add) {
-                    val customerId = vm.createOrUpdateCustomerCard(name.trim(), phone.trim())
-                    vm.selectCustomer(customerId)
-                    navController.navigate(Routes.customerDetail(customerId))
-                } else {
-                    editingCustomerId?.let { vm.updateCustomer(it, name.trim(), phone.trim()) }
-                }
-                showCustomerSheet = false
-            }
-        )
     }
 
     if (deleteTarget != null) {

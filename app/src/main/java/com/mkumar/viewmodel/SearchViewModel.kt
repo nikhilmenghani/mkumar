@@ -3,6 +3,7 @@ package com.mkumar.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.model.SearchBy
 import com.mkumar.model.SearchMode
 import com.mkumar.model.SearchType
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 
@@ -75,7 +77,7 @@ class SearchViewModel @Inject constructor(
         observe()
     }
 
-    private fun loadRecent() {
+    fun loadRecent() {
         viewModelScope.launch(Dispatchers.IO) {
             val list = repo.getRecentCustomerList(limit = 5)
             _ui.update { it.copy(recent = list) }
@@ -163,6 +165,32 @@ class SearchViewModel @Inject constructor(
 
     fun clearResults() {
         _ui.update { it.copy(results = emptyList(), isSearching = false) }
+    }
+
+    fun createOrUpdateCustomerCard(name: String, phone: String, email: String? = null): String {
+        val customer = CustomerEntity(
+            id = UUID.randomUUID().toString(), // or ULID
+            name = name.trim(),
+            phone = phone.trim(),
+        )
+        viewModelScope.launch {
+            // If you want "update if same phone exists", do a DAO lookup and reuse ID.
+            repo.upsert(customer)
+            // optional: update search index here if you wired SearchDao
+        }
+        return customer.id
+    }
+
+    fun updateCustomer(id: String, name: String, phone: String) {
+        viewModelScope.launch {
+            repo.upsert(
+                CustomerEntity(
+                    id = id,                // keep same id to update
+                    name = name.trim(),
+                    phone = phone.trim()
+                )
+            )
+        }
     }
 
 

@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,18 +64,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.mkumar.model.SearchBy
 import com.mkumar.model.SearchMode
 import com.mkumar.model.SearchType
 import com.mkumar.model.UiCustomerMini
+import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
+import com.mkumar.ui.components.cards.CustomerInfoCard
+import com.mkumar.ui.navigation.Routes
+import com.mkumar.ui.screens.CustomerSheetMode
 import com.mkumar.ui.screens.RecentCustomersSection
 import com.mkumar.viewmodel.SearchViewModel
 import kotlinx.coroutines.delay
 
-// -------------------------------------------------------------------------------------
-// Main Composable
-// -------------------------------------------------------------------------------------
-
+// ================================================================
+// MAIN SCREEN
+// ================================================================
 @Composable
 fun SearchScreen(
     navController: NavHostController,
@@ -84,7 +90,23 @@ fun SearchScreen(
     val ui by vm.ui.collectAsState()
     var showAdvancedOptions by remember { mutableStateOf(false) }
 
-    // Auto-focus
+    // -------------------------------
+    // ADD CUSTOMER BOTTOM-SHEET STATE
+    // -------------------------------
+    var showCustomerSheet by remember { mutableStateOf(false) }
+    var addName by remember { mutableStateOf("") }
+    var addPhone by remember { mutableStateOf("") }
+
+    val canSubmit by derivedStateOf {
+        addName.isNotBlank() || addPhone.length >= 9
+    }
+
+    var sheetMode by remember { mutableStateOf(CustomerSheetMode.Add) }
+    var editingCustomerId by remember { mutableStateOf<String?>(null) }
+
+    // -------------------------------
+    // Auto-focus Search Box
+    // -------------------------------
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
 
@@ -94,6 +116,13 @@ fun SearchScreen(
         keyboard?.show()
     }
 
+    val navBackStackEntry = navController.currentBackStackEntryAsState()
+    LaunchedEffect(navBackStackEntry.value) {
+        // Call a function in your ViewModel to refresh recents
+        vm.loadRecent()
+    }
+
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -101,7 +130,7 @@ fun SearchScreen(
             .imePadding()
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
     ) {
-        // Header
+        // HEADER
         SearchHeader(
             query = ui.query,
             isSearching = ui.isSearching,
@@ -112,7 +141,7 @@ fun SearchScreen(
             focusRequester = focusRequester
         )
 
-        // Advanced Options (Mode + SearchBy + SearchType)
+        // ADVANCED OPTIONS
         AnimatedVisibility(
             visible = showAdvancedOptions,
             enter = expandVertically() + fadeIn(),
@@ -128,7 +157,7 @@ fun SearchScreen(
             )
         }
 
-        // Search progress UI
+        // SEARCH PROGRESS
         AnimatedVisibility(
             visible = ui.isSearching,
             enter = expandVertically(),
@@ -137,23 +166,78 @@ fun SearchScreen(
             SearchProgress()
         }
 
-        // Results
+        // RESULTS
         SearchResultsSection(
             results = ui.results,
             recent = ui.recent,
+            searchBy = ui.searchBy,
             isSearching = ui.isSearching,
             query = ui.query,
             onClear = vm::clearResults,
-            openCustomer = openCustomer,
-            onDismissRequest = onBack
+            onAddCustomer = { prefillName, prefillPhone ->
+                addName = prefillName ?: ""
+                addPhone = prefillPhone ?: ""
+                showCustomerSheet = true
+            },
+            openCustomer = openCustomer
+        )
+    }
+
+    // ===========================================================
+    // ADD CUSTOMER BOTTOM SHEET
+    // ===========================================================
+    if (showCustomerSheet) {
+        ShortBottomSheet(
+            title = if (sheetMode == CustomerSheetMode.Add) "Add Customer" else "Edit Customer",
+            showTitle = false,
+            sheetContent = {
+                CustomerInfoCard(
+                    title = if (sheetMode == CustomerSheetMode.Add) "Add Customer Information" else "Edit Customer Information",
+                    name = addName,
+                    phone = addPhone,
+                    onNameChange = { addName = it },
+                    onPhoneChange = { addPhone = it },
+
+                    onSubmit = {
+                        if (!canSubmit) {
+                            // optional feedback:
+                            // scope.launch { snackbarHostState.showSnackbar("Enter at least 9 digits") }
+                            return@CustomerInfoCard
+                        }
+                        if (sheetMode == CustomerSheetMode.Add) {
+                            val customerId = vm.createOrUpdateCustomerCard(addName.trim(), addPhone.trim())
+//                            vm.selectCustomer(customerId)
+                            navController.navigate(Routes.customerDetail(customerId))
+                        } else {
+                            editingCustomerId?.let { vm.updateCustomer(it, addPhone.trim(), addPhone.trim()) }
+                        }
+                        showCustomerSheet = false
+                    }
+                )
+            },
+            onDismiss = { showCustomerSheet = false },
+
+            showDismiss = true,
+            showDone = canSubmit,
+
+            onDoneClick = {
+                if (!canSubmit) return@ShortBottomSheet
+                if (sheetMode == CustomerSheetMode.Add) {
+                    val customerId = vm.createOrUpdateCustomerCard(addName.trim(), addPhone.trim())
+//                    vm.selectCustomer(customerId)
+                    navController.navigate(Routes.customerDetail(customerId))
+                } else {
+                    editingCustomerId?.let { vm.updateCustomer(it, addName.trim(), addPhone.trim()) }
+                }
+                showCustomerSheet = false
+            }
         )
     }
 }
 
-// -------------------------------------------------------------------------------------
-// Header
-// -------------------------------------------------------------------------------------
-
+// ================================================================
+// HEADER
+// ================================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchHeader(
@@ -189,7 +273,7 @@ private fun SearchHeader(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Back"
+                        contentDescription = null
                     )
                 }
             },
@@ -198,56 +282,38 @@ private fun SearchHeader(
                     when {
                         isSearching -> {
                             IconButton(onClick = onStopClick) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Stop,
-                                    contentDescription = "Stop search"
-                                )
+                                Icon(Icons.Rounded.Stop, null)
                             }
                         }
-
                         query.isNotEmpty() -> {
                             IconButton(onClick = { onQueryChange("") }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    contentDescription = "Clear"
-                                )
+                                Icon(Icons.Filled.Close, null)
                             }
                         }
                     }
 
                     IconButton(onClick = onAdvancedToggle) {
-                        Icon(
-                            imageVector = Icons.Rounded.Tune,
-                            contentDescription = "Advanced options"
-                        )
+                        Icon(Icons.Rounded.Tune, null)
                     }
                 }
             },
             singleLine = true,
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
             ),
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Search,
                 capitalization = KeyboardCapitalization.Words
             ),
-            keyboardActions = KeyboardActions(
-                // Search is already debounced on every change.
-                onSearch = { /* no-op; search is automatic */ }
-            )
+            keyboardActions = KeyboardActions(onSearch = {})
         )
     }
 }
 
-// -------------------------------------------------------------------------------------
-// Advanced Options
-// -------------------------------------------------------------------------------------
-
+// ================================================================
+// ADVANCED OPTIONS
+// ================================================================
 @Composable
 private fun SearchAdvancedOptions(
     mode: SearchMode,
@@ -261,8 +327,8 @@ private fun SearchAdvancedOptions(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
+                Brush.verticalGradient(
+                    listOf(
                         MaterialTheme.colorScheme.surfaceContainerHigh,
                         MaterialTheme.colorScheme.surfaceContainerLow
                     )
@@ -278,18 +344,13 @@ private fun SearchAdvancedOptions(
 
         Spacer(Modifier.height(12.dp))
 
-        // Fast / Flexible
+        // Mode
         ModeToggle(mode, onModeChange)
 
         Spacer(Modifier.height(16.dp))
 
-        // Search By (Name / Phone / Invoice)
-        Text(
-            "Search by",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-
+        // Search By
+        Text("Search by", color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(8.dp))
 
         Row {
@@ -300,21 +361,17 @@ private fun SearchAdvancedOptions(
             SearchByChip("Invoice", SearchBy.INVOICE, searchBy, onSearchByChange)
         }
 
-        // Search Type (Customers / Orders)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 16.dp)
-        ) {
-            Text(
-                "Return results:",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        // Search Type
+        Spacer(Modifier.height(16.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Return results:", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(12.dp))
 
             Switch(
                 checked = searchType == SearchType.ORDERS,
-                onCheckedChange = { checked ->
-                    val newType = if (checked) SearchType.ORDERS else SearchType.CUSTOMERS
+                onCheckedChange = {
+                    val newType = if (it) SearchType.ORDERS else SearchType.CUSTOMERS
                     onSearchTypeChange(newType)
                 }
             )
@@ -322,7 +379,8 @@ private fun SearchAdvancedOptions(
             Spacer(Modifier.width(8.dp))
 
             Text(
-                if (searchType == SearchType.ORDERS) "Orders" else "Customers",
+                if (searchType == SearchType.ORDERS) "Orders"
+                else "Customers",
                 color = MaterialTheme.colorScheme.primary
             )
         }
@@ -394,10 +452,9 @@ private fun OptionChip(label: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-// -------------------------------------------------------------------------------------
-// Progress
-// -------------------------------------------------------------------------------------
-
+// ================================================================
+// SEARCH PROGRESS
+// ================================================================
 @Composable
 private fun SearchProgress() {
     Column(
@@ -420,26 +477,25 @@ private fun SearchProgress() {
     }
 }
 
-// -------------------------------------------------------------------------------------
-// Results
-// -------------------------------------------------------------------------------------
-
+// ================================================================
+// RESULTS + RECENT + ADD CUSTOMER BUTTON
+// ================================================================
 @Composable
 private fun SearchResultsSection(
     results: List<UiCustomerMini>,
     recent: List<UiCustomerMini>,
+    searchBy: SearchBy,
     isSearching: Boolean,
     query: String,
     onClear: () -> Unit,
-    openCustomer: (String) -> Unit,
-    onDismissRequest: () -> Unit
+    onAddCustomer: (prefillName: String?, prefillPhone: String?) -> Unit,
+    openCustomer: (String) -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Header
+    Column(modifier = Modifier.fillMaxSize()) {
+
         val headerTitle =
-            if (query.isBlank()) "Results" else "Results (${results.size})"
+            if (query.isBlank()) "Recent customers"
+            else "Results (${results.size})"
 
         Row(
             Modifier
@@ -463,33 +519,94 @@ private fun SearchResultsSection(
             }
         }
 
-        // When query is blank → show recent customers (if any)
+        // ---------------------------------------------------------
+        // NO QUERY → Show Recent
+        // ---------------------------------------------------------
         if (query.isBlank()) {
             if (recent.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         "No recent customers.",
-                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
                 RecentCustomersSection(
                     customers = recent,
-                    openCustomer = { id ->
-                        openCustomer(id)
-                    },
-                    onDismissRequest = onDismissRequest
+                    openCustomer = openCustomer,
+                    onDismissRequest = {}
                 )
             }
             return
         }
 
-        // When query is non-blank but no results and not searching → empty state
+        // ---------------------------------------------------------
+        // NO RESULTS → Add Customer Button
+        // ---------------------------------------------------------
         if (results.isEmpty() && !isSearching) {
+
+            // Don't allow adding customers while searching by Invoice
+            if (searchBy == SearchBy.INVOICE) {
+                Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No matches found.")
+                }
+                return
+            }
+
+            NoResultsAddCustomer(
+                query = query,
+                searchBy = searchBy,
+                openAddCustomerSheet = onAddCustomer
+            )
+            return
+        }
+
+        // ---------------------------------------------------------
+        // RESULTS LIST
+        // ---------------------------------------------------------
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+        ) {
+            itemsIndexed(results, key = { _, it -> it.id }) { _, c ->
+                SearchResultItem(
+                    c = c,
+                    onClick = { openCustomer(c.id) }
+                )
+            }
+        }
+    }
+}
+
+// ================================================================
+// ADD CUSTOMER BUTTON (NO RESULTS STATE)
+// ================================================================
+@Composable
+private fun NoResultsAddCustomer(
+    query: String,
+    searchBy: SearchBy,
+    openAddCustomerSheet: (String?, String?) -> Unit
+) {
+    val prefillName: String?
+    val prefillPhone: String?
+
+    when (searchBy) {
+        SearchBy.NAME -> {
+            prefillName = query
+            prefillPhone = null
+        }
+        SearchBy.PHONE -> {
+            prefillName = null
+            prefillPhone = query
+        }
+        SearchBy.INVOICE -> {
             Box(
                 Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -498,30 +615,53 @@ private fun SearchResultsSection(
             }
             return
         }
+    }
 
-        // Results list
-        LazyColumn(
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            "No matching customers found.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .clickable {
+                    openAddCustomerSheet(prefillName, prefillPhone)
+                },
+            color = MaterialTheme.colorScheme.primary,
+            shape = RoundedCornerShape(12.dp)
         ) {
-            itemsIndexed(results, key = { _, it -> it.id }) { _, c ->
-                SearchResultItem(
-                    c = c,
-                    onClick = {
-                        openCustomer(c.id)     // navigate properly
-                    }
+            Box(
+                Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "Add customer",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
     }
 }
 
+// ================================================================
+// RESULT ITEM
+// ================================================================
 @Composable
-fun SearchResultItem(
-    c: UiCustomerMini,
-    onClick: () -> Unit
-) {
+fun SearchResultItem(c: UiCustomerMini, onClick: () -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
