@@ -135,23 +135,6 @@ class CustomerDetailsViewModel @Inject constructor(
         }
     }
 
-//    fun shareOrder(orderId: String, invoiceNumber: String, logo: Bitmap) {
-//        viewModelScope.launch {
-//            try {
-//                _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
-//                val uri = generateInvoicePdf(orderId, invoiceNumber, logo)
-//                if (uri != null) {
-//                    _effects.tryEmit(CustomerDetailsEffect.ShareInvoice(orderId, uri))
-//                    _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Invoice ready."))
-//                } else {
-//                    _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Order not found."))
-//                }
-//            } catch (t: Throwable) {
-//                _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Failed to prepare share: ${t.message}"))
-//            }
-//        }
-//    }
-
     fun viewInvoice(orderId: String, invoiceNumber: String) {
         viewModelScope.launch {
             _effects.emit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
@@ -164,20 +147,6 @@ class CustomerDetailsViewModel @Inject constructor(
                     _effects.emit(CustomerDetailsEffect.ShowMessage("Failed: ${r.throwable.message}"))
             }
         }
-//        viewModelScope.launch {
-//            try {
-//                _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
-//                val uri = generateInvoicePdf(orderId, invoiceNumber, logo)
-//                if (uri != null) {
-//                    _effects.tryEmit(CustomerDetailsEffect.ViewInvoice(orderId, invoiceNumber, uri))
-//                    _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Invoice ready."))
-//                } else {
-//                    _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Order not found."))
-//                }
-//            } catch (t: Throwable) {
-//                _effects.tryEmit(CustomerDetailsEffect.ShowMessage("Failed to create/open invoice: ${t.message}"))
-//            }
-//        }
     }
 
     private fun emitMessage(msg: String) {

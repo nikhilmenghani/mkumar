@@ -4,17 +4,23 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.data.db.entities.CustomerEntity
+import com.mkumar.domain.invoice.InvoiceManager
+import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.model.SearchBy
 import com.mkumar.model.SearchMode
 import com.mkumar.model.SearchType
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.CustomerRepository
+import com.mkumar.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -30,7 +36,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val repo: CustomerRepository
+    private val repo: CustomerRepository,
+    private val invoiceManager: InvoiceManager,
+    private val orderRepo: OrderRepository
 ) : ViewModel() {
 
     data class UiState(
@@ -54,6 +62,9 @@ class SearchViewModel @Inject constructor(
             (if (invoiceQuery.isNotBlank()) 1 else 0) +
                     (if (remainingOnly) 1 else 0)
     }
+
+    private val _effects = MutableSharedFlow<CustomerDetailsEffect>(extraBufferCapacity = 64)
+    val effects: Flow<CustomerDetailsEffect> = _effects.asSharedFlow()
 
     private val _ui = MutableStateFlow(UiState())
     val ui: StateFlow<UiState> = _ui.asStateFlow()
@@ -211,7 +222,48 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    fun shareInvoice(orderId: String, invoiceNumber: String) {
+        viewModelScope.launch {
+            _effects.emit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
+            when (val r = invoiceManager.createInvoice(orderId, invoiceNumber)) {
+                is InvoiceManager.InvoiceResult.Success ->
+                    _effects.emit(CustomerDetailsEffect.ShareInvoice(orderId, r.uri))
+                is InvoiceManager.InvoiceResult.NotFound ->
+                    _effects.emit(CustomerDetailsEffect.ShowMessage(r.message))
+                is InvoiceManager.InvoiceResult.Error ->
+                    _effects.emit(CustomerDetailsEffect.ShowMessage("Failed: ${r.throwable.message}"))
+            }
+        }
+    }
 
+    fun viewInvoice(orderId: String, invoiceNumber: String) {
+        viewModelScope.launch {
+            _effects.emit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
+            when (val r = invoiceManager.createInvoice(orderId, invoiceNumber)) {
+                is InvoiceManager.InvoiceResult.Success ->
+                    _effects.emit(CustomerDetailsEffect.ViewInvoice(orderId, invoiceNumber, r.uri))
+                is InvoiceManager.InvoiceResult.NotFound ->
+                    _effects.emit(CustomerDetailsEffect.ShowMessage(r.message))
+                is InvoiceManager.InvoiceResult.Error ->
+                    _effects.emit(CustomerDetailsEffect.ShowMessage("Failed: ${r.throwable.message}"))
+            }
+        }
+    }
+
+    fun deleteOrder(orderId: String) {
+        viewModelScope.launch {
+            try {
+                orderRepo.delete(orderId)
+                emitMessage("Order deleted.")
+            } catch (t: Throwable) {
+                emitMessage("Failed to delete order: ${t.message}")
+            }
+        }
+    }
+
+    private fun emitMessage(msg: String) {
+        _effects.tryEmit(CustomerDetailsEffect.ShowMessage(msg))
+    }
 }
 
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)

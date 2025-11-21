@@ -1,5 +1,8 @@
 package com.mkumar.ui.screens.search
 
+import android.content.ClipData
+import android.content.Intent
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -35,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,7 +69,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.mkumar.MainActivity
 import com.mkumar.common.extension.formatAsDate
+import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.CustomerSheetMode
 import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.model.SearchBy
@@ -74,11 +80,14 @@ import com.mkumar.model.SearchType
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.cards.CustomerInfoCard
+import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.RecentCustomersSection
 import com.mkumar.ui.screens.RecentOrdersList
+import com.mkumar.ui.screens.customer.humanReadableInvoiceLocation
 import com.mkumar.viewmodel.SearchViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 
 // ================================================================
 // MAIN SCREEN
@@ -112,11 +121,51 @@ fun SearchScreen(
     // -------------------------------
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalActivity.current as MainActivity
+    val (pendingDeleteOrderId, setPendingDeleteOrderId) = remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         delay(100)
         focusRequester.requestFocus()
         keyboard?.show()
+        vm.effects.collectLatest { effect ->
+            when (effect) {
+                is CustomerDetailsEffect.ShowMessage ->
+                    snackbarHostState.showSnackbar(effect.message)
+
+                is CustomerDetailsEffect.ViewInvoice -> {
+                    val uri = effect.uri
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "application/pdf")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    val chooser = Intent.createChooser(intent, "Open invoice")
+                    runCatching { context.startActivity(chooser) }
+                        .onFailure { _ ->
+                            val hint = humanReadableInvoiceLocation(effect.orderId, effect.invoiceNumber)
+                            snackbarHostState.showSnackbar(
+                                "No PDF app found. Invoice saved at: $hint"
+                            )
+                        }
+                }
+
+                is CustomerDetailsEffect.ShareInvoice -> {
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, effect.uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        clipData = ClipData.newRawUri("invoice", effect.uri)
+                    }
+                    runCatching { context.startActivity(Intent.createChooser(send, "Share invoice")) }
+                        .onFailure {
+                            snackbarHostState.showSnackbar(
+                                "No app to share PDF. File is in Files > Downloads > Documents > MKumar > Invoices"
+                            )
+                        }
+                }
+            }
+        }
     }
 
     val navBackStackEntry = navController.currentBackStackEntryAsState()
@@ -179,8 +228,17 @@ fun SearchScreen(
                 isSearching = ui.isSearching,
                 query = ui.query,
                 onClear = vm::clearResults,
-                openOrder = { orderId, cid ->
-                    navController.navigate(Routes.orderEditor(customerId = cid, orderId = orderId))
+                onOrderClick = { orderId, customerId ->
+                    navController.navigate(Routes.orderEditor(customerId, orderId))
+                },
+                onInvoiceClick = { orderId, invoiceNumber ->
+                    vm.viewInvoice(orderId, invoiceNumber.toString())
+                },
+                onShareClick = { orderId, invoiceNumber ->
+                    vm.shareInvoice(orderId, invoiceNumber.toString())
+                },
+                onDeleteClick = { orderId ->
+                    setPendingDeleteOrderId(orderId)
                 }
             )
         } else {
@@ -203,6 +261,20 @@ fun SearchScreen(
 
     }
 
+    if (pendingDeleteOrderId != null) {
+        ConfirmActionDialog(
+            title = "Delete Order",
+            message = "This action cannot be undone. Delete this order?",
+            confirmLabel = "Delete",
+            dismissLabel = "Cancel",
+            highlightConfirmAsDestructive = true,
+            onConfirm = {
+                vm.deleteOrder(pendingDeleteOrderId)
+                setPendingDeleteOrderId(null)
+            },
+            onDismiss = { setPendingDeleteOrderId(null) }
+        )
+    }
     // ===========================================================
     // ADD CUSTOMER BOTTOM SHEET
     // ===========================================================
@@ -581,7 +653,10 @@ fun SearchOrderResultsSection(
     isSearching: Boolean,
     query: String,
     onClear: () -> Unit,
-    openOrder: (String, String) -> Unit
+    onOrderClick: (orderId: String, customerId: String) -> Unit,
+    onInvoiceClick: (orderId: String, invoiceNumber: Long) -> Unit,
+    onShareClick: (orderId: String, invoiceNumber: Long) -> Unit,
+    onDeleteClick: (orderId: String) -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize()
@@ -626,7 +701,10 @@ fun SearchOrderResultsSection(
         Column(Modifier.padding(14.dp)) {
             RecentOrdersList(
                 orders = orderResults,
-                onOrderClick = openOrder
+                onOrderClick = onOrderClick,
+                onInvoiceClick = onInvoiceClick,
+                onShareClick = onShareClick,
+                onDeleteClick = onDeleteClick
             )
         }
     }

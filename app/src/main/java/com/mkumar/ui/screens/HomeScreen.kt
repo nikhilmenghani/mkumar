@@ -1,5 +1,7 @@
 package com.mkumar.ui.screens
 
+import android.content.ClipData
+import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -60,6 +63,7 @@ import com.mkumar.common.constant.AppConstants.getExternalStorageDir
 import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
+import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.cards.CustomerListCard2
@@ -70,10 +74,12 @@ import com.mkumar.ui.navigation.Material3BottomNavigationBar
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.navigation.Screen
 import com.mkumar.ui.navigation.Screens
+import com.mkumar.ui.screens.customer.humanReadableInvoiceLocation
 import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.worker.DownloadWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,10 +97,50 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
 
     var deleteTarget by remember { mutableStateOf<UiCustomerMini?>(null) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val (pendingDeleteOrderId, setPendingDeleteOrderId) = remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             latestVersion = fetchLatestVersion()
             isLatestVersion = (currentVersion == latestVersion) || (latestVersion == "Unknown")
+            vm.effects.collectLatest { effect ->
+                when (effect) {
+                    is CustomerDetailsEffect.ShowMessage ->
+                        snackbarHostState.showSnackbar(effect.message)
+
+                    is CustomerDetailsEffect.ViewInvoice -> {
+                        val uri = effect.uri
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, "application/pdf")
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        val chooser = Intent.createChooser(intent, "Open invoice")
+                        runCatching { context.startActivity(chooser) }
+                            .onFailure { _ ->
+                                val hint = humanReadableInvoiceLocation(effect.orderId, effect.invoiceNumber)
+                                snackbarHostState.showSnackbar(
+                                    "No PDF app found. Invoice saved at: $hint"
+                                )
+                            }
+                    }
+
+                    is CustomerDetailsEffect.ShareInvoice -> {
+                        val send = Intent(Intent.ACTION_SEND).apply {
+                            type = "application/pdf"
+                            putExtra(Intent.EXTRA_STREAM, effect.uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            clipData = ClipData.newRawUri("invoice", effect.uri)
+                        }
+                        runCatching { context.startActivity(Intent.createChooser(send, "Share invoice")) }
+                            .onFailure {
+                                snackbarHostState.showSnackbar(
+                                    "No app to share PDF. File is in Files > Downloads > Documents > MKumar > Invoices"
+                                )
+                            }
+                    }
+                }
+            }
         }
     }
 
@@ -217,12 +263,35 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 RecentOrdersList(
                     orders = vm.recentOrders.collectAsStateWithLifecycle().value,
                     onOrderClick = { orderId, customerId ->
-//                        vm.selectCustomer(customerId)
                         navController.navigate(Routes.orderEditor(customerId, orderId))
+                    },
+                    onInvoiceClick = { orderId, invoiceNumber ->
+                        vm.viewInvoice(orderId, invoiceNumber.toString())
+                    },
+                    onShareClick = { orderId, invoiceNumber ->
+                        vm.shareInvoice(orderId, invoiceNumber.toString())
+                    },
+                    onDeleteClick = { orderId ->
+                        setPendingDeleteOrderId(orderId)
                     }
                 )
             }
         }
+    }
+
+    if (pendingDeleteOrderId != null) {
+        ConfirmActionDialog(
+            title = "Delete Order",
+            message = "This action cannot be undone. Delete this order?",
+            confirmLabel = "Delete",
+            dismissLabel = "Cancel",
+            highlightConfirmAsDestructive = true,
+            onConfirm = {
+                vm.deleteOrder(pendingDeleteOrderId)
+                setPendingDeleteOrderId(null)
+            },
+            onDismiss = { setPendingDeleteOrderId(null) }
+        )
     }
 
     if (deleteTarget != null) {

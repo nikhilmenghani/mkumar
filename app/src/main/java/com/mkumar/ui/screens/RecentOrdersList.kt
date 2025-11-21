@@ -44,7 +44,10 @@ import com.mkumar.ui.components.ProOverflowMenuIcons
 @Composable
 fun RecentOrdersList(
     orders: List<OrderWithCustomerInfo>,
-    onOrderClick: (orderId: String, customerId: String) -> Unit
+    onOrderClick: (orderId: String, customerId: String) -> Unit,
+    onInvoiceClick: (orderId: String, invoiceNumber: Long) -> Unit,
+    onShareClick: (orderId: String, invoiceNumber: Long) -> Unit,
+    onDeleteClick: (orderId: String) -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -63,13 +66,13 @@ fun RecentOrdersList(
                         onOrderClick(order.id, order.customerId)
                     },
                     onInvoice = {
-                        onOrderClick(order.id, order.customerId)
+                        onInvoiceClick(order.id, order.invoiceNumber)
                     },
                     onShare = {
-                        onOrderClick(order.id, order.customerId)
+                        onShareClick(order.id, order.invoiceNumber)
                     },
                     onDelete = {
-                        onOrderClick(order.id, order.customerId)
+                        onDeleteClick(order.id)
                     })
             }
         }
