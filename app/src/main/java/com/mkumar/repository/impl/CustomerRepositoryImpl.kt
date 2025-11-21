@@ -179,9 +179,9 @@ class CustomerRepositoryImpl @Inject constructor(
         }
 
         // 2. Invoice filter
-        if (!invoice.isNullOrBlank()) {
-            idSets += customerDao.findCustomerIdsByInvoice(invoice)
-        }
+//        if (!invoice.isNullOrBlank()) {
+//            idSets += customerDao.findCustomerIdsByInvoice(invoice)
+//        }
 
         // 3. Remaining > 0 filter
         if (remainingOnly) {

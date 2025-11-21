@@ -271,6 +271,7 @@ fun SearchScreen(
             onConfirm = {
                 vm.deleteOrder(pendingDeleteOrderId)
                 setPendingDeleteOrderId(null)
+                vm.triggerSearch()
             },
             onDismiss = { setPendingDeleteOrderId(null) }
         )

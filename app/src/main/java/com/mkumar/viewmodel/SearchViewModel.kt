@@ -55,7 +55,8 @@ class SearchViewModel @Inject constructor(
 
         val results: List<UiCustomerMini> = emptyList(),
         val orderResults: List<OrderWithCustomerInfo> = emptyList(),
-        val isSearching: Boolean = false
+        val isSearching: Boolean = false,
+        val forceRefresh: Boolean = false
     ) {
         val hasFilters: Boolean get() = invoiceQuery.isNotBlank() || remainingOnly
         val filterCount: Int get() =
@@ -119,19 +120,19 @@ class SearchViewModel @Inject constructor(
     private fun observe() {
         combine(
             _ui.map { it.query },
-            _ui.map { it.invoiceQuery },
+            _ui.map { it.forceRefresh },
             _ui.map { it.remainingOnly },
             _ui.map { it.mode },
             _ui.map { it.searchType }
-        ) { q, invoice, remaining, mode, type ->
-            Quint(q, invoice, remaining, mode, type)
+        ) { q, forceRefresh, remaining, mode, type ->
+            Quint(q, forceRefresh, remaining, mode, type)
         }
             .debounce(300)
             .distinctUntilChanged()
             .onEach { (q, invoice, remaining, mode, type) ->
 
                 // No text → show recent customers only
-                if (q.isBlank() && invoice.isBlank() && !remaining) {
+                if (q.isBlank() && !remaining) {
                     _ui.update {
                         it.copy(
                             results = emptyList(),
@@ -150,7 +151,7 @@ class SearchViewModel @Inject constructor(
                             val results = runCatching {
                                 repo.searchCustomersAdvanced(
                                     nameOrPhone = q.takeIf { it.isNotBlank() },
-                                    invoice = invoice.takeIf { it.isNotBlank() },
+                                    invoice = q.takeIf { it.isNotBlank() },
                                     remainingOnly = remaining,
                                     searchMode = mode
                                 )
@@ -177,14 +178,7 @@ class SearchViewModel @Inject constructor(
     }
 
     fun triggerSearch() {
-        // Setting the same query value will NOT trigger debounce
-        // So force-search by toggling isSearching flag
-        val current = _ui.value
-        if (current.query.isBlank() && current.invoiceQuery.isBlank() && !current.remainingOnly) {
-            return
-        }
-
-        _ui.update { it.copy(isSearching = true) }
+        _ui.update { it.copy(forceRefresh = !it.forceRefresh) }
     }
 
     fun stopSearch() {
