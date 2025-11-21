@@ -37,15 +37,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mkumar.data.CustomerFormState
+import com.mkumar.model.UiCustomerMini
 
 @Composable
 fun CustomerListCard(
-    customer: CustomerFormState,
+    customer: UiCustomerMini,
     modifier: Modifier = Modifier,
-    onClick: (CustomerFormState) -> Unit = {},
-    onUploadToGitHub: (CustomerFormState) -> Unit = {},
-    onGeneratePdf: (CustomerFormState) -> Unit = {}
+    onClick: (UiCustomerMini) -> Unit = {},
+    onUploadToGitHub: (UiCustomerMini) -> Unit = {},
+    onGeneratePdf: (UiCustomerMini) -> Unit = {}
 ) {
     Card(
         modifier = modifier
@@ -172,7 +172,7 @@ private fun InitialsAvatar(
 @Preview(showBackground = true)
 @Composable
 fun PreviewCustomerListCard() {
-    val sampleCustomer = CustomerFormState(
+    val sampleCustomer = UiCustomerMini(
         id = "12345",
         name = "Jane Doe",
         phone = "9876543210"

@@ -11,12 +11,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.mkumar.data.CustomerFormState
+import com.mkumar.model.UiCustomerMini
 
 @Composable
 fun DashboardRecentCustomersSection(
-    customers: List<CustomerFormState>,
-    onCustomerClick: (CustomerFormState) -> Unit
+    customers: List<UiCustomerMini>,
+    onCustomerClick: (UiCustomerMini) -> Unit
 ) {
     if (customers.isEmpty()) return
 
@@ -39,7 +39,7 @@ fun DashboardRecentCustomersSection(
 
 @Composable
 fun DashboardCustomerCard(
-    customer: CustomerFormState,
+    customer: UiCustomerMini,
     onClick: () -> Unit
 ) {
     Surface(

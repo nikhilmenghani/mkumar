@@ -8,7 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
-import com.mkumar.repository.impl.UiCustomerMini
+import com.mkumar.model.UiCustomerMini
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -30,6 +30,9 @@ interface CustomerDao {
 
     @Query("SELECT * FROM customers ORDER BY createdAt DESC LIMIT :limit")
     fun getRecentCustomers(limit: Int): Flow<List<CustomerEntity>>
+
+    @Query("SELECT * FROM customers ORDER BY createdAt DESC LIMIT :limit")
+    fun getRecentCustomerList(limit: Int): List<CustomerEntity>
 
 
     @Query("SELECT * FROM customers ORDER BY updatedAt DESC")

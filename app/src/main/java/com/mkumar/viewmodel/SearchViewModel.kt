@@ -3,10 +3,13 @@ package com.mkumar.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mkumar.model.SearchBy
+import com.mkumar.model.SearchMode
+import com.mkumar.model.SearchType
+import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.CustomerRepository
-import com.mkumar.repository.impl.SearchMode
-import com.mkumar.repository.impl.UiCustomerMini
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +21,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
@@ -30,7 +34,14 @@ class SearchViewModel @Inject constructor(
         val query: String = "",
         val invoiceQuery: String = "",
         val remainingOnly: Boolean = false,
+
         val mode: SearchMode = SearchMode.QUICK,
+
+        // NEW:
+        val searchBy: SearchBy = SearchBy.NAME,
+        val searchType: SearchType = SearchType.CUSTOMERS,
+        val recent: List<UiCustomerMini> = emptyList(),
+
         val results: List<UiCustomerMini> = emptyList(),
         val isSearching: Boolean = false
     ) {
@@ -60,8 +71,34 @@ class SearchViewModel @Inject constructor(
     }
 
     init {
+        loadRecent()
         observe()
     }
+
+    private fun loadRecent() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val list = repo.getRecentCustomerList(limit = 5)
+            _ui.update { it.copy(recent = list) }
+        }
+    }
+
+
+    fun updateSearchBy(by: SearchBy) {
+        _ui.update {
+            val forcedType = if (by == SearchBy.INVOICE) SearchType.ORDERS else it.searchType
+            it.copy(searchBy = by, searchType = forcedType)
+        }
+    }
+
+    fun updateSearchType(type: SearchType) {
+        // If searchBy is invoice, force type = ORDERS only
+        if (_ui.value.searchBy == SearchBy.INVOICE) {
+            _ui.update { it.copy(searchType = SearchType.ORDERS) }
+        } else {
+            _ui.update { it.copy(searchType = type) }
+        }
+    }
+
 
     @OptIn(FlowPreview::class)
     private fun observe() {
@@ -76,8 +113,15 @@ class SearchViewModel @Inject constructor(
             .debounce(200)
             .distinctUntilChanged()
             .onEach { (q, invoice, remaining, mode) ->
+
+                // If no search text → show recent 5 customers
                 if (q.isBlank() && invoice.isBlank() && !remaining) {
-                    _ui.update { it.copy(results = emptyList(), isSearching = false) }
+                    _ui.update {
+                        it.copy(
+                            results = emptyList(),
+                            isSearching = false
+                        )
+                    }
                     return@onEach
                 }
 

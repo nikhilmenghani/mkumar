@@ -17,16 +17,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.mkumar.data.CustomerFormState
+import com.mkumar.model.UiCustomerMini
 import com.mkumar.ui.components.LongPressMenuAnchor
 import com.mkumar.ui.components.ProMenuItem
 
 @Composable
 fun RecentCustomersHorizontalList(
-    customers: List<CustomerFormState>,
-    onCustomerClick: (CustomerFormState) -> Unit,
-    onDelete: (CustomerFormState) -> Unit = {},
-    onEdit: (CustomerFormState) -> Unit = {},
+    customers: List<UiCustomerMini>,
+    onCustomerClick: (UiCustomerMini) -> Unit,
+    onDelete: (UiCustomerMini) -> Unit = {},
+    onEdit: (UiCustomerMini) -> Unit = {},
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -45,10 +45,10 @@ fun RecentCustomersHorizontalList(
 
 @Composable
 fun RecentCustomerHorizontalCard(
-    customer: CustomerFormState,
+    customer: UiCustomerMini,
     onClick: () -> Unit,
-    onEdit: (CustomerFormState) -> Unit,
-    onDelete: (CustomerFormState) -> Unit
+    onEdit: (UiCustomerMini) -> Unit,
+    onDelete: (UiCustomerMini) -> Unit
 ) {
     LongPressMenuAnchor(
         onClick = onClick,

@@ -35,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -59,12 +60,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.mkumar.repository.impl.SearchMode
-import com.mkumar.repository.impl.UiCustomerMini
+import com.mkumar.model.SearchBy
+import com.mkumar.model.SearchMode
+import com.mkumar.model.SearchType
+import com.mkumar.model.UiCustomerMini
+import com.mkumar.ui.screens.RecentCustomersSection
 import com.mkumar.viewmodel.SearchViewModel
 import kotlinx.coroutines.delay
 
@@ -92,63 +94,59 @@ fun SearchScreen(
         keyboard?.show()
     }
 
-    Dialog(
-        onDismissRequest = onBack,
-        properties = DialogProperties(
-            dismissOnClickOutside = false,
-            decorFitsSystemWindows = false,
-            usePlatformDefaultWidth = false
-        )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .imePadding()
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .imePadding()
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        // Header
+        SearchHeader(
+            query = ui.query,
+            isSearching = ui.isSearching,
+            onBackClick = onBack,
+            onQueryChange = vm::updateQuery,
+            onStopClick = vm::stopSearch,
+            onAdvancedToggle = { showAdvancedOptions = !showAdvancedOptions },
+            focusRequester = focusRequester
+        )
+
+        // Advanced Options (Mode + SearchBy + SearchType)
+        AnimatedVisibility(
+            visible = showAdvancedOptions,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
         ) {
-            // Header
-            SearchHeader(
-                query = ui.query,
-                isSearching = ui.isSearching,
-                onBackClick = onBack,
-                onQueryChange = vm::updateQuery,
-                onStopClick = vm::stopSearch,
-                onAdvancedToggle = { showAdvancedOptions = !showAdvancedOptions },
-                focusRequester = focusRequester
-            )
-
-            // Advanced Options (Mode Toggle)
-            AnimatedVisibility(
-                visible = showAdvancedOptions,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                SearchAdvancedOptions(
-                    mode = ui.mode,
-                    onModeChange = vm::updateMode
-                )
-            }
-
-            // Search progress UI
-            AnimatedVisibility(
-                visible = ui.isSearching,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
-                SearchProgress()
-            }
-
-            // Results
-            SearchResultsSection(
-                results = ui.results,
-                isSearching = ui.isSearching,
-                query = ui.query,
-                onClear = vm::clearResults,
-                openCustomer = openCustomer,
-                onDismissRequest = onBack
+            SearchAdvancedOptions(
+                mode = ui.mode,
+                searchBy = ui.searchBy,
+                searchType = ui.searchType,
+                onModeChange = vm::updateMode,
+                onSearchByChange = vm::updateSearchBy,
+                onSearchTypeChange = vm::updateSearchType
             )
         }
+
+        // Search progress UI
+        AnimatedVisibility(
+            visible = ui.isSearching,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            SearchProgress()
+        }
+
+        // Results
+        SearchResultsSection(
+            results = ui.results,
+            recent = ui.recent,
+            isSearching = ui.isSearching,
+            query = ui.query,
+            onClear = vm::clearResults,
+            openCustomer = openCustomer,
+            onDismissRequest = onBack
+        )
     }
 }
 
@@ -206,10 +204,11 @@ private fun SearchHeader(
                                 )
                             }
                         }
+
                         query.isNotEmpty() -> {
                             IconButton(onClick = { onQueryChange("") }) {
                                 Icon(
-                                    imageVector = Icons.Default.Close,
+                                    imageVector = Icons.Filled.Close,
                                     contentDescription = "Clear"
                                 )
                             }
@@ -239,7 +238,6 @@ private fun SearchHeader(
             ),
             keyboardActions = KeyboardActions(
                 // Search is already debounced on every change.
-                // Use IME action just to keep focus/keyboard behavior if you want later.
                 onSearch = { /* no-op; search is automatic */ }
             )
         )
@@ -253,7 +251,11 @@ private fun SearchHeader(
 @Composable
 private fun SearchAdvancedOptions(
     mode: SearchMode,
-    onModeChange: (SearchMode) -> Unit
+    searchBy: SearchBy,
+    searchType: SearchType,
+    onModeChange: (SearchMode) -> Unit,
+    onSearchByChange: (SearchBy) -> Unit,
+    onSearchTypeChange: (SearchType) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -276,7 +278,79 @@ private fun SearchAdvancedOptions(
 
         Spacer(Modifier.height(12.dp))
 
+        // Fast / Flexible
         ModeToggle(mode, onModeChange)
+
+        Spacer(Modifier.height(16.dp))
+
+        // Search By (Name / Phone / Invoice)
+        Text(
+            "Search by",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Row {
+            SearchByChip("Name", SearchBy.NAME, searchBy, onSearchByChange)
+            Spacer(Modifier.width(8.dp))
+            SearchByChip("Phone", SearchBy.PHONE, searchBy, onSearchByChange)
+            Spacer(Modifier.width(8.dp))
+            SearchByChip("Invoice", SearchBy.INVOICE, searchBy, onSearchByChange)
+        }
+
+        // Search Type (Customers / Orders)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            Text(
+                "Return results:",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.width(12.dp))
+
+            Switch(
+                checked = searchType == SearchType.ORDERS,
+                onCheckedChange = { checked ->
+                    val newType = if (checked) SearchType.ORDERS else SearchType.CUSTOMERS
+                    onSearchTypeChange(newType)
+                }
+            )
+
+            Spacer(Modifier.width(8.dp))
+
+            Text(
+                if (searchType == SearchType.ORDERS) "Orders" else "Customers",
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchByChip(
+    label: String,
+    value: SearchBy,
+    selected: SearchBy,
+    onChange: (SearchBy) -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onChange(value) },
+        color = if (selected == value)
+            MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            color = if (selected == value)
+                MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -353,6 +427,7 @@ private fun SearchProgress() {
 @Composable
 private fun SearchResultsSection(
     results: List<UiCustomerMini>,
+    recent: List<UiCustomerMini>,
     isSearching: Boolean,
     query: String,
     onClear: () -> Unit,
@@ -362,6 +437,10 @@ private fun SearchResultsSection(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
+        // Header
+        val headerTitle =
+            if (query.isBlank()) "Results" else "Results (${results.size})"
+
         Row(
             Modifier
                 .fillMaxWidth()
@@ -370,21 +449,47 @@ private fun SearchResultsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Results (${results.size})",
-                style = MaterialTheme.typography.titleSmall,
+                headerTitle,
+                style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(Modifier.weight(1f))
 
-            if (results.isNotEmpty()) {
+            if (query.isNotBlank() && results.isNotEmpty()) {
                 TextButton(onClick = onClear) {
                     Text("Clear")
                 }
             }
         }
 
-        if (query.isNotBlank() && results.isEmpty() && !isSearching) {
+        // When query is blank → show recent customers (if any)
+        if (query.isBlank()) {
+            if (recent.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "No recent customers.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                RecentCustomersSection(
+                    customers = recent,
+                    openCustomer = { id ->
+                        openCustomer(id)
+                    },
+                    onDismissRequest = onDismissRequest
+                )
+            }
+            return
+        }
+
+        // When query is non-blank but no results and not searching → empty state
+        if (results.isEmpty() && !isSearching) {
             Box(
                 Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -394,28 +499,34 @@ private fun SearchResultsSection(
             return
         }
 
+        // Results list
         LazyColumn(
             Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
             itemsIndexed(results, key = { _, it -> it.id }) { _, c ->
-                SearchResultItem(c, onClick = {
-                    onDismissRequest()     // close the dialog
-                    openCustomer(c.id)     // navigate properly
-                })
+                SearchResultItem(
+                    c = c,
+                    onClick = {
+                        openCustomer(c.id)     // navigate properly
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SearchResultItem(c: UiCustomerMini, onClick: (String) -> Unit) {
+fun SearchResultItem(
+    c: UiCustomerMini,
+    onClick: () -> Unit
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clickable { onClick(c.id) },
+            .clickable { onClick() },
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 1.dp
     ) {
@@ -428,7 +539,7 @@ private fun SearchResultItem(c: UiCustomerMini, onClick: (String) -> Unit) {
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                c.phone ?: "—",
+                c.phone,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

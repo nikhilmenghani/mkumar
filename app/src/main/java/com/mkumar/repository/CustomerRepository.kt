@@ -1,11 +1,10 @@
 package com.mkumar.repository
 
-import com.mkumar.data.CustomerFormState
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.model.OrderWithCustomerInfo
-import com.mkumar.repository.impl.SearchMode
-import com.mkumar.repository.impl.UiCustomerMini
+import com.mkumar.model.SearchMode
+import com.mkumar.model.UiCustomerMini
 import kotlinx.coroutines.flow.Flow
 
 interface CustomerRepository {
@@ -16,7 +15,8 @@ interface CustomerRepository {
     suspend fun getAll(): List<CustomerEntity>
     fun observeWithOrders(customerId: String): Flow<CustomerWithOrders?>
     suspend fun getWithOrders(customerId: String): CustomerWithOrders?
-    fun getRecentCustomers(limit: Int): Flow<List<CustomerFormState>>
+    fun getRecentCustomers(limit: Int): Flow<List<UiCustomerMini>>
+    fun getRecentCustomerList(limit: Int): List<UiCustomerMini>
     fun getRecentOrders(limit: Int): Flow<List<OrderWithCustomerInfo>>
     suspend fun reindexCustomerForSearch(customer: CustomerEntity)
     suspend fun searchCustomers(

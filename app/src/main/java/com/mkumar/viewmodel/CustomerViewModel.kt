@@ -2,9 +2,9 @@ package com.mkumar.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mkumar.data.CustomerFormState
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.db.entities.CustomerEntity
+import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.CustomerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,13 +23,13 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
     private val repository: CustomerRepository
 ) : ViewModel() {
 
-    private val _customers = MutableStateFlow<List<CustomerFormState>>(emptyList())
-    private val uiStateByCustomer = MutableStateFlow<Map<String, CustomerFormState>>(emptyMap())
+    private val _customers = MutableStateFlow<List<UiCustomerMini>>(emptyList())
+    private val uiStateByCustomer = MutableStateFlow<Map<String, UiCustomerMini>>(emptyMap())
 
     private val _currentCustomerId = MutableStateFlow<String?>(null)
     val currentCustomerId: StateFlow<String?> = _currentCustomerId
 
-    private val _formState = MutableStateFlow(CustomerFormState())
+    private val _formState = MutableStateFlow(UiCustomerMini())
 
     val recentCustomers = repository.getRecentCustomers(limit = 10)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
@@ -42,7 +42,7 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
     private val _openForms = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
     val openForms: StateFlow<Map<String, Set<String>>> = _openForms
 
-    val customersUi: StateFlow<List<CustomerFormState>> =
+    val customersUi: StateFlow<List<UiCustomerMini>> =
         combine(repository.observeAll(), uiStateByCustomer) { entities, cache ->
             entities
                 .map { e ->
@@ -51,7 +51,7 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
                         // keep products/selectedProductId from cache
                         name = e.name,
                         phone = e.phone,
-                    ) ?: CustomerFormState(
+                    ) ?: UiCustomerMini(
                         id = e.id,
                         name = e.name,
                         phone = e.phone,
@@ -84,7 +84,7 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
     fun selectCustomer(customerID: String?) {
         _currentCustomerId.value = customerID
         _formState.value = _customers.value.find { it.id == customerID }
-            ?: CustomerFormState()
+            ?: UiCustomerMini()
     }
 
     fun updateCustomer(id: String, name: String, phone: String) {
@@ -105,17 +105,4 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
             }
         }
     }
-
-//    fun serializeCustomer(customerId: String, includeUnsavedEdits: Boolean = true): String {
-//        val customer = _customers.value.find { it.id == customerId } ?: return ""
-//        val mergedProducts = customer.products.map { p ->
-//            val eff = if (includeUnsavedEdits)
-//                editingBuffer[customer.id]?.get(p.id) ?: p.formData
-//            else p.formData
-//            p.copy(formData = eff)
-//        }
-//        val snapshot = customer.copy(products = mergedProducts)
-//        val json = Json { encodeDefaults = true; ignoreUnknownKeys = true; classDiscriminator = "type"; prettyPrint = true }
-//        return json.encodeToString(CustomerFormState.serializer(), snapshot)
-//    }
 }

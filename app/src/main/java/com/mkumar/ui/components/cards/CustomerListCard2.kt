@@ -39,23 +39,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mkumar.data.CustomerFormState
+import com.mkumar.model.UiCustomerMini
 import com.mkumar.ui.components.ProMenuItem
 import com.mkumar.ui.components.ProOverflowMenuIcons
 import com.mkumar.ui.theme.AppColors
 
 data class MenuAction(
     val title: String,
-    val onClick: (CustomerFormState) -> Unit
+    val onClick: (UiCustomerMini) -> Unit
 )
 
 @Composable
 fun CustomerListCard2(
-    customer: CustomerFormState,
+    customer: UiCustomerMini,
     modifier: Modifier = Modifier,
-    onClick: (CustomerFormState) -> Unit = {},
-    onEdit: (CustomerFormState) -> Unit = {},
-    onDelete: (CustomerFormState) -> Unit = {},
+    onClick: (UiCustomerMini) -> Unit = {},
+    onEdit: (UiCustomerMini) -> Unit = {},
+    onDelete: (UiCustomerMini) -> Unit = {},
     extraActions: List<MenuAction> = emptyList(),
     showPhoneRow: Boolean = true
 ) {
@@ -194,7 +194,7 @@ private fun PreviewCustomerListCard2_Dark() {
 
 @Composable
 private fun PreviewContent() {
-    val customer = CustomerFormState(
+    val customer = UiCustomerMini(
         id = "12345",
         name = "Courteney White",
         phone = "(123) 456-7890"

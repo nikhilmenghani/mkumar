@@ -45,7 +45,6 @@ import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.work.Constraints
@@ -60,7 +59,7 @@ import com.mkumar.common.constant.AppConstants.getExternalStorageDir
 import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
-import com.mkumar.data.CustomerFormState
+import com.mkumar.model.UiCustomerMini
 import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.cards.CustomerInfoCard
@@ -105,7 +104,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     var phone by remember { mutableStateOf("") }
     val haptic = LocalHapticFeedback.current
 
-    var deleteTarget by remember { mutableStateOf<CustomerFormState?>(null) }
+    var deleteTarget by remember { mutableStateOf<UiCustomerMini?>(null) }
 
     val canSubmit by remember(name, phone) {
         val digits = phone.count { it.isDigit() }
@@ -176,13 +175,7 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     icon = { Icon(Icons.Default.PersonSearch, contentDescription = "Search", modifier = Modifier.size(24.dp)) },
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        navController.navigate(Screen.Search.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                        navController.navigate(Screen.Search.route)
                     },
                 )
                 if (!isLatestVersion) {
@@ -329,10 +322,10 @@ fun DashboardSection(
 
 @Composable
 fun CustomerList(
-    customers: List<CustomerFormState>,
-    onClick: (CustomerFormState) -> Unit = {},
-    onDelete: (CustomerFormState) -> Unit = {},
-    onEdit: (CustomerFormState) -> Unit = {},
+    customers: List<UiCustomerMini>,
+    onClick: (UiCustomerMini) -> Unit = {},
+    onDelete: (UiCustomerMini) -> Unit = {},
+    onEdit: (UiCustomerMini) -> Unit = {},
     extraBottomPadding: Dp = 0.dp
 ) {
     LazyColumn(
@@ -382,9 +375,9 @@ fun HomeScreenPreview() {
             ) {
                 CustomerList(
                     customers = listOf(
-                        CustomerFormState(id = "1", name = "John Doe", phone = "9876543210"),
-                        CustomerFormState(id = "2", name = "Jane Smith", phone = "8765432109"),
-                        CustomerFormState(id = "3", name = "Bob Wilson", phone = "7654321098")
+                        UiCustomerMini(id = "1", name = "John Doe", phone = "9876543210"),
+                        UiCustomerMini(id = "2", name = "Jane Smith", phone = "8765432109"),
+                        UiCustomerMini(id = "3", name = "Bob Wilson", phone = "7654321098")
                     ),
                     onClick = {},
                     onDelete = {},

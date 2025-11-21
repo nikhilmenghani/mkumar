@@ -5,12 +5,13 @@ import com.mkumar.common.search.buildFtsTrigramMatch
 import com.mkumar.common.search.digitsOnly
 import com.mkumar.common.search.foldName
 import com.mkumar.common.search.ngrams
-import com.mkumar.data.CustomerFormState
 import com.mkumar.data.db.dao.CustomerDao
 import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.SearchDao
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
+import com.mkumar.model.SearchMode
+import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.CustomerRepository
 import com.mkumar.viewmodel.toUiModel
 import kotlinx.coroutines.Dispatchers
@@ -48,10 +49,14 @@ class CustomerRepositoryImpl @Inject constructor(
     override suspend fun getWithOrders(customerId: String): CustomerWithOrders? =
         customerDao.getWithOrders(customerId)
 
-    override fun getRecentCustomers(limit: Int): Flow<List<CustomerFormState>> =
+    override fun getRecentCustomers(limit: Int): Flow<List<UiCustomerMini>> =
         customerDao.getRecentCustomers(limit).map { list ->
             list.map { it.toUiModel() }   // same mapper used everywhere else
         }
+
+    override fun getRecentCustomerList(limit: Int): List<UiCustomerMini> =
+        customerDao.getRecentCustomerList(limit).map { it.toUiModel() }
+
 
     override fun getRecentOrders(limit: Int) =
         orderDao.getRecentOrdersWithCustomer(limit)
@@ -171,23 +176,12 @@ class CustomerRepositoryImpl @Inject constructor(
         return minis.orderByIds(finalIds)
     }
 
-
     // Preserve FTS/combined order
     private fun List<UiCustomerMini>.orderByIds(ids: List<String>): List<UiCustomerMini> {
         val pos = ids.withIndex().associate { it.value to it.index }
         return this.sortedBy { pos[it.id] ?: Int.MAX_VALUE }
     }
 }
-
-enum class SearchMode { QUICK, FLEXIBLE }
-
-// Minimal UI projection model (place where you keep other UI models)
-data class UiCustomerMini(
-    val id: String,
-    val name: String,
-    val phone: String?
-)
-
 
 // Simple in-memory reorder to preserve id order returned by FTS
 private fun List<UiCustomerMini>.orderByIds(ids: List<String>): List<UiCustomerMini> {
