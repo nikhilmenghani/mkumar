@@ -34,7 +34,6 @@ import com.mkumar.ui.components.cards.OrderHeaderCardPro
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.OrderEditorViewModel
-import java.time.LocalDate
 import java.time.ZoneId
 
 @Composable
@@ -43,8 +42,7 @@ fun OrderSheet(
     viewModel: OrderEditorViewModel,
     modifier: Modifier = Modifier
 ) {
-    val today = remember { LocalDate.now().toString() }
-    val safeProducts = state.draft.items.orEmpty()
+    val safeProducts = state.draft.items
     val justAddedId = state.draft.justAddedItemId
 
     // NEW: hold which product is pending deletion

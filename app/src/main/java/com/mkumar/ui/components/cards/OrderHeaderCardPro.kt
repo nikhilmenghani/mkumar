@@ -42,25 +42,23 @@ import java.time.ZoneOffset
 fun OrderHeaderCardPro(
     customerName: String,
     mobile: String,
-    displayedDate: String,           // formatted text (DD-MM-YYYY)
+    displayedDate: String,
     isDateReadOnly: Boolean,
-    onPickDateTime: (Instant) -> Unit, // now LocalDate!
+    onPickDateTime: (Instant) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDateDialog by remember { mutableStateOf(false) }
 
-    // Rotate the calendar icon when picker is open
     val rotation by animateFloatAsState(
         targetValue = if (showDateDialog) 180f else 0f,
         label = "calendarRotation"
     )
 
-    // ────────────────────────────────────────────────
-    // DATE PICKER DIALOG (LocalDate extraction)
-    // ────────────────────────────────────────────────
+    // ───────────────────────────────────
+    // DATE PICKER
+    // ───────────────────────────────────
     if (showDateDialog) {
         val pickerState = rememberDatePickerState()
-
         DatePickerDialog(
             onDismissRequest = { showDateDialog = false },
             confirmButton = {
@@ -69,13 +67,10 @@ fun OrderHeaderCardPro(
                         val millis = pickerState.selectedDateMillis
                         if (millis != null) {
                             val istZone = ZoneId.of("Asia/Kolkata")
-
-                            // Step 1: Interpret raw millis as UTC date
                             val pickedUtcDate = Instant.ofEpochMilli(millis)
                                 .atZone(ZoneOffset.UTC)
                                 .toLocalDate()
 
-                            // Step 2: Convert that LocalDate into IST midnight Instant
                             val istInstant = pickedUtcDate
                                 .atStartOfDay(istZone)
                                 .toInstant()
@@ -96,87 +91,92 @@ fun OrderHeaderCardPro(
         }
     }
 
-    // ────────────────────────────────────────────────
-    // FULL-WIDTH PILL CARD
-    // ────────────────────────────────────────────────
+    // ───────────────────────────────────
+    // COMPACT FULL-WIDTH PILL CARD
+    // ───────────────────────────────────
     Surface(
         modifier = modifier.fillMaxWidth(),
-        tonalElevation = 4.dp,
-        shape = RoundedCornerShape(40.dp) // full-width wide pill
+        tonalElevation = 3.dp,
+        shape = RoundedCornerShape(12.dp)  // smaller pill
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp), // reduced height
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
 
-            // ───── Row: Name + Phone + Calendar
+            // ──────────────────────────────
+            // NAME + PHONE in the same line
+            // ──────────────────────────────
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.Start
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Text(
-                        text = customerName,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    )
+                Text(
+                    text = customerName,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    modifier = Modifier.padding(end = 8.dp)
+                )
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Phone,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = mobile,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Outlined.Phone,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-                if (!isDateReadOnly) {
-                    IconButton(onClick = { showDateDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarMonth,
-                            contentDescription = "Select received date",
-                            modifier = Modifier
-                                .size(24.dp)
-                                .rotate(rotation),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                Spacer(Modifier.width(4.dp))
+
+                Text(
+                    text = mobile,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            // ───── Received Date
+            // ──────────────────────────────
+            // RECEIVED DATE + ICON INLINE
+            // ──────────────────────────────
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
             ) {
                 Text(
                     text = "Received Date:",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
                 Spacer(Modifier.width(6.dp))
+
                 Text(
                     text = displayedDate,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+
+                if (!isDateReadOnly) {
+                    Spacer(Modifier.width(8.dp))
+
+                    IconButton(
+                        onClick = { showDateDialog = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarMonth,
+                            contentDescription = "Change date",
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(rotation),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         }
     }
