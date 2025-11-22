@@ -6,28 +6,28 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,8 +37,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -61,7 +64,6 @@ fun OrderAccordionItem(
     selectedType: ProductType?,
     onFormSave: (String, ProductFormData) -> Unit,
     onDelete: (String) -> Unit,
-    // Bump default to fit 2-line title + owner chip without remeasure
     collapsedHeight: Dp = 92.dp,
     grouped: Boolean = false,
     rowShape: RoundedCornerShape = RoundedCornerShape(12.dp),
@@ -77,138 +79,145 @@ fun OrderAccordionItem(
     var draft by remember { mutableStateOf(draftBeforeState) }
 
     val cardColors = AppColors.elevatedCardColors()
-    val selectedTypeAssistChip = if (selectedType?.name == "GeneralProduct") {
-        (selectedProduct.formData as? ProductFormData.GeneralProductData)?.productType ?: productTypeDisplayNames[selectedType]
-    } else {
-        productTypeDisplayNames[selectedType]
-    }
 
+    val selectedTypeText =
+        if (selectedType?.name == "GeneralProduct") {
+            (selectedProduct.formData as? ProductFormData.GeneralProductData)?.productType
+                ?: productTypeDisplayNames[selectedType]
+        } else {
+            productTypeDisplayNames[selectedType]
+        }
 
-    // Title fallback text
     val titleText = selectedProduct.formData?.productDescription
         ?.ifBlank { "New ${productTypeDisplayNames[selectedType] ?: ""}" }
         ?: "New ${productTypeDisplayNames[selectedType] ?: ""}"
 
-    // Owner (subtitle) from draft so it reflects edits immediately
     val owner: String = draft.productOwner.orEmpty()
+
+    // ------------------------------------------------------------------
+    // BORDER HANDLING — No double borders when grouped
+    // ------------------------------------------------------------------
+    val borderColor = MaterialTheme.colorScheme.outlineVariant
+
+    val borderModifier = if (grouped) {
+        Modifier.drawBehind {
+            val strokeWidth = 1.dp.toPx()
+
+            // Left
+            drawRect(
+                color = borderColor,
+                topLeft = Offset(0f, 0f),
+                size = Size(strokeWidth, size.height)
+            )
+            // Right
+            drawRect(
+                color = borderColor,
+                topLeft = Offset(size.width - strokeWidth, 0f),
+                size = Size(strokeWidth, size.height)
+            )
+            // Bottom
+            drawRect(
+                color = borderColor,
+                topLeft = Offset(0f, size.height - strokeWidth),
+                size = Size(size.width, strokeWidth)
+            )
+        }
+    } else {
+        Modifier.border(1.dp, borderColor, rowShape)
+    }
+
 
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            // Subtle outline only when not grouped & collapsed; avoids overlay Box with fillMaxHeight
-            .then(
-                if (!grouped && !expanded)
-                    Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, rowShape)
-                else
-                    Modifier
-            )
-            .clickable { /* expand/collapse handled by header click below */ },
+            .then(borderModifier),
         shape = rowShape,
         colors = cardColors,
         elevation = if (grouped) CardDefaults.cardElevation(0.dp) else CardDefaults.cardElevation(1.dp)
     ) {
         Column {
-            // Header (collapsible area)
-            var shrinkTitle by remember { mutableStateOf(false) }
 
+            // ------------------------------------------------------------------
+            // HEADER WITH BACKGROUND WHEN COLLAPSED
+            // ------------------------------------------------------------------
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    // FIX: keep header height stable to avoid sheet anchor shifts
-                    .requiredHeight(collapsedHeight)
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                    .clickable { expanded = !expanded },
-                verticalAlignment = Alignment.Top
+                    .background(
+                        if (!expanded)
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        else
+                            Color.Transparent
+                    )
+                    .clickable { expanded = !expanded }
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left: Title + Owner chip
-                Column(
+
+                // LEFT COLUMN — Description (elastic height + bigger font)
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = 12.dp)
+                        .padding(end = 12.dp),
+                    contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
                         text = titleText,
-                        style = (if (shrinkTitle) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge)
-                            .copy(fontWeight = FontWeight.Medium),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        onTextLayout = { layoutResult ->
-                            // If it still overflows on two lines, shrink once
-                            if (layoutResult.hasVisualOverflow && !shrinkTitle) {
-                                shrinkTitle = true
-                            }
-                        }
+                        overflow = TextOverflow.Ellipsis
                     )
+                }
 
-                    Spacer(modifier = Modifier.padding(top = 4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                // RIGHT COLUMN — TWO ROWS
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.Center
+                ) {
+
+                    // Row 1 — Amount + Arrow
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "₹${selectedProduct.finalTotal}",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Icon(
+                            imageVector = if (expanded)
+                                Icons.Outlined.KeyboardArrowUp
+                            else Icons.Outlined.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.height(4.dp))
+
+                    // Row 2 — Badges (owner + type)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         if (owner.isNotBlank() && owner != productOwner) {
-                            AssistChip(
-                                onClick = { /* no-op; header handles main click */ },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Person,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        owner,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-                            )
-                            if (selectedType != null) {
-                                Spacer(Modifier.width(6.dp))
-                            }
+                            OutlinedBadge(text = owner)
                         }
-                        if (selectedType != null) {
-                            AssistChip(
-                                onClick = { },
-                                label = {
-                                    selectedTypeAssistChip?.let {
-                                        Text(
-                                            it,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            maxLines = 1,
-                                            softWrap = false,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                },
-                                modifier = Modifier.wrapContentHeight()
-                            )
+                        selectedTypeText?.let {
+                            OutlinedBadge(text = it)
                         }
                     }
                 }
-
-                // Right: Price + Chevron
-                Column(
-                    modifier = Modifier.width(74.dp),
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Text(
-                        text = "₹${selectedProduct.finalTotal}",
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        modifier = Modifier.width(84.dp),
-                        textAlign = TextAlign.End
-                    )
-                    Icon(
-                        imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
-                        contentDescription = if (expanded) "Collapse item" else "Expand item",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .size(32.dp)
-                    )
-                }
             }
 
-            // Expanded form
+            // ------------------------------------------------------------------
+            // EXPANDED CONTENT (FORM)
+            // ------------------------------------------------------------------
             AnimatedVisibility(
                 visible = expanded,
                 enter = fadeIn() + expandVertically(),
@@ -235,13 +244,32 @@ fun OrderAccordionItem(
     }
 }
 
+@Composable
+private fun OutlinedBadge(text: String) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = Color.Transparent,
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
-fun PreviewOrderAccordionItem() {
+fun PreviewOrderAccordionItem_Compact() {
     val sampleProduct = UiOrderItem(
         id = "1",
         productType = ProductType.GeneralProduct,
-        productDescription = "Sample Lens",
+        productDescription = "Sample Lens for customer order",
         formData = defaultFormFor(ProductType.GeneralProduct, "Mahendra"),
         finalTotal = 1200,
         name = "Nikhil",
@@ -249,12 +277,12 @@ fun PreviewOrderAccordionItem() {
         unitPrice = 25,
         discountPercentage = 10
     )
+
     OrderAccordionItem(
         productOwner = "Nikhil",
         selectedProduct = sampleProduct,
         selectedType = ProductType.GeneralProduct,
         onFormSave = { _, _ -> },
-        onDelete = {},
-        collapsedHeight = 92.dp
+        onDelete = {}
     )
 }

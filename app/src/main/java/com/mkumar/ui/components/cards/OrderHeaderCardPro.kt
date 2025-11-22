@@ -133,7 +133,7 @@ fun OrderHeaderCardPro(
                 )
 
                 Text(
-                    text = globalClass.preferencesManager.invoicePrefs.invoicePrefix + "$invoiceNumber",
+                    text = "#" + globalClass.preferencesManager.invoicePrefs.invoicePrefix + invoiceNumber,
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Medium
                     ),

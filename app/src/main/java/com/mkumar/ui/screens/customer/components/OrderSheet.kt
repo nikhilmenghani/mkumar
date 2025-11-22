@@ -97,7 +97,7 @@ fun OrderSheet(
             }
         } else {
 
-            val groupRadius = 20.dp
+            val groupRadius = 12.dp
 
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
