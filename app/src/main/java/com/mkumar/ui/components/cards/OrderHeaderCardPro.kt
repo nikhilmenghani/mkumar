@@ -1,6 +1,7 @@
 package com.mkumar.ui.components.cards
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mkumar.App.Companion.globalClass
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -43,22 +45,25 @@ fun OrderHeaderCardPro(
     customerName: String,
     mobile: String,
     displayedDate: String,
+    invoiceNumber: String,
     isDateReadOnly: Boolean,
     onPickDateTime: (Instant) -> Unit,
     modifier: Modifier = Modifier
 ) {
+
     var showDateDialog by remember { mutableStateOf(false) }
 
     val rotation by animateFloatAsState(
         targetValue = if (showDateDialog) 180f else 0f,
-        label = "calendarRotation"
+        label = "rotateCalendar"
     )
 
-    // ───────────────────────────────────
-    // DATE PICKER
-    // ───────────────────────────────────
+    // ─────────────────────────────────────────────
+    // DATE PICKER (IST conversion — correct & stable)
+    // ─────────────────────────────────────────────
     if (showDateDialog) {
         val pickerState = rememberDatePickerState()
+
         DatePickerDialog(
             onDismissRequest = { showDateDialog = false },
             confirmButton = {
@@ -66,13 +71,14 @@ fun OrderHeaderCardPro(
                     onClick = {
                         val millis = pickerState.selectedDateMillis
                         if (millis != null) {
-                            val istZone = ZoneId.of("Asia/Kolkata")
+                            val ist = ZoneId.of("Asia/Kolkata")
+
                             val pickedUtcDate = Instant.ofEpochMilli(millis)
                                 .atZone(ZoneOffset.UTC)
                                 .toLocalDate()
 
                             val istInstant = pickedUtcDate
-                                .atStartOfDay(istZone)
+                                .atStartOfDay(ist)
                                 .toInstant()
 
                             onPickDateTime(istInstant)
@@ -91,90 +97,101 @@ fun OrderHeaderCardPro(
         }
     }
 
-    // ───────────────────────────────────
-    // COMPACT FULL-WIDTH PILL CARD
-    // ───────────────────────────────────
+    // ─────────────────────────────────────────────
+    // PROFESSIONAL ROUNDED CARD WITH BORDER
+    // ─────────────────────────────────────────────
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        tonalElevation = 3.dp,
-        shape = RoundedCornerShape(12.dp)  // smaller pill
+        modifier = modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = RoundedCornerShape(12.dp)
+            ),
+        tonalElevation = 0.dp, // border replaces elevation
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp), // reduced height
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
 
-            // ──────────────────────────────
-            // NAME + PHONE in the same line
-            // ──────────────────────────────
+            // ─────────── Row 1: Name + Invoice Number
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+
                 Text(
                     text = customerName,
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold
-                    ),
-                    modifier = Modifier.padding(end = 8.dp)
+                    )
                 )
-
-                Icon(
-                    imageVector = Icons.Outlined.Phone,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(Modifier.width(4.dp))
 
                 Text(
-                    text = mobile,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = globalClass.preferencesManager.invoicePrefs.invoicePrefix + "$invoiceNumber",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // ──────────────────────────────
-            // RECEIVED DATE + ICON INLINE
-            // ──────────────────────────────
+            // ─────────── Row 2: Phone (left) + Received Date (right)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Received Date:",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
 
-                Spacer(Modifier.width(6.dp))
+                // LEFT → Phone
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.Phone,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                Text(
-                    text = displayedDate,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                    Spacer(Modifier.width(4.dp))
 
-                if (!isDateReadOnly) {
-                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = mobile,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
-                    IconButton(
-                        onClick = { showDateDialog = true },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarMonth,
-                            contentDescription = "Change date",
-                            modifier = Modifier
-                                .size(20.dp)
-                                .rotate(rotation),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                Spacer(Modifier.weight(1f))  // pushes date to the right
+
+                // RIGHT → Received Date + Calendar Icon
+                Row(verticalAlignment = Alignment.CenterVertically) {
+
+                    Text(
+                        text = "Received: $displayedDate",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    if (!isDateReadOnly) {
+                        Spacer(Modifier.width(6.dp))
+
+                        IconButton(
+                            onClick = { showDateDialog = true },
+                            modifier = Modifier.size(22.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CalendarMonth,
+                                contentDescription = "Change date",
+                                modifier = Modifier
+                                    .size(16.dp) // same visual weight as text
+                                    .rotate(rotation),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }

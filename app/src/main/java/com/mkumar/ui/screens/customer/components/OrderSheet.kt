@@ -63,6 +63,7 @@ fun OrderSheet(
         OrderHeaderCardPro(
             customerName = state.customer?.name ?: "Test Customer",
             mobile = state.customer?.phone ?: "1234567890",
+            invoiceNumber = state.draft.invoiceNumber.toString(),
             displayedDate = state.draft.occurredAt.atZone(ZoneId.of("Asia/Kolkata")).toLocalDate().formatAsDate(DateFormat.DEFAULT_DATE_ONLY).toString(),
             isDateReadOnly = false,
             onPickDateTime = { picked ->
