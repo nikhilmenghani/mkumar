@@ -239,6 +239,9 @@ fun SearchScreen(
                 },
                 onDeleteClick = { orderId ->
                     setPendingDeleteOrderId(orderId)
+                },
+                onOpenCustomer = { customerId ->
+                    navController.navigate(Routes.customerDetail(customerId))
                 }
             )
         } else {
@@ -661,6 +664,7 @@ fun SearchOrderResultsSection(
     onInvoiceClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onShareClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onDeleteClick: (orderId: String) -> Unit,
+    onOpenCustomer: (customerId: String) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize()
@@ -708,7 +712,8 @@ fun SearchOrderResultsSection(
                 onOrderClick = onOrderClick,
                 onInvoiceClick = onInvoiceClick,
                 onShareClick = onShareClick,
-                onDeleteClick = onDeleteClick
+                onDeleteClick = onDeleteClick,
+                onOpenCustomer = onOpenCustomer
             )
         }
     }

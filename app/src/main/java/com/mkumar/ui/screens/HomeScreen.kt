@@ -273,6 +273,9 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                     },
                     onDeleteClick = { orderId ->
                         setPendingDeleteOrderId(orderId)
+                    },
+                    onOpenCustomer = { customerId ->
+                        navController.navigate(Routes.customerDetail(customerId))
                     }
                 )
             }

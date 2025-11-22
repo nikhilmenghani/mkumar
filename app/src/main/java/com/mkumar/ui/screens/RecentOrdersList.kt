@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +49,7 @@ fun RecentOrdersList(
     onInvoiceClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onShareClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onDeleteClick: (orderId: String) -> Unit,
+    onOpenCustomer: (customerId: String) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -73,7 +75,11 @@ fun RecentOrdersList(
                     },
                     onDelete = {
                         onDeleteClick(order.id)
-                    })
+                    },
+                    onOpenCustomer = {
+                        onOpenCustomer(order.customerId)
+                    }
+                )
             }
         }
     }
@@ -161,6 +167,7 @@ fun RecentOrderCardCompact(
     onInvoice: () -> Unit,
     onShare: () -> Unit,
     onDelete: () -> Unit,
+    onOpenCustomer : () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
@@ -202,6 +209,13 @@ fun RecentOrderCardCompact(
                         icon = Icons.Outlined.Share,
                         startNewGroup = true,
                         onClick = { onShare() }
+                    ),
+                    ProMenuItem(
+                        title = "Open Customer",
+                        supportingText = "Open the Customer details",
+                        startNewGroup = true,
+                        icon = Icons.Outlined.Person,
+                        onClick = { onOpenCustomer() }
                     ),
                     ProMenuItem(
                         title = "Delete",
