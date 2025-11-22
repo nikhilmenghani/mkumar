@@ -11,21 +11,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -73,28 +65,27 @@ fun OrderAccordionItem(
 
     var expanded by remember { mutableStateOf(initiallyExpanded) }
 
+    // Restore draft state
     val draftBeforeState = rememberSaveable(
         selectedProduct.id,
         saver = ProductFormDataSaver
     ) { selectedProduct.formData ?: defaultFormFor(selectedProduct.productType, productOwner) }
-
     var draft by remember { mutableStateOf(draftBeforeState) }
 
     val cardColors = AppColors.elevatedCardColors()
 
-    val selectedTypeText =
-        if (selectedType?.name == "GeneralProduct") {
-            (selectedProduct.formData as? ProductFormData.GeneralProductData)?.productType
-                ?: productTypeDisplayNames[selectedType]
-        } else {
-            productTypeDisplayNames[selectedType]
-        }
+    val typeLabel = if (selectedType?.name == "GeneralProduct") {
+        (selectedProduct.formData as? ProductFormData.GeneralProductData)?.productType
+            ?: productTypeDisplayNames[selectedType]
+    } else {
+        productTypeDisplayNames[selectedType]
+    }
 
-    val titleText = selectedProduct.formData?.productDescription
+    val title = selectedProduct.formData?.productDescription
         ?.ifBlank { "New ${productTypeDisplayNames[selectedType] ?: ""}" }
         ?: "New ${productTypeDisplayNames[selectedType] ?: ""}"
 
-    val owner: String = draft.productOwner.orEmpty()
+    val owner = draft.productOwner.orEmpty()
 
     // ------------------------------------------------------------------
     // BORDER HANDLING — avoid double borders when grouped
@@ -105,19 +96,19 @@ fun OrderAccordionItem(
 
     val borderModifier = if (grouped) {
         Modifier.drawBehind {
-            // LEFT
+            // Left
             drawRect(
                 color = borderColor,
                 topLeft = Offset(0f, 0f),
                 size = Size(borderStrokePx, size.height)
             )
-            // RIGHT
+            // Right
             drawRect(
                 color = borderColor,
                 topLeft = Offset(size.width - borderStrokePx, 0f),
                 size = Size(borderStrokePx, size.height)
             )
-            // BOTTOM
+            // Bottom only (no top border)
             drawRect(
                 color = borderColor,
                 topLeft = Offset(0f, size.height - borderStrokePx),
@@ -136,12 +127,13 @@ fun OrderAccordionItem(
         colors = cardColors,
         elevation = if (grouped) CardDefaults.cardElevation(0.dp) else CardDefaults.cardElevation(1.dp)
     ) {
+
         Column {
 
             // ------------------------------------------------------------------
-            // HEADER (with collapsed background)
+            // COLLAPSED HEADER (Option E CUSTOM)
             // ------------------------------------------------------------------
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
@@ -151,78 +143,54 @@ fun OrderAccordionItem(
                             Color.Transparent
                     )
                     .clickable { expanded = !expanded }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
 
-                // LEFT — Bigger description
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 12.dp),
-                    contentAlignment = Alignment.CenterStart
+                // -------------------------
+                // ROW 1 — Title + Product Type
+                // -------------------------
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+
                     Text(
-                        text = titleText,
-                        style = MaterialTheme.typography.bodyLarge.copy(
+                        text = title,
+                        style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+
+                    typeLabel?.let {
+                        OutlinedBadge(text = it)
+                    }
                 }
 
-                // ------------------------------------------------------------------
-                // RIGHT COLUMN — TWO ROWS
-                // ------------------------------------------------------------------
-                Column(horizontalAlignment = Alignment.End) {
+                // -------------------------
+                // ROW 2 — Owner + Unit Price + Discount + Total
+                // -------------------------
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
 
-                    // Row 1 — Total: + amount + arrow
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "Total:",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Text(
-                            text = "₹${selectedProduct.finalTotal}",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        Icon(
-                            imageVector = if (expanded)
-                                Icons.Outlined.KeyboardArrowUp
-                            else Icons.Outlined.KeyboardArrowDown,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
+                    if (owner.isNotBlank() && owner != productOwner) {
+                        OutlinedBadge(text = owner)
                     }
 
-                    Spacer(Modifier.height(4.dp))
-
-                    // Row 2 — badges
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        if (owner.isNotBlank() && owner != productOwner) {
-                            OutlinedBadge(text = owner)
-                        }
-                        selectedTypeText?.let {
-                            OutlinedBadge(text = it)
-                        }
-                    }
+                    OutlinedBadge(text = "Unit: ₹${selectedProduct.unitPrice}")
+                    OutlinedBadge(text = "Disc: ${selectedProduct.discountPercentage}%")
+                    OutlinedBadge(text = "Total: ₹${selectedProduct.finalTotal}")
                 }
             }
 
             // ------------------------------------------------------------------
-            // EXPANDED FORM
+            // EXPANDED CONTENT
             // ------------------------------------------------------------------
             AnimatedVisibility(
                 visible = expanded,
@@ -238,8 +206,8 @@ fun OrderAccordionItem(
                         selectedProduct = selectedProduct,
                         draft = draft,
                         onDraftChange = { draft = it },
-                        onSave = { productId, formData ->
-                            onFormSave(productId, formData)
+                        onSave = { id, formData ->
+                            onFormSave(id, formData)
                             expanded = false
                         },
                         onDelete = onDelete
@@ -271,11 +239,11 @@ private fun OutlinedBadge(text: String) {
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewOrderAccordionItem_Compact() {
-    val sampleProduct = UiOrderItem(
+fun PreviewOrderAccordionItem() {
+    val sample = UiOrderItem(
         id = "1",
         productType = ProductType.GeneralProduct,
-        productDescription = "Sample Lens for customer order",
+        productDescription = "Sample Lens with very long description for ellipsis effect",
         formData = defaultFormFor(ProductType.GeneralProduct, "Mahendra"),
         finalTotal = 1200,
         name = "Nikhil",
@@ -286,7 +254,7 @@ fun PreviewOrderAccordionItem_Compact() {
 
     OrderAccordionItem(
         productOwner = "Nikhil",
-        selectedProduct = sampleProduct,
+        selectedProduct = sample,
         selectedType = ProductType.GeneralProduct,
         onFormSave = { _, _ -> },
         onDelete = {}
