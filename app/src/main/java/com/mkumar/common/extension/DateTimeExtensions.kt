@@ -2,6 +2,7 @@ package com.mkumar.common.extension
 
 import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
@@ -52,3 +53,19 @@ fun Long.formatAsDateTime(
 
 fun Long.formatAsDate(): String =
     SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(this))
+
+fun LocalDate.toEpochLong(): Long = this.toEpochDay()
+
+fun LocalDate.toInstant(): Instant =
+    this.atStartOfDay(ZoneId.systemDefault()).toInstant()
+
+fun LocalDate.formatAsDate(
+    format: DateFormat = DateFormat.DEFAULT_DATE_ONLY,
+    zoneId: ZoneId = ZoneId.systemDefault()
+): String {
+    return DateTimeFormatter.ofPattern(format.pattern)
+        .format(this.atStartOfDay(zoneId))
+}
+
+fun Long.toLocalDate(): LocalDate = LocalDate.ofEpochDay(this)
+

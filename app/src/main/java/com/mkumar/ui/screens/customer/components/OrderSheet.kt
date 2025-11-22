@@ -24,6 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mkumar.common.extension.DateFormat
+import com.mkumar.common.extension.formatAsDate
 import com.mkumar.model.NewOrderIntent
 import com.mkumar.model.OrderEditorIntent
 import com.mkumar.model.OrderEditorUi
@@ -33,6 +35,7 @@ import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.OrderEditorViewModel
 import java.time.LocalDate
+import java.time.ZoneId
 
 @Composable
 fun OrderSheet(
@@ -62,7 +65,7 @@ fun OrderSheet(
         OrderHeaderCardPro(
             customerName = state.customer?.name ?: "Test Customer",
             mobile = state.customer?.phone ?: "1234567890",
-            displayedDate = today,
+            displayedDate = state.draft.occurredAt.atZone(ZoneId.of("Asia/Kolkata")).toLocalDate().formatAsDate(DateFormat.DEFAULT_DATE_ONLY).toString(),
             isDateReadOnly = false,
             onPickDateTime = { picked ->
                 viewModel.onIntent(OrderEditorIntent.UpdateOccurredAt(picked))

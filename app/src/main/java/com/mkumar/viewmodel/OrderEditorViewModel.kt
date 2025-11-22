@@ -2,6 +2,7 @@ package com.mkumar.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mkumar.common.extension.toLong
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.domain.pricing.PricingInput
@@ -374,7 +375,8 @@ class OrderEditorViewModel @Inject constructor(
                 productCategories = categories,
                 owners = owners,
                 orderStatus = if (draft.remainingBalance > 0) OrderStatus.ACTIVE.value else OrderStatus.COMPLETED.value,
-                updatedAt = System.currentTimeMillis()
+                updatedAt = System.currentTimeMillis(),
+                occurredAt = draft.occurredAt.toLong()
             )
             val newEntities = draft.items.map {
                 it.toEntity(draft.orderId)
