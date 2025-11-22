@@ -57,7 +57,7 @@ fun OrderSheet(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 4.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         OrderHeaderCardPro(

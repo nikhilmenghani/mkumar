@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -76,6 +77,7 @@ fun OrderAccordionItem(
         selectedProduct.id,
         saver = ProductFormDataSaver
     ) { selectedProduct.formData ?: defaultFormFor(selectedProduct.productType, productOwner) }
+
     var draft by remember { mutableStateOf(draftBeforeState) }
 
     val cardColors = AppColors.elevatedCardColors()
@@ -95,37 +97,36 @@ fun OrderAccordionItem(
     val owner: String = draft.productOwner.orEmpty()
 
     // ------------------------------------------------------------------
-    // BORDER HANDLING — No double borders when grouped
+    // BORDER HANDLING — avoid double borders when grouped
     // ------------------------------------------------------------------
     val borderColor = MaterialTheme.colorScheme.outlineVariant
+    val density = LocalDensity.current
+    val borderStrokePx = with(density) { 1.dp.toPx() }
 
     val borderModifier = if (grouped) {
         Modifier.drawBehind {
-            val strokeWidth = 1.dp.toPx()
-
-            // Left
+            // LEFT
             drawRect(
                 color = borderColor,
                 topLeft = Offset(0f, 0f),
-                size = Size(strokeWidth, size.height)
+                size = Size(borderStrokePx, size.height)
             )
-            // Right
+            // RIGHT
             drawRect(
                 color = borderColor,
-                topLeft = Offset(size.width - strokeWidth, 0f),
-                size = Size(strokeWidth, size.height)
+                topLeft = Offset(size.width - borderStrokePx, 0f),
+                size = Size(borderStrokePx, size.height)
             )
-            // Bottom
+            // BOTTOM
             drawRect(
                 color = borderColor,
-                topLeft = Offset(0f, size.height - strokeWidth),
-                size = Size(size.width, strokeWidth)
+                topLeft = Offset(0f, size.height - borderStrokePx),
+                size = Size(size.width, borderStrokePx)
             )
         }
     } else {
         Modifier.border(1.dp, borderColor, rowShape)
     }
-
 
     ElevatedCard(
         modifier = Modifier
@@ -138,7 +139,7 @@ fun OrderAccordionItem(
         Column {
 
             // ------------------------------------------------------------------
-            // HEADER WITH BACKGROUND WHEN COLLAPSED
+            // HEADER (with collapsed background)
             // ------------------------------------------------------------------
             Row(
                 modifier = Modifier
@@ -154,7 +155,7 @@ fun OrderAccordionItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                // LEFT COLUMN — Description (elastic height + bigger font)
+                // LEFT — Bigger description
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -171,17 +172,22 @@ fun OrderAccordionItem(
                     )
                 }
 
+                // ------------------------------------------------------------------
                 // RIGHT COLUMN — TWO ROWS
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Center
-                ) {
+                // ------------------------------------------------------------------
+                Column(horizontalAlignment = Alignment.End) {
 
-                    // Row 1 — Amount + Arrow
+                    // Row 1 — Total: + amount + arrow
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
+                        Text(
+                            text = "Total:",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
                         Text(
                             text = "₹${selectedProduct.finalTotal}",
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
@@ -200,7 +206,7 @@ fun OrderAccordionItem(
 
                     Spacer(Modifier.height(4.dp))
 
-                    // Row 2 — Badges (owner + type)
+                    // Row 2 — badges
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -216,7 +222,7 @@ fun OrderAccordionItem(
             }
 
             // ------------------------------------------------------------------
-            // EXPANDED CONTENT (FORM)
+            // EXPANDED FORM
             // ------------------------------------------------------------------
             AnimatedVisibility(
                 visible = expanded,
