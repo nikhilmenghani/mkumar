@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mkumar.App.Companion.globalClass
 import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.ui.components.LongPressMenuAnchor
@@ -297,7 +298,7 @@ fun RecentOrderCardCompact(
                         Text("•", style = MaterialTheme.typography.bodySmall)
 
                         Text(
-                            text = "Invoice: ${order.invoiceNumber}",
+                            text = "#" + globalClass.preferencesManager.invoicePrefs.invoicePrefix + "${order.invoiceNumber}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
