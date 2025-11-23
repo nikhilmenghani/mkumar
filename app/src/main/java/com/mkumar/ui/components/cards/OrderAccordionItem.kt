@@ -65,11 +65,11 @@ fun OrderAccordionItem(
 
     var expanded by remember { mutableStateOf(initiallyExpanded) }
 
-    // Restore draft state
     val draftBeforeState = rememberSaveable(
         selectedProduct.id,
         saver = ProductFormDataSaver
     ) { selectedProduct.formData ?: defaultFormFor(selectedProduct.productType, productOwner) }
+
     var draft by remember { mutableStateOf(draftBeforeState) }
 
     val cardColors = AppColors.elevatedCardColors()
@@ -77,15 +77,16 @@ fun OrderAccordionItem(
     val typeLabel = if (selectedType?.name == "GeneralProduct") {
         (selectedProduct.formData as? ProductFormData.GeneralProductData)?.productType
             ?: productTypeDisplayNames[selectedType]
-    } else {
-        productTypeDisplayNames[selectedType]
-    }
+    } else productTypeDisplayNames[selectedType]
 
     val title = selectedProduct.formData?.productDescription
         ?.ifBlank { "New ${productTypeDisplayNames[selectedType] ?: ""}" }
         ?: "New ${productTypeDisplayNames[selectedType] ?: ""}"
 
     val owner = draft.productOwner.orEmpty()
+
+    val discountPercent = selectedProduct.discountPercentage
+    val hasDiscount = discountPercent > 0
 
     // ------------------------------------------------------------------
     // BORDER HANDLING — avoid double borders when grouped
@@ -96,33 +97,26 @@ fun OrderAccordionItem(
 
     val borderModifier = if (grouped) {
         Modifier.drawBehind {
-            // Left
             drawRect(
                 color = borderColor,
                 topLeft = Offset(0f, 0f),
                 size = Size(borderStrokePx, size.height)
             )
-            // Right
             drawRect(
                 color = borderColor,
                 topLeft = Offset(size.width - borderStrokePx, 0f),
                 size = Size(borderStrokePx, size.height)
             )
-            // Bottom only (no top border)
             drawRect(
                 color = borderColor,
                 topLeft = Offset(0f, size.height - borderStrokePx),
                 size = Size(size.width, borderStrokePx)
             )
         }
-    } else {
-        Modifier.border(1.dp, borderColor, rowShape)
-    }
+    } else Modifier.border(1.dp, borderColor, rowShape)
 
     ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(borderModifier),
+        modifier = Modifier.fillMaxWidth().then(borderModifier),
         shape = rowShape,
         colors = cardColors,
         elevation = if (grouped) CardDefaults.cardElevation(0.dp) else CardDefaults.cardElevation(1.dp)
@@ -131,16 +125,14 @@ fun OrderAccordionItem(
         Column {
 
             // ------------------------------------------------------------------
-            // COLLAPSED HEADER (Option E CUSTOM)
+            // COLLAPSED HEADER
             // ------------------------------------------------------------------
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        if (!expanded)
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        else
-                            Color.Transparent
+                        if (!expanded) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        else Color.Transparent
                     )
                     .clickable { expanded = !expanded }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -165,13 +157,11 @@ fun OrderAccordionItem(
                         modifier = Modifier.weight(1f)
                     )
 
-                    typeLabel?.let {
-                        OutlinedBadge(text = it)
-                    }
+                    typeLabel?.let { OutlinedBadge(text = it) }
                 }
 
                 // -------------------------
-                // ROW 2 — Owner + Unit Price + Discount + Total
+                // ROW 2 — Owner + Unit + Discount + Highlighted Total
                 // -------------------------
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -183,9 +173,14 @@ fun OrderAccordionItem(
                         OutlinedBadge(text = owner)
                     }
 
-                    OutlinedBadge(text = "Unit: ₹${selectedProduct.unitPrice}")
-                    OutlinedBadge(text = "Disc: ${selectedProduct.discountPercentage}%")
-                    OutlinedBadge(text = "Total: ₹${selectedProduct.finalTotal}")
+                    // Only show unit & discount when discount exists
+                    if (hasDiscount) {
+                        OutlinedBadge(text = "Unit: ₹${selectedProduct.unitPrice}")
+                        OutlinedBadge(text = "${discountPercent}% off")
+                    }
+
+                    // Highlighted total badge
+                    HighlightedTotalBadge(amount = selectedProduct.finalTotal)
                 }
             }
 
@@ -218,6 +213,10 @@ fun OrderAccordionItem(
     }
 }
 
+// ----------------------------------------------------------------------
+// BADGES
+// ----------------------------------------------------------------------
+
 @Composable
 private fun OutlinedBadge(text: String) {
     Surface(
@@ -237,19 +236,37 @@ private fun OutlinedBadge(text: String) {
     }
 }
 
+@Composable
+private fun HighlightedTotalBadge(amount: Int) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        tonalElevation = 0.dp
+    ) {
+        Text(
+            text = "Total: ₹$amount",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewOrderAccordionItem() {
     val sample = UiOrderItem(
         id = "1",
         productType = ProductType.GeneralProduct,
-        productDescription = "Sample Lens with very long description for ellipsis effect",
+        productDescription = "Sample Lens with long descriptive text",
         formData = defaultFormFor(ProductType.GeneralProduct, "Mahendra"),
         finalTotal = 1200,
         name = "Nikhil",
         quantity = 1,
         unitPrice = 25,
-        discountPercentage = 10
+        discountPercentage = 20
     )
 
     OrderAccordionItem(
