@@ -7,8 +7,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,11 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -88,126 +82,92 @@ fun OrderAccordionItem(
     val discountPercent = selectedProduct.discountPercentage
     val hasDiscount = discountPercent > 0
 
-    // ------------------------------------------------------------------
-    // BORDER HANDLING — avoid double borders when grouped
-    // ------------------------------------------------------------------
-    val borderColor = MaterialTheme.colorScheme.outlineVariant
-    val density = LocalDensity.current
-    val borderStrokePx = with(density) { 1.dp.toPx() }
-
-    val borderModifier = if (grouped) {
-        Modifier.drawBehind {
-            drawRect(
-                color = borderColor,
-                topLeft = Offset(0f, 0f),
-                size = Size(borderStrokePx, size.height)
-            )
-            drawRect(
-                color = borderColor,
-                topLeft = Offset(size.width - borderStrokePx, 0f),
-                size = Size(borderStrokePx, size.height)
-            )
-            drawRect(
-                color = borderColor,
-                topLeft = Offset(0f, size.height - borderStrokePx),
-                size = Size(size.width, borderStrokePx)
-            )
-        }
-    } else Modifier.border(1.dp, borderColor, rowShape)
-
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth().then(borderModifier),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
         shape = rowShape,
-        colors = cardColors,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = if (grouped) CardDefaults.cardElevation(0.dp) else CardDefaults.cardElevation(1.dp)
     ) {
 
-        Column {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
 
-            // ------------------------------------------------------------------
-            // COLLAPSED HEADER
-            // ------------------------------------------------------------------
+            // -------------------------
+            // ROW 1 — Title + Product Type
+            // -------------------------
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                typeLabel?.let { OutlinedBadge(text = it) }
+            }
+
+            // -------------------------
+            // ROW 2 — Badges cluster
+            // -------------------------
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                // Owner (only when different)
+                if (owner.isNotBlank() && owner != productOwner) {
+                    OutlinedBadge(text = owner)
+                }
+
+                // Discount + Unit logic
+                if (hasDiscount) {
+                    OutlinedBadge(text = "Unit: ₹${selectedProduct.unitPrice}")
+                    OutlinedBadge(text = "${discountPercent}% off")
+                }
+
+                // Always show Total, but highlighted
+                HighlightedTotalBadge(amount = selectedProduct.finalTotal)
+            }
+        }
+
+        // ---------------------------------------------------------
+        // EXPANDED FORM AREA
+        // ---------------------------------------------------------
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        if (!expanded) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        else Color.Transparent
-                    )
-                    .clickable { expanded = !expanded }
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-
-                // -------------------------
-                // ROW 1 — Title + Product Type
-                // -------------------------
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    typeLabel?.let { OutlinedBadge(text = it) }
-                }
-
-                // -------------------------
-                // ROW 2 — Owner + Unit + Discount + Highlighted Total
-                // -------------------------
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    if (owner.isNotBlank() && owner != productOwner) {
-                        OutlinedBadge(text = owner)
-                    }
-
-                    // Only show unit & discount when discount exists
-                    if (hasDiscount) {
-                        OutlinedBadge(text = "Unit: ₹${selectedProduct.unitPrice}")
-                        OutlinedBadge(text = "${discountPercent}% off")
-                    }
-
-                    // Highlighted total badge
-                    HighlightedTotalBadge(amount = selectedProduct.finalTotal)
-                }
-            }
-
-            // ------------------------------------------------------------------
-            // EXPANDED CONTENT
-            // ------------------------------------------------------------------
-            AnimatedVisibility(
-                visible = expanded,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    ProductFormItem(
-                        selectedProduct = selectedProduct,
-                        draft = draft,
-                        onDraftChange = { draft = it },
-                        onSave = { id, formData ->
-                            onFormSave(id, formData)
-                            expanded = false
-                        },
-                        onDelete = onDelete
-                    )
-                }
+                ProductFormItem(
+                    selectedProduct = selectedProduct,
+                    draft = draft,
+                    onDraftChange = { draft = it },
+                    onSave = { id, formData ->
+                        onFormSave(id, formData)
+                        expanded = false
+                    },
+                    onDelete = onDelete
+                )
             }
         }
     }
@@ -240,12 +200,12 @@ private fun OutlinedBadge(text: String) {
 private fun HighlightedTotalBadge(amount: Int) {
     Surface(
         shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         tonalElevation = 0.dp
     ) {
         Text(
-            text = "Total: ₹$amount",
+            text = "₹$amount",
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

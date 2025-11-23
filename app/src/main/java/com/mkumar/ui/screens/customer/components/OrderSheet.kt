@@ -1,18 +1,13 @@
 package com.mkumar.ui.screens.customer.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DeleteForever
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,10 +24,8 @@ import com.mkumar.common.extension.formatAsDate
 import com.mkumar.model.NewOrderIntent
 import com.mkumar.model.OrderEditorIntent
 import com.mkumar.model.OrderEditorUi
-import com.mkumar.ui.components.cards.OrderAccordionItem
 import com.mkumar.ui.components.cards.OrderHeaderCardPro
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
-import com.mkumar.ui.theme.AppColors
 import com.mkumar.viewmodel.OrderEditorViewModel
 import java.time.ZoneId
 
@@ -45,9 +38,9 @@ fun OrderSheet(
     val safeProducts = state.draft.items
     val justAddedId = state.draft.justAddedItemId
 
-    // NEW: hold which product is pending deletion
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
 
+    // Consume just-added flag once
     LaunchedEffect(justAddedId) {
         if (justAddedId != null) {
             viewModel.onNewOrderIntent(NewOrderIntent.ConsumeJustAdded)
@@ -60,17 +53,27 @@ fun OrderSheet(
             .padding(horizontal = 4.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // -----------------------------------------------------------
+        // HEADER CARD (unchanged)
+        // -----------------------------------------------------------
         OrderHeaderCardPro(
             customerName = state.customer?.name ?: "Test Customer",
             mobile = state.customer?.phone ?: "1234567890",
             invoiceNumber = state.draft.invoiceNumber.toString(),
-            displayedDate = state.draft.occurredAt.atZone(ZoneId.of("Asia/Kolkata")).toLocalDate().formatAsDate(DateFormat.DEFAULT_DATE_ONLY).toString(),
+            displayedDate = state.draft.occurredAt
+                .atZone(ZoneId.of("Asia/Kolkata"))
+                .toLocalDate()
+                .formatAsDate(DateFormat.DEFAULT_DATE_ONLY)
+                .toString(),
             isDateReadOnly = false,
             onPickDateTime = { picked ->
                 viewModel.onIntent(OrderEditorIntent.UpdateOccurredAt(picked))
             }
         )
 
+        // -----------------------------------------------------------
+        // NO PRODUCTS YET
+        // -----------------------------------------------------------
         if (safeProducts.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -86,7 +89,7 @@ fun OrderSheet(
                         .padding(vertical = 8.dp)
                 ) {
                     Text(
-                        text = "No products added yet. \nClick on '+' to Add a new Product.",
+                        text = "No products added yet.\nClick on '+' to add a new product.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
@@ -97,65 +100,30 @@ fun OrderSheet(
             }
         } else {
 
-            val groupRadius = 12.dp
-
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(groupRadius),
-                colors = AppColors.elevatedCardColors(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(Modifier.fillMaxWidth()) {
-                    safeProducts.forEachIndexed { index, product ->
-                        val isFirst = index == 0
-                        val isLast = index == safeProducts.lastIndex
-
-                        val radius = groupRadius
-                        val rowShape = when {
-                            isFirst && isLast -> RoundedCornerShape(radius)
-                            isFirst -> RoundedCornerShape(
-                                topStart = radius, topEnd = radius,
-                                bottomStart = 0.dp, bottomEnd = 0.dp
-                            )
-                            isLast -> RoundedCornerShape(
-                                topStart = 0.dp, topEnd = 0.dp,
-                                bottomStart = radius, bottomEnd = radius
-                            )
-                            else -> RoundedCornerShape(0.dp)
-                        }
-
-                        OrderAccordionItem(
-                            productOwner = state.customer?.name ?: "",
-                            selectedProduct = product,
-                            selectedType = product.productType,
-                            onFormSave = { productId, updated ->
-                                viewModel.onNewOrderIntent(
-                                    NewOrderIntent.FormUpdate(productId, updated)
-                                )
-                            },
-                            onDelete = { productId ->
-                                // <- instead of deleting immediately, ask for confirmation
-                                pendingDeleteId = productId
-                            },
-                            initiallyExpanded = (product.id == justAddedId),
-                            grouped = true,
-                            rowShape = rowShape
-                        )
-
-                        if (!isLast) {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .requiredHeight(1.dp)
-                                    .background(MaterialTheme.colorScheme.outlineVariant)
-                            )
-                        }
-                    }
-                }
-            }
+            // -----------------------------------------------------------
+            // PRODUCTS SECTION CARD (DoorDash inspired)
+            // -----------------------------------------------------------
+            ProductsSectionCard(
+                products = safeProducts,
+                productOwner = state.customer?.name ?: "",
+                onFormSave = { productId, updated ->
+                    viewModel.onNewOrderIntent(
+                        NewOrderIntent.FormUpdate(productId, updated)
+                    )
+                },
+                onDelete = { productId ->
+                    // Ask for confirmation — do not delete immediately
+                    pendingDeleteId = productId
+                },
+                getTypeForProduct = { it.productType },  // your existing type source
+                initiallyExpandedId = justAddedId
+            )
         }
     }
 
+    // -----------------------------------------------------------
+    // DELETE CONFIRMATION DIALOG
+    // -----------------------------------------------------------
     if (pendingDeleteId != null) {
         ConfirmActionDialog(
             title = "Remove product?",
