@@ -65,7 +65,7 @@ fun ItemPriceEditor(
                 value = unitPrice,
                 label = "Unit Price (₹)",
                 placeholder = "e.g. 1,200",
-                mode = FieldMode.IntegerPositive,
+                mode = FieldMode.Integer,
                 modifier = Modifier.weight(1f),
                 onValueChange = { txt ->
                     val filtered = txt.filter { it.isDigit() || it == ',' }
@@ -78,7 +78,7 @@ fun ItemPriceEditor(
                 value = discountPct,
                 label = "Discount %",
                 placeholder = "e.g. 10",
-                mode = FieldMode.IntegerPositive,
+                mode = FieldMode.Percent0to100,
                 modifier = Modifier.weight(1f),
                 onValueChange = { txt ->
                     val clamped =
@@ -92,7 +92,7 @@ fun ItemPriceEditor(
             OLTextField(
                 value = total,
                 label = "Total (₹)",
-                mode = FieldMode.IntegerPositive,
+                mode = FieldMode.Integer,
                 modifier = Modifier.weight(1f),
                 enabled = false,
                 onValueChange = {},

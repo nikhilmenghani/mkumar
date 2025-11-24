@@ -103,6 +103,17 @@ sealed interface FieldMode {
         }
     }
 
+    /** Whole-number quantities (>=1). */
+    data object Integer : FieldMode {
+        override val keyboardType = KeyboardType.Number
+        override val defaultIme = ImeAction.Next
+        override fun sanitizeOnChange(input: String) = input.filter { it.isDigit() }
+        override fun formatOnCommit(input: String): String {
+            val n = input.filter { it.isDigit() }.toIntOrNull() ?: 0
+            return n.coerceAtLeast(0).toString()
+        }
+    }
+
     /** Percent 0..100, no % sign stored. */
     data object Percent0to100 : FieldMode {
         override val keyboardType = KeyboardType.Number

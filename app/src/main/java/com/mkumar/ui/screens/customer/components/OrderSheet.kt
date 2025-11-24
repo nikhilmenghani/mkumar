@@ -104,6 +104,10 @@ fun OrderSheet(
             // PRODUCTS SECTION CARD (DoorDash inspired)
             // -----------------------------------------------------------
             ProductsSectionCard(
+                totalAmount = state.draft.totalAmount,
+                adjustedAmount = state.draft.adjustedAmount,
+                remainingBalance = state.draft.remainingBalance,
+                advanceTotal = state.draft.advanceTotal,
                 products = safeProducts,
                 productOwner = state.customer?.name ?: "",
                 onFormSave = { productId, updated ->

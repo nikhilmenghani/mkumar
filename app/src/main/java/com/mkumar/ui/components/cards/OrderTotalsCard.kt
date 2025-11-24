@@ -23,6 +23,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mkumar.ui.components.inputs.FieldMode
+import com.mkumar.ui.components.inputs.OLTextField
 import com.mkumar.ui.theme.AppColors
 
 
@@ -197,70 +199,29 @@ fun OrderTotalsNoCard(
             .padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        OutlinedTextField(
-            value = totalAmount.toString(),
-            onValueChange = {},
-            label = { Text("Total (₹)") },
-            enabled = false,
-            singleLine = true,
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = remainingBalance.toString(),
-            onValueChange = {
-
-            },
-            label = { Text("Remaining Balance (₹)") },
-            enabled = false,
-            singleLine = true,
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 8.dp)
-        )
-    }
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        OutlinedTextField(
+        OLTextField(
             value = adjustedAmount.toString(),
+            label = "Adjusted Total",
+            placeholder = "e.g. 200",
+            mode = FieldMode.Integer,
+            modifier = Modifier.weight(1f),
             onValueChange = {
                 adjustedAmount = it.toIntOrNull() ?: 0
                 onAdjustedAmountChange(adjustedAmount)
             },
-            label = { Text("Adjusted Total") },
-            placeholder = { Text("e.g. 200") },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            singleLine = true,
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 8.dp)
         )
-        OutlinedTextField(
+
+        OLTextField(
             value = advanceTotal.toString(),
+            label = "Advance Total",
+            placeholder = "e.g. 200",
+            mode = FieldMode.Integer,
+            modifier = Modifier.weight(1f),
             onValueChange = {
                 advanceTotal = it.toIntOrNull() ?: 0
                 onAdvanceTotalChange(advanceTotal)
             },
-            label = { Text("Advance Total") },
-            placeholder = { Text("e.g. 200") },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            singleLine = true,
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 8.dp)
         )
-
     }
 }
 
