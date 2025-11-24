@@ -87,10 +87,8 @@ fun OrderSummaryAccordion(
                     OrderTotalsNoCard(
                         initialAdvanceTotal = advanceTotal,
                         onAdvanceTotalChange = onAdvanceTotalChange,
-                        totalAmount = totalAmount,                 // read-only
                         adjustedAmount = adjustedAmount,
                         onAdjustedAmountChange = onAdjustedAmountChange,
-                        remainingBalance = remainingBalance
                     )
                 }
             }

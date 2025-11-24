@@ -24,6 +24,7 @@ import com.mkumar.common.extension.formatAsDate
 import com.mkumar.model.NewOrderIntent
 import com.mkumar.model.OrderEditorIntent
 import com.mkumar.model.OrderEditorUi
+import com.mkumar.ui.components.accordions.OrderSummaryAccordion
 import com.mkumar.ui.components.cards.OrderHeaderCardPro
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.viewmodel.OrderEditorViewModel
@@ -122,6 +123,22 @@ fun OrderSheet(
                 getTypeForProduct = { it.productType },  // your existing type source
                 initiallyExpandedId = justAddedId
             )
+
+            if (state.draft.items.isNotEmpty()) {
+                OrderSummaryAccordion(
+                    totalAmount = state.draft.totalAmount,
+                    adjustedAmount = state.draft.adjustedAmount,
+                    onAdjustedAmountChange = {
+                        viewModel.onIntent(OrderEditorIntent.UpdateAdjustedAmount(it))
+                    },
+                    advanceTotal = state.draft.advanceTotal,
+                    onAdvanceTotalChange = {
+                        viewModel.onIntent(OrderEditorIntent.UpdateAdvanceTotal(it))
+                    },
+                    remainingBalance = state.draft.remainingBalance,
+                    initiallyExpanded = false
+                )
+            }
         }
     }
 

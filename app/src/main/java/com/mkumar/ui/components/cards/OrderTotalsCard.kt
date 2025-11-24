@@ -129,54 +129,7 @@ fun OrderTotalsCard(
                         .weight(1f)
                         .padding(bottom = 8.dp)
                 )
-
             }
-
-//            Row(
-//                Modifier.fillMaxWidth(),
-//                horizontalArrangement = Arrangement.SpaceBetween
-//            ) {
-//                Text("Advance Total:", style = MaterialTheme.typography.bodyMedium)
-//                OutlinedTextField(
-//                    value = advanceTotal.toString(),
-//                    onValueChange = {},
-////                    label = { Text("Advance Total (₹)") },
-//                    enabled = false,
-//                    singleLine = true,
-//                    modifier = Modifier
-//                        .weight(1f)
-//                        .padding(bottom = 8.dp)
-//                )
-//            }
-//            Row(
-//                Modifier.fillMaxWidth(),
-//                horizontalArrangement = Arrangement.SpaceBetween
-//            ) {
-//                Text("Total Amount:", style = MaterialTheme.typography.bodyMedium)
-//                Text(totalAmount.toString(), style = MaterialTheme.typography.bodyMedium)
-//            }
-//            Row(
-//                Modifier.fillMaxWidth(),
-//                horizontalArrangement = Arrangement.SpaceBetween
-//            ) {
-//                Text("Adjusted Amount:", style = MaterialTheme.typography.bodyMedium)
-//                OutlinedTextField(
-//                    value = adjustedAmount.toString(),
-//                    onValueChange = { value ->
-//                        val intValue = value.toIntOrNull() ?: 0
-//                        onAdjustedAmountChange(intValue)
-//                    },
-//                    singleLine = true,
-//                    modifier = Modifier.width(120.dp)
-//                )
-//            }
-//            Row(
-//                Modifier.fillMaxWidth(),
-//                horizontalArrangement = Arrangement.SpaceBetween
-//            ) {
-//                Text("Remaining Balance:", style = MaterialTheme.typography.bodyMedium)
-//                Text(remainingBalance.toString(), style = MaterialTheme.typography.bodyMedium)
-//            }
         }
     }
 }
@@ -185,10 +138,8 @@ fun OrderTotalsCard(
 fun OrderTotalsNoCard(
     initialAdvanceTotal: Int,
     onAdvanceTotalChange: (Int) -> Unit,
-    totalAmount: Int,
     adjustedAmount: Int,
-    onAdjustedAmountChange: (Int) -> Unit,
-    remainingBalance: Int
+    onAdjustedAmountChange: (Int) -> Unit
 ) {
     var adjustedAmount by remember(adjustedAmount) { mutableIntStateOf(adjustedAmount) }
     var advanceTotal by remember(initialAdvanceTotal) { mutableIntStateOf(initialAdvanceTotal) }
@@ -228,12 +179,11 @@ fun OrderTotalsNoCard(
 @Composable
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 fun PreviewOrderTotalsCard() {
-    OrderTotalsCard(
+    OrderTotalsNoCard(
         initialAdvanceTotal = 5000,
-        totalAmount = 12000,
         adjustedAmount = 5000,
         onAdjustedAmountChange = {},
-        onAdvanceTotalChange = {}
+        onAdvanceTotalChange = {},
     )
 }
 

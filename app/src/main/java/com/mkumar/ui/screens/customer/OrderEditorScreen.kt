@@ -47,7 +47,6 @@ import androidx.navigation.NavHostController
 import com.mkumar.model.OrderEditorEffect
 import com.mkumar.model.OrderEditorIntent
 import com.mkumar.model.ProductType
-import com.mkumar.ui.components.accordions.OrderSummaryAccordion
 import com.mkumar.ui.components.bottomsheets.ProductPickerSheet
 import com.mkumar.ui.components.fabs.AddProductSpeedMenuButton
 import com.mkumar.ui.screens.customer.components.OrderSheet
@@ -195,22 +194,6 @@ fun OrderEditorScreen(
                         viewModel = viewModel,
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    if (ui.draft.items.isNotEmpty()) {
-                        OrderSummaryAccordion(
-                            totalAmount = ui.draft.totalAmount,
-                            adjustedAmount = ui.draft.adjustedAmount,
-                            onAdjustedAmountChange = {
-                                viewModel.onIntent(OrderEditorIntent.UpdateAdjustedAmount(it))
-                            },
-                            advanceTotal = ui.draft.advanceTotal,
-                            onAdvanceTotalChange = {
-                                viewModel.onIntent(OrderEditorIntent.UpdateAdvanceTotal(it))
-                            },
-                            remainingBalance = ui.draft.remainingBalance,
-                            initiallyExpanded = false
-                        )
-                    }
                 }
             }
         }
