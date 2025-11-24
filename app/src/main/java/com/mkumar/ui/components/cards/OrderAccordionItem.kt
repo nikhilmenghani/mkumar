@@ -6,7 +6,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,7 +25,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,6 +35,8 @@ import com.mkumar.data.ProductFormDataSaver
 import com.mkumar.model.ProductType
 import com.mkumar.model.UiOrderItem
 import com.mkumar.model.productTypeDisplayNames
+import com.mkumar.ui.components.badges.HighlightedBadge
+import com.mkumar.ui.components.badges.OutlinedBadge
 import com.mkumar.ui.components.forms.ProductFormItem
 import com.mkumar.ui.components.forms.defaultFormFor
 import com.mkumar.ui.theme.AppColors
@@ -137,11 +136,15 @@ fun OrderAccordionItem(
                 // Discount + Unit logic
                 if (hasDiscount) {
                     OutlinedBadge(text = "Unit: ₹${selectedProduct.unitPrice}")
-                    OutlinedBadge(text = "${discountPercent}% off")
+                    HighlightedBadge(
+                        text = "${discountPercent}% off",
+                        backgroundColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 }
 
                 // Always show Total, but highlighted
-                HighlightedTotalBadge(amount = selectedProduct.finalTotal)
+                HighlightedBadge(text = "₹${selectedProduct.finalTotal}")
             }
         }
 
@@ -170,47 +173,6 @@ fun OrderAccordionItem(
                 )
             }
         }
-    }
-}
-
-// ----------------------------------------------------------------------
-// BADGES
-// ----------------------------------------------------------------------
-
-@Composable
-private fun OutlinedBadge(text: String) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        color = Color.Transparent,
-        shadowElevation = 0.dp,
-        tonalElevation = 0.dp
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-        )
-    }
-}
-
-@Composable
-private fun HighlightedTotalBadge(amount: Int) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        tonalElevation = 0.dp
-    ) {
-        Text(
-            text = "₹$amount",
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-        )
     }
 }
 
