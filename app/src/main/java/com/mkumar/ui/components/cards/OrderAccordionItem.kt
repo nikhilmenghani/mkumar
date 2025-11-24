@@ -144,7 +144,7 @@ fun OrderAccordionItem(
                 }
 
                 // Always show Total, but highlighted
-                HighlightedBadge(text = "₹${selectedProduct.finalTotal}")
+                HighlightedBadge(text = "Total: ₹${selectedProduct.finalTotal}")
             }
         }
 
