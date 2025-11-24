@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mkumar.ui.components.headers.FractionedSectionHeader
 import kotlin.math.roundToLong
 
 @Composable
@@ -55,6 +56,7 @@ fun ItemPriceEditor(
     }
 
     Column(modifier) {
+        FractionedSectionHeader("Price Details")
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -84,25 +86,6 @@ fun ItemPriceEditor(
                             ?.toString() ?: ""
                     discountPct = clamped
                     onDiscountChange(clamped)
-                    recalculateTotal()
-                }
-            )
-        }
-        Row(
-            Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OLTextField(
-                value = quantity,
-                label = "Qty",
-                placeholder = "2",
-                mode = FieldMode.IntegerPositive,
-                modifier = Modifier.weight(1f),
-                onValueChange = { txt ->
-                    val filtered = txt.filter { it.isDigit() }.take(4)
-                    quantity = filtered
-                    onQuantityChange(filtered)
                     recalculateTotal()
                 }
             )

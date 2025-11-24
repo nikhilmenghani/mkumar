@@ -156,7 +156,7 @@ fun OrderAccordionItem(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
             ) {
                 ProductFormItem(
                     selectedProduct = selectedProduct,

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mkumar.data.ProductFormData
+import com.mkumar.ui.components.headers.FractionedSectionHeader
 import com.mkumar.ui.components.inputs.FieldMode
 import com.mkumar.ui.components.inputs.ItemPriceEditor
 import com.mkumar.ui.components.inputs.OLTextField
@@ -43,6 +44,7 @@ fun FrameForm(
     }
 
     Column {
+        FractionedSectionHeader("Product Information")
         OLTextField(
             value = frame.productOwner,
             label = "Product Owner",
@@ -93,6 +95,7 @@ fun GlassForm(
     }
 
     Column {
+        FractionedSectionHeader("Product Information")
         OLTextField(
             value = form.productOwner,
             label = "Product Owner",
@@ -109,13 +112,14 @@ fun GlassForm(
             onValueChange = { form = form.copy(productDescription = it) },
             onCommit = { onChange(form) }
         )
+        FractionedSectionHeader("Right Eye")
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             OLTextField(
                 value = form.rightSph,
-                label = "Right Sph",
+                label = "R Sph",
                 placeholder = "+1.50",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
                 onValueChange = { form = form.copy(rightSph = it) },
@@ -124,22 +128,16 @@ fun GlassForm(
             )
             OLTextField(
                 value = form.rightCyl,
-                label = "Right Cyl",
+                label = "R Cyl",
                 placeholder = "-0.50",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = false),
                 onValueChange = { form = form.copy(rightCyl = it) },
                 modifier = Modifier.weight(1f),
                 onCommit = { onChange(form) }
             )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
             OLTextField(
                 value = form.rightAxis,
-                label = "Right Axis",
+                label = "R Axis",
                 placeholder = "175",
                 mode = FieldMode.AxisDegrees,        // clamps 0..180 on commit
                 onValueChange = { form = form.copy(rightAxis = it) },
@@ -148,7 +146,7 @@ fun GlassForm(
             )
             OLTextField(
                 value = form.rightAdd,
-                label = "Right Add",
+                label = "R Add",
                 placeholder = "+1.75",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
                 onValueChange = { form = form.copy(rightAdd = it) },
@@ -157,13 +155,15 @@ fun GlassForm(
             )
         }
 
+        FractionedSectionHeader("Left Eye")
+
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OLTextField(
                 value = form.leftSph,
-                label = "Left Sph",
+                label = "L Sph",
                 placeholder = "+1.50",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
                 onValueChange = { form = form.copy(leftSph = it) },
@@ -172,22 +172,16 @@ fun GlassForm(
             )
             OLTextField(
                 value = form.leftCyl,
-                label = "Left Cyl",
+                label = "L Cyl",
                 placeholder = "-0.50",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = false),
                 onValueChange = { form = form.copy(leftCyl = it) },
                 modifier = Modifier.weight(1f),
                 onCommit = { onChange(form) }
             )
-        }
-
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
             OLTextField(
                 value = form.leftAxis,
-                label = "Left Axis",
+                label = "L Axis",
                 placeholder = "175",
                 mode = FieldMode.AxisDegrees,        // clamps 0..180 on commit
                 onValueChange = { form = form.copy(leftAxis = it) },
@@ -196,7 +190,7 @@ fun GlassForm(
             )
             OLTextField(
                 value = form.leftAdd,
-                label = "Left Add",
+                label = "L Add",
                 placeholder = "+1.75",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
                 onValueChange = { form = form.copy(leftAdd = it) },
@@ -233,6 +227,7 @@ fun ContactLensForm(
     }
 
     Column {
+        FractionedSectionHeader("Product Information")
         OLTextField(
             value = form.productOwner,
             label = "Product Owner",
@@ -250,13 +245,14 @@ fun ContactLensForm(
             onCommit = { onChange(form) }
         )
 
+        FractionedSectionHeader("Right Eye")
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             OLTextField(
                 value = form.rightSph,
-                label = "Right Sph",
+                label = "R Sph",
                 placeholder = "+1.50",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
                 onValueChange = { form = form.copy(rightSph = it) },
@@ -265,22 +261,16 @@ fun ContactLensForm(
             )
             OLTextField(
                 value = form.rightCyl,
-                label = "Right Cyl",
+                label = "R Cyl",
                 placeholder = "-0.50",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = false),
                 onValueChange = { form = form.copy(rightCyl = it) },
                 modifier = Modifier.weight(1f),
                 onCommit = { onChange(form) }
             )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
             OLTextField(
                 value = form.rightAxis,
-                label = "Right Axis",
+                label = "R Axis",
                 placeholder = "175",
                 mode = FieldMode.AxisDegrees,        // clamps 0..180 on commit
                 onValueChange = { form = form.copy(rightAxis = it) },
@@ -289,7 +279,7 @@ fun ContactLensForm(
             )
             OLTextField(
                 value = form.rightAdd,
-                label = "Right Add",
+                label = "R Add",
                 placeholder = "+1.75",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
                 onValueChange = { form = form.copy(rightAdd = it) },
@@ -298,13 +288,15 @@ fun ContactLensForm(
             )
         }
 
+        FractionedSectionHeader("Left Eye")
+
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OLTextField(
                 value = form.leftSph,
-                label = "Left Sph",
+                label = "L Sph",
                 placeholder = "+1.50",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
                 onValueChange = { form = form.copy(leftSph = it) },
@@ -313,22 +305,16 @@ fun ContactLensForm(
             )
             OLTextField(
                 value = form.leftCyl,
-                label = "Left Cyl",
+                label = "L Cyl",
                 placeholder = "-0.50",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = false),
                 onValueChange = { form = form.copy(leftCyl = it) },
                 modifier = Modifier.weight(1f),
                 onCommit = { onChange(form) }
             )
-        }
-
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
             OLTextField(
                 value = form.leftAxis,
-                label = "Left Axis",
+                label = "L Axis",
                 placeholder = "175",
                 mode = FieldMode.AxisDegrees,        // clamps 0..180 on commit
                 onValueChange = { form = form.copy(leftAxis = it) },
@@ -337,7 +323,7 @@ fun ContactLensForm(
             )
             OLTextField(
                 value = form.leftAdd,
-                label = "Left Add",
+                label = "L Add",
                 placeholder = "+1.75",
                 mode = FieldMode.SignedDecimal(scale = 2, forcePlus = true),
                 onValueChange = { form = form.copy(leftAdd = it) },
@@ -379,6 +365,7 @@ fun GeneralProductForm(
     }
 
     Column {
+        FractionedSectionHeader("Product Information")
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
