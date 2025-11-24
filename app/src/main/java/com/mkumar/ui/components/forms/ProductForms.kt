@@ -47,6 +47,7 @@ fun FrameForm(
             value = frame.productOwner,
             label = "Product Owner",
             mode = FieldMode.TitleCase(),
+            modifier = Modifier.fillMaxWidth(),
             onValueChange = { frame = frame.copy(productOwner = it) },
             onCommit = { onChange(frame) }
         )
@@ -55,6 +56,7 @@ fun FrameForm(
             value = frame.productDescription,
             label = "Description",
             mode = FieldMode.TitleCase(),
+            modifier = Modifier.fillMaxWidth(),
             onValueChange = { frame = frame.copy(productDescription = it) },
             onCommit = { onChange(frame) }
         )
@@ -90,11 +92,12 @@ fun GlassForm(
             .collect { onChange(it) }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column {
         OLTextField(
             value = form.productOwner,
             label = "Product Owner",
             mode = FieldMode.TitleCase(),
+            modifier = Modifier.fillMaxWidth(),
             onValueChange = { form = form.copy(productOwner = it) },
             onCommit = { onChange(form) }
         )
@@ -102,6 +105,7 @@ fun GlassForm(
             value = form.productDescription,
             label = "Description",
             mode = FieldMode.TitleCase(),
+            modifier = Modifier.fillMaxWidth(),
             onValueChange = { form = form.copy(productDescription = it) },
             onCommit = { onChange(form) }
         )
@@ -228,11 +232,12 @@ fun ContactLensForm(
             .collect { onChange(it) }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column {
         OLTextField(
             value = form.productOwner,
             label = "Product Owner",
             mode = FieldMode.TitleCase(),
+            modifier = Modifier.fillMaxWidth(),
             onValueChange = { form = form.copy(productOwner = it) },
             onCommit = { onChange(form) }
         )
@@ -240,6 +245,7 @@ fun ContactLensForm(
             value = form.productDescription,
             label = "Description",
             mode = FieldMode.TitleCase(),
+            modifier = Modifier.fillMaxWidth(),
             onValueChange = { form = form.copy(productDescription = it) },
             onCommit = { onChange(form) }
         )
@@ -373,24 +379,32 @@ fun GeneralProductForm(
     }
 
     Column {
-        OLTextField(
-            value = form.productOwner,
-            label = "Product Owner",
-            mode = FieldMode.TitleCase(),
-            onValueChange = { form = form.copy(productOwner = it) },
-            onCommit = { onChange(form) }
-        )
-        OLTextField(
-            value = form.productType,
-            label = "Product Type",
-            mode = FieldMode.TitleCase(),
-            onValueChange = { form = form.copy(productType = it) },
-            onCommit = { onChange(form) }
-        )
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OLTextField(
+                value = form.productOwner,
+                label = "Product Owner",
+                mode = FieldMode.TitleCase(),
+                modifier = Modifier.weight(1f),
+                onValueChange = { form = form.copy(productOwner = it) },
+                onCommit = { onChange(form) }
+            )
+            OLTextField(
+                value = form.productType,
+                label = "Product Type",
+                mode = FieldMode.TitleCase(),
+                modifier = Modifier.weight(1f),
+                onValueChange = { form = form.copy(productType = it) },
+                onCommit = { onChange(form) }
+            )
+        }
         OLTextField(
             value = form.productDescription,
             label = "Description",
             mode = FieldMode.TitleCase(),
+            modifier = Modifier.fillMaxWidth(),
             onValueChange = { form = form.copy(productDescription = it) },
             onCommit = { onChange(form) }
         )

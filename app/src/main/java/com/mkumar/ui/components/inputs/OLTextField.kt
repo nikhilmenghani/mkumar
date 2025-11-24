@@ -1,13 +1,13 @@
 package com.mkumar.ui.components.inputs
 
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,8 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
 
 @Composable
 fun OLTextField(
@@ -33,11 +36,27 @@ fun OLTextField(
     onDone: (() -> Unit)? = null,
     imeActionOverride: ImeAction? = null,
     singleLine: Boolean = true,
+    enabled: Boolean = true
 ) {
     val focusManager = LocalFocusManager.current
     var hadFocus by remember { mutableStateOf(false) }
 
-    val imeAction = imeActionOverride ?: mode.defaultIme
+    val ime = imeActionOverride ?: mode.defaultIme
+
+    val textStyle = TextStyle(
+        fontSize = 14.sp,                // smaller input text
+        color = MaterialTheme.colorScheme.onSurface
+    )
+
+    val labelStyle = TextStyle(
+        fontSize = 11.sp,                // compact floating label
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+
+    val placeholderStyle = TextStyle(
+        fontSize = 13.sp,
+        color = MaterialTheme.colorScheme.outline
+    )
 
     val actions = KeyboardActions(
         onNext = {
@@ -60,19 +79,26 @@ fun OLTextField(
 
     OutlinedTextField(
         value = value,
-        onValueChange = { onValueChange(mode.sanitizeOnChange(it)) },
-        label = { Text(label, maxLines = 1) },     // prevents stretching
-        placeholder = { if (placeholder != null) Text(placeholder) },
+        onValueChange = { new ->
+            onValueChange(mode.sanitizeOnChange(new))
+        },
+        textStyle = textStyle,
+        label = { Text(label, style = labelStyle, maxLines = 1) },
+        placeholder = {
+            if (placeholder != null) {
+                Text(placeholder, style = placeholderStyle, maxLines = 1)
+            }
+        },
         singleLine = singleLine,
         keyboardOptions = KeyboardOptions(
             keyboardType = mode.keyboardType,
-            imeAction = imeAction
+            imeAction = ime
         ),
+        enabled = enabled,
         keyboardActions = actions,
         modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = TextFieldDefaults.MinHeight)  // FIX: stable height at 130–200%
-            .padding(bottom = 8.dp)
+            .heightIn(min = 42.dp)          // compact height
+            .padding(bottom = 4.dp)         // reduced spacing below
             .onFocusChanged { fs ->
                 if (hadFocus && !fs.isFocused) {
                     val formatted = mode.formatOnCommit(value)
@@ -80,6 +106,13 @@ fun OLTextField(
                     onCommit?.invoke()
                 }
                 hadFocus = fs.isFocused
-            }
+            },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            cursorColor = MaterialTheme.colorScheme.primary
+        )
     )
 }
