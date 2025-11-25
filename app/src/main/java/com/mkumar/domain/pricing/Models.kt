@@ -5,7 +5,7 @@ data class PricingInput(
     val orderId: String,
     val items: List<ItemInput>,
     val adjustedAmount: Int,   // >= 0 rupees, flat reduction
-    val advanceTotal: Int      // >= 0 rupees
+    val paidTotal: Int      // >= 0 rupees
 ) {
     data class ItemInput(
         val itemId: String,
@@ -31,6 +31,6 @@ data class PricingResult(
     val subtotalBeforeAdjust: Int, // sum(lineTotal)
     val adjustedAmount: Int,       // clamped to [0..subtotal]
     val totalAmount: Int,          // subtotal - adjustedAmount
-    val advanceTotal: Int,         // clamped >= 0
+    val paidTotal: Int,         // clamped >= 0
     val remainingBalance: Int      // max(0, totalAmount - advanceTotal)
 )

@@ -9,12 +9,14 @@ import com.mkumar.data.db.dao.CustomerDao
 import com.mkumar.data.db.dao.InvoiceCounterDao
 import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.OrderItemDao
+import com.mkumar.data.db.dao.PaymentDao
 import com.mkumar.data.db.dao.SearchDao
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.entities.InvoiceCounterEntity
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.data.db.entities.OutboxEntity
+import com.mkumar.data.db.entities.PaymentEntity
 import com.mkumar.data.db.entities.SearchFts
 import com.mkumar.data.utils.Converters
 
@@ -26,6 +28,7 @@ import com.mkumar.data.utils.Converters
         OutboxEntity::class,
         SearchFts::class,
         InvoiceCounterEntity::class,
+        PaymentEntity::class
     ],
     version = 1,
     exportSchema = true
@@ -38,4 +41,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun orderItemDao(): OrderItemDao
     abstract fun searchDao(): SearchDao
     abstract fun invoiceCounterDao(): InvoiceCounterDao
+    abstract fun paymentDao(): PaymentDao
 }

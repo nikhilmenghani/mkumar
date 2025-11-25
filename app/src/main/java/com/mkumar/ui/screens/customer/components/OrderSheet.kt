@@ -108,7 +108,7 @@ fun OrderSheet(
                 totalAmount = state.draft.totalAmount,
                 adjustedAmount = state.draft.adjustedAmount,
                 remainingBalance = state.draft.remainingBalance,
-                advanceTotal = state.draft.advanceTotal,
+                paidTotal = state.draft.paidTotal,
                 products = safeProducts,
                 productOwner = state.customer?.name ?: "",
                 onFormSave = { productId, updated ->
@@ -126,14 +126,16 @@ fun OrderSheet(
 
             if (state.draft.items.isNotEmpty()) {
                 OrderSummaryAccordion(
-                    totalAmount = state.draft.totalAmount,
+                    payments = state.draft.payments,
+                    onAddPayment = { amountPaid, paymentAt  ->
+                        viewModel.onIntent(OrderEditorIntent.AddPayment(state.draft.orderId, amountPaid, paymentAt))
+                    },
+                    onDeletePayment = { paymentId ->
+                        viewModel.onIntent(OrderEditorIntent.DeletePayment(paymentId))
+                    },
                     adjustedAmount = state.draft.adjustedAmount,
                     onAdjustedAmountChange = {
                         viewModel.onIntent(OrderEditorIntent.UpdateAdjustedAmount(it))
-                    },
-                    advanceTotal = state.draft.advanceTotal,
-                    onAdvanceTotalChange = {
-                        viewModel.onIntent(OrderEditorIntent.UpdateAdvanceTotal(it))
                     },
                     remainingBalance = state.draft.remainingBalance,
                     initiallyExpanded = false

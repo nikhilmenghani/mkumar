@@ -7,8 +7,8 @@ import com.mkumar.data.db.entities.OrderItemEntity
 fun buildPricingInput(order: OrderEntity, items: List<OrderItemEntity>): PricingInput {
     return PricingInput(
         orderId = order.id,
-        adjustedAmount = (order.adjustedAmount ?: 0).coerceAtLeast(0),
-        advanceTotal = order.advanceTotal.coerceAtLeast(0),
+        adjustedAmount = order.adjustedAmount.coerceAtLeast(0),
+        paidTotal = order.paidTotal.coerceAtLeast(0),
         items = items.map {
             PricingInput.ItemInput(
                 itemId = it.id,

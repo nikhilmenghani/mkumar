@@ -110,7 +110,7 @@ fun SearchScreen(
     var addPhone by remember { mutableStateOf("") }
 
     val canSubmit by derivedStateOf {
-        addName.isNotBlank() || addPhone.length >= 9
+        addName.isNotBlank() && addPhone.length == 10
     }
 
     var sheetMode by remember { mutableStateOf(CustomerSheetMode.Add) }

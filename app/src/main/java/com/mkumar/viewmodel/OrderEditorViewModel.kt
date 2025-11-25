@@ -16,12 +16,15 @@ import com.mkumar.model.ProductType
 import com.mkumar.model.UiOrderItem
 import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
+import com.mkumar.repository.PaymentRepository
 import com.mkumar.repository.ProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -33,21 +36,19 @@ class OrderEditorViewModel @Inject constructor(
     private val orderRepo: OrderRepository,
     private val productRepo: ProductRepository,
     private val customerRepo: CustomerRepository,
-    private val pricing: PricingService
+    private val pricing: PricingService,
+    private val paymentsRepo: PaymentRepository
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(OrderEditorUi())
     val ui: StateFlow<OrderEditorUi> = _ui
 
-    private val _effects = MutableSharedFlow<OrderEditorEffect>(
-        replay = 0,
-        extraBufferCapacity = 64
-    )
+    private val _effects = MutableSharedFlow<OrderEditorEffect>()
     val effects = _effects.asSharedFlow()
 
-    // -------------------------------------------------
-    // PUBLIC ENTRY POINT
-    // -------------------------------------------------
+    // --------------------------------------------------------------
+    // PUBLIC ENTRY (LOAD DRAFT / ORDER)
+    // --------------------------------------------------------------
 
     fun load(customerId: String, orderId: String?) {
         if (orderId.isNullOrBlank()) {
@@ -57,19 +58,49 @@ class OrderEditorViewModel @Inject constructor(
         }
     }
 
-    // -------------------------------------------------
+    // --------------------------------------------------------------
     // INTENTS
-    // -------------------------------------------------
+    // --------------------------------------------------------------
 
     fun onIntent(intent: OrderEditorIntent) {
         when (intent) {
+
             is OrderEditorIntent.AddItem -> addItem(intent.type)
-            is OrderEditorIntent.UpdateItem -> updateItem(intent.itemId, intent.newData)
-            is OrderEditorIntent.DeleteItem -> deleteItem(intent.itemId)
-            is OrderEditorIntent.UpdateAdjustedAmount -> updateAdjusted(intent.value)
-            is OrderEditorIntent.UpdateAdvanceTotal -> updateAdvance(intent.value)
-            is OrderEditorIntent.SaveOrder -> activateOrder()
-            is OrderEditorIntent.UpdateOccurredAt -> updateOccurredAt(intent.occurredAt)
+
+            is OrderEditorIntent.UpdateItem ->
+                updateItem(intent.itemId, intent.newData)
+
+            is OrderEditorIntent.DeleteItem ->
+                deleteItem(intent.itemId)
+
+            is OrderEditorIntent.UpdateAdjustedAmount ->
+                updateAdjusted(intent.value)
+
+            is OrderEditorIntent.SaveOrder ->
+                activateOrder()
+
+            is OrderEditorIntent.UpdateOccurredAt ->
+                updateOccurredAt(intent.occurredAt)
+
+            // ---- PAYMENT ADD ----
+            is OrderEditorIntent.AddPayment -> {
+                viewModelScope.launch {
+                    paymentsRepo.addPayment(
+                        orderId = intent.orderId,
+                        amount = intent.amountPaid,
+                        paymentAt = intent.paymentAt
+                    )
+                }
+            }
+
+            // ---- PAYMENT DELETE ----
+            is OrderEditorIntent.DeletePayment -> {
+                viewModelScope.launch {
+                    paymentsRepo.deletePaymentById(intent.paymentId)
+                }
+            }
+
+            else -> {}
         }
     }
 
@@ -77,136 +108,202 @@ class OrderEditorViewModel @Inject constructor(
         when (intent) {
             is NewOrderIntent.FormUpdate -> onSaveItem(intent.productId, intent.newData)
             is NewOrderIntent.FormDelete -> onDeleteItem(intent.productId)
-            is NewOrderIntent.Save -> TODO()
-            is NewOrderIntent.SelectType -> TODO()
             is NewOrderIntent.ConsumeJustAdded -> {
-                mutateDraft { d -> d.copy(justAddedItemId = null) }
+                mutateDraft { it.copy(justAddedItemId = null) }
             }
+            else -> {}
         }
     }
 
-    // -------------------------------------------------
-    // INITIAL LOAD
-    // -------------------------------------------------
+    // --------------------------------------------------------------
+    // CREATE NEW DRAFT
+    // --------------------------------------------------------------
 
     private fun createDraft(customerId: String) {
         val draftId = UUID.randomUUID().toString()
-        // Insert empty DRAFT row in DB
+
         viewModelScope.launch {
+            // create empty DRAFT row
             val entity = OrderEntity(
                 id = draftId,
                 customerId = customerId,
                 orderStatus = OrderStatus.DRAFT.value
             )
-            val order = orderRepo.createOrderWithItems(entity)
+            val created = orderRepo.createOrderWithItems(entity)
+
             val customerWithOrders = customerRepo.getWithOrders(customerId)
-            val uiCustomer = customerWithOrders?.toUi(pricing = pricing)?.customer
+            val uiCustomer = customerWithOrders?.toUi(pricing)?.customer
+
             _ui.update {
                 it.copy(
                     isLoading = false,
+                    customer = uiCustomer,
+                    orders = customerWithOrders?.orders?.map { o -> o.toUiOrder() }.orEmpty(),
                     draft = OrderEditorUi.Draft(
                         orderId = draftId,
+                        editingOrderId = draftId,
                         customerId = customerId,
                         items = emptyList(),
                         adjustedAmount = 0,
-                        advanceTotal = 0,
-                        editingOrderId = draftId,
-                        invoiceNumber = order.invoiceSeq ?: 0L
-                    ),
-                    customer = uiCustomer,
-                    orders = customerWithOrders?.orders?.map { o -> o.toUiOrder() }.orEmpty(),
+                        totalAmount = 0,
+                        paidTotal = 0,
+                        remainingBalance = 0,
+                        invoiceNumber = created.invoiceSeq ?: 0L,
+                        occurredAt = Instant.now(),
+                        payments = emptyList()
+                    )
                 )
             }
+
+            // Start real-time payment monitoring
+            collectPayments(draftId)
         }
     }
+
+    // --------------------------------------------------------------
+    // LOAD EXISTING ORDER
+    // --------------------------------------------------------------
 
     private fun loadExistingOrder(orderId: String) {
         viewModelScope.launch {
+
             val order = orderRepo.getOrder(orderId) ?: return@launch
+
             val customerWithOrders = customerRepo.getWithOrders(order.customerId)
-            val uiCustomer = customerWithOrders?.toUi(pricing = pricing)?.customer
-            val items = productRepo.getItemsForOrder(orderId)
-            val uiItems = items
-                .map { it.toUiItem() }
+            val uiCustomer = customerWithOrders?.toUi(pricing)?.customer
 
-            val draft = OrderEditorUi.Draft(
-                orderId = order.id,
-                editingOrderId = order.id,
-                customerId = order.customerId,
-                items = uiItems,
-                adjustedAmount = order.adjustedAmount,
-                advanceTotal = order.advanceTotal,
-                invoiceNumber = order.invoiceSeq?: -1,
-                totalAmount = order.totalAmount,
-                remainingBalance = order.remainingBalance,
-                occurredAt = Instant.ofEpochMilli(order.occurredAt )
-            )
+            val items = productRepo.getItemsForOrder(orderId).map { it.toUiItem() }
+            val occurred = Instant.ofEpochMilli(order.occurredAt)
 
-            _ui.update { it.copy(
-                isLoading = false,
-                customer = uiCustomer,
-                orders = customerWithOrders?.orders?.map { o -> o.toUiOrder() }.orEmpty(),
-                draft = draft
-            ) }
+            _ui.update {
+                it.copy(
+                    isLoading = false,
+                    customer = uiCustomer,
+                    orders = customerWithOrders?.orders?.map { o -> o.toUiOrder() }.orEmpty(),
+                    draft = OrderEditorUi.Draft(
+                        orderId = order.id,
+                        editingOrderId = order.id,
+                        customerId = order.customerId,
+                        items = items,
+                        adjustedAmount = order.adjustedAmount,
+                        paidTotal = order.paidTotal,
+                        totalAmount = order.totalAmount,
+                        remainingBalance = order.remainingBalance,
+                        invoiceNumber = order.invoiceSeq ?: -1,
+                        occurredAt = occurred,
+                        payments = emptyList() // will be updated by collector
+                    )
+                )
+            }
+
+            // Start real-time payments stream
+            collectPayments(orderId)
         }
     }
 
-    // -------------------------------------------------
-    // ADD / EDIT / DELETE ITEMS
-    // -------------------------------------------------
+    // --------------------------------------------------------------
+    // REAL-TIME PAYMENT UPDATES (CRITICAL FIX)
+    // --------------------------------------------------------------
+
+    private suspend fun collectPayments(orderId: String) {
+        paymentsRepo.getPaymentsForOrder(orderId)
+            .onEach { list ->
+
+                val paid = list.sumOf { it.amountPaid }
+                val d = _ui.value.draft
+
+                // Effective total based on adjusted OR actual
+                val effectiveTotal = if (d.adjustedAmount > 0)
+                    d.adjustedAmount
+                else
+                    d.totalAmount
+
+                val remaining = effectiveTotal - paid
+
+                // 1) Update draft for UI
+                _ui.update { s ->
+                    s.copy(
+                        draft = s.draft.copy(
+                            payments = list.map { it.toUiPaymentItem() },
+                            paidTotal = paid,
+                            remainingBalance = remaining
+                        )
+                    )
+                }
+
+                // 2) Persist to DB
+                val updated = _ui.value.draft
+                val entity = OrderEntity(
+                    id = updated.orderId,
+                    customerId = updated.customerId,
+                    invoiceSeq = updated.invoiceNumber,
+                    adjustedAmount = updated.adjustedAmount,
+                    totalAmount = updated.totalAmount,       // actual total only
+                    paidTotal = paid,
+                    productCategories = updated.items.map { it.productType.toString() }.distinct(),
+                    owners = updated.items.map { it.name }.distinct(),
+                    remainingBalance = remaining,
+                    updatedAt = System.currentTimeMillis(),
+                    occurredAt = updated.occurredAt.toLong(),
+                    orderStatus = if (remaining > 0)
+                        OrderStatus.ACTIVE.value
+                    else
+                        OrderStatus.COMPLETED.value
+                )
+
+                viewModelScope.launch {
+                    orderRepo.upsert(entity)
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    // --------------------------------------------------------------
+    // ITEM CRUD
+    // --------------------------------------------------------------
 
     private fun addItem(type: ProductType) {
-        val current = _ui.value.draft
-        val owner = current.items.firstOrNull { it.productType == type }?.name ?: "Default"
-
+        val d = _ui.value.draft
         val newItem = UiOrderItem(
             id = UUID.randomUUID().toString(),
             productType = type,
-            name = owner, //review: should we default to last used owner for this type?
+            name = "",
             productDescription = "",
             quantity = 1,
             unitPrice = 0,
-            discountPercentage = 0
+            discountPercentage = 0,
+            finalTotal = 0
         )
 
-        val updated = current.copy(items = current.items + newItem, justAddedItemId = newItem.id)
+        val updated = d.copy(
+            items = d.items + newItem,
+            justAddedItemId = newItem.id
+        )
         recalc(updated)
     }
 
-    private fun updateItem(itemId: String, new: UiOrderItem) {
-        val current = _ui.value.draft
-        val updatedItems = current.items.map { if (it.id == itemId) new else it }
-        recalc(current.copy(items = updatedItems))
+    private fun updateItem(itemId: String, newItem: UiOrderItem) {
+        val d = _ui.value.draft
+        val newList = d.items.map { if (it.id == itemId) newItem else it }
+        recalc(d.copy(items = newList))
     }
 
     private fun deleteItem(itemId: String) {
-        val current = _ui.value.draft
-        val updated = current.copy(items = current.items.filterNot { it.id == itemId })
-        recalc(updated)
+        val d = _ui.value.draft
+        recalc(d.copy(items = d.items.filterNot { it.id == itemId }))
     }
+
+    // --------------------------------------------------------------
+    // SAVE SINGLE ITEM (FORM)
+    // --------------------------------------------------------------
 
     fun onSaveItem(productId: String, newForm: ProductFormData) {
         viewModelScope.launch {
             val s = _ui.value
-            val draft = s.draft
-            val orderId = draft.editingOrderId
-//            emitMessage("Saving $orderId")
-            val current = draft.items.firstOrNull { it.id == productId } ?: return@launch
+            val d = s.draft
+            val orderId = d.orderId
 
-            // If order doesn't exist yet, keep it local only.
-            if (orderId == null) {
-                mutateDraft { d ->
-                    val newItems = d.items.map { if (it.id == productId) it.copy(formData = newForm) else it }
-                    recomputeTotals(
-                        items = newItems,
-                        occurredAt = d.occurredAt,
-                        adjustedAmount = d.adjustedAmount,
-                        advanceTotal = d.advanceTotal
-                    )
-                }
-                emitMessage("Item updated locally. Save the order to persist.")
-                return@launch
-            }
+            val current = d.items.firstOrNull { it.id == productId } ?: return@launch
 
             val updated = current.copy(
                 formData = newForm,
@@ -216,151 +313,92 @@ class OrderEditorViewModel @Inject constructor(
                 finalTotal = newForm.total
             )
             val entity = updated.toEntity(orderId)
+
             try {
-                // 1) Persist
                 productRepo.upsert(entity)
-
-                // 2) Reflect in UI draft
-                mutateDraft { d ->
-                    val newItems = d.items.map {
-                        if (it.id == productId) it.copy(
-                            formData = newForm,
-                            unitPrice = newForm.unitPrice,
-                            quantity = newForm.quantity,
-                            discountPercentage = newForm.discountPct,
-                            finalTotal = newForm.total
-                        ) else it
-                    }
-
-                    // Write zero into state first (source of truth)
-                    val cleared = d.copy(
-                        items = newItems,
-                        adjustedAmount = 0,
-                        advanceTotal = 0
-                    )
-
-                    // Then recompute totals using zero
-                    recomputeTotals(
-                        items = cleared.items,
-                        occurredAt = cleared.occurredAt,
-                        adjustedAmount = cleared.adjustedAmount,
-                        advanceTotal = cleared.advanceTotal
-                    )
-                }
-//                emitMessage("Item saved.")
-            } catch (t: Throwable) {
-//                emitMessage("Failed to save item: ${t.message ?: "unknown error"}")
-            }
+                val newList = d.items.map { if (it.id == productId) updated else it }
+                recalc(d.copy(items = newList))
+            } catch (_: Throwable) {}
         }
     }
 
-    fun onDeleteItem(itemId: String) {
+    fun onDeleteItem(productId: String) {
         viewModelScope.launch {
             try {
-                // 1) Persist delete
-                productRepo.deleteProductById(itemId)
+                productRepo.deleteProductById(productId)
 
-                // 2) Reflect in UI draft
-                mutateDraft { d ->
-                    val updated = d.items.filterNot { it.id == itemId }
-                    recomputeTotals(updated, d.occurredAt, adjustedAmount = 0, advanceTotal = d.advanceTotal)
-                }
-//                emitMessage("Item deleted.")
-            } catch (t: Throwable) {
-//                emitMessage("Failed to delete item: ${t.message ?: "unknown error"}")
-            }
+                val d = _ui.value.draft
+                val newList = d.items.filterNot { it.id == productId }
+
+                recalc(d.copy(items = newList))
+            } catch (_: Throwable) {}
         }
     }
 
-    private fun recomputeTotals(items: List<UiOrderItem>, occurredAt: Instant): OrderEditorUi.Draft {
-        val d = _ui.value.draft
-        return recomputeTotals(items, occurredAt, d.adjustedAmount, d.advanceTotal)
-    }
-
-    private fun recomputeTotals(
-        items: List<UiOrderItem>,
-        occurredAt: Instant,
-        adjustedAmount: Int ,
-        advanceTotal: Int
-    ): OrderEditorUi.Draft {
-        val prev = _ui.value.draft
-        val input = PricingInput(
-            orderId = prev.editingOrderId ?: "DRAFT",
-            items = items.map { it.toItemInput() },  // include qty, unitPrice, discounts, taxes…
-            adjustedAmount = adjustedAmount.coerceAtLeast(0),
-            advanceTotal = advanceTotal.coerceAtLeast(0),
-        )
-        val result = pricing.price(input)
-
-        return prev.copy(
-            occurredAt = occurredAt,
-            items = items,
-            subtotalBeforeAdjust = result.subtotalBeforeAdjust,
-            adjustedAmount = result.adjustedAmount,
-            totalAmount = result.totalAmount,
-            advanceTotal = result.advanceTotal,
-            remainingBalance = result.remainingBalance
-        )
-    }
-
-    // -------------------------------------------------
+    // --------------------------------------------------------------
     // PRICING
-    // -------------------------------------------------
+    // --------------------------------------------------------------
 
     private fun updateAdjusted(value: Int) {
-        val current = _ui.value.draft
-        recalc(current.copy(adjustedAmount = value))
+        val d = _ui.value.draft
+        recalc(d.copy(adjustedAmount = value))
     }
 
-    private fun updateAdvance(value: Int) {
-        val current = _ui.value.draft
-        recalc(current.copy(advanceTotal = value))
+    private fun updateOccurredAt(instant: Instant) {
+        val d = _ui.value.draft
+        recalc(d.copy(occurredAt = instant))
     }
 
     private fun recalc(draft: OrderEditorUi.Draft) {
-        val pricingInput = PricingInput(
-            orderId = draft.orderId,
-            adjustedAmount = draft.adjustedAmount,
-            advanceTotal = draft.advanceTotal,
-            items = draft.items.map {
-                PricingInput.ItemInput(
-                    itemId = it.id,
-                    quantity = it.quantity,
-                    unitPrice = it.unitPrice,
-                    discountPercentage = it.discountPercentage
-                )
-            }
-        )
-
-        val result = pricing.price(pricingInput)
-
-        val updatedItems = draft.items.map { uiItem ->
-            val priced = result.items.find { it.itemId == uiItem.id }
-            uiItem.copy(
-                finalTotal = priced?.lineTotal ?: 0
+        val result = pricing.price(
+            PricingInput(
+                orderId = draft.orderId,
+                adjustedAmount = draft.adjustedAmount,
+                paidTotal = draft.paidTotal,
+                items = draft.items.map {
+                    PricingInput.ItemInput(
+                        itemId = it.id,
+                        quantity = it.quantity,
+                        unitPrice = it.unitPrice,
+                        discountPercentage = it.discountPercentage
+                    )
+                }
             )
-        }
-
-        val newDraft = draft.copy(
-            items = updatedItems,
-            adjustedAmount = result.adjustedAmount,
-            advanceTotal = result.advanceTotal,
-            totalAmount = result.totalAmount,
-            remainingBalance = result.remainingBalance
         )
 
-        _ui.update { it.copy(draft = newDraft) }
+        val actualTotal = result.totalAmount
+
+        // UI total = adjusted OR actual
+        val uiTotal = if (draft.adjustedAmount > 0)
+            draft.adjustedAmount
+        else
+            actualTotal
+
+        val paid = draft.paidTotal
+        val remaining = uiTotal - paid
+
+        val updatedDraft = draft.copy(
+            items = result.items.map { p ->
+                val original = draft.items.first { it.id == p.itemId }
+                original.copy(finalTotal = p.lineTotal)
+            },
+            totalAmount = actualTotal,     // save actual
+            remainingBalance = remaining   // based on UI total
+        )
+
+        _ui.update { it.copy(draft = updatedDraft) }
     }
 
-//    // -------------------------------------------------
-//    // SAVE / ACTIVATE ORDER
-//    // -------------------------------------------------
+    // --------------------------------------------------------------
+    // SAVE ORDER
+    // --------------------------------------------------------------
 
     private fun activateOrder() {
         val draft = _ui.value.draft
         if (draft.items.isEmpty()) return
 
         viewModelScope.launch {
+
             val owners = draft.items.map { it.name }.distinct()
             val categories = draft.items.map { it.productType.toString() }.distinct()
 
@@ -370,40 +408,35 @@ class OrderEditorViewModel @Inject constructor(
                 invoiceSeq = draft.invoiceNumber,
                 adjustedAmount = draft.adjustedAmount,
                 totalAmount = draft.totalAmount,
-                advanceTotal = draft.advanceTotal,
-                remainingBalance = draft.remainingBalance,
+                paidTotal = draft.paidTotal,
                 productCategories = categories,
                 owners = owners,
-                orderStatus = if (draft.remainingBalance > 0) OrderStatus.ACTIVE.value else OrderStatus.COMPLETED.value,
+                remainingBalance = draft.remainingBalance,
                 updatedAt = System.currentTimeMillis(),
-                occurredAt = draft.occurredAt.toLong()
+                occurredAt = draft.occurredAt.toLong(),
+                orderStatus = if (draft.remainingBalance > 0)
+                    OrderStatus.ACTIVE.value
+                else
+                    OrderStatus.COMPLETED.value
             )
+
             val newEntities = draft.items.map {
                 it.toEntity(draft.orderId)
             }
+
             orderRepo.upsert(entity)
-            for (item in newEntities) productRepo.upsert(item)
+            newEntities.forEach { productRepo.upsert(it) }
 
             _effects.emit(OrderEditorEffect.CloseEditor)
         }
     }
 
+    // --------------------------------------------------------------
+    // HELPERS
+    // --------------------------------------------------------------
+
     private fun mutateDraft(block: (OrderEditorUi.Draft) -> OrderEditorUi.Draft) {
         val s = _ui.value
-        val prev = s.draft
-        val updated = block(prev).copy(
-            editingOrderId = prev.editingOrderId
-        )
-        _ui.value = s.copy(draft = updated)
-    }
-
-    private fun updateOccurredAt(instant: Instant) = mutateDraft { draft ->
-        recomputeTotals(draft.items, instant)
-    }
-
-    private fun emitMessage(msg: String) {
-        _effects.tryEmit(OrderEditorEffect.ShowMessage(msg))
+        _ui.value = s.copy(draft = block(s.draft))
     }
 }
-
-

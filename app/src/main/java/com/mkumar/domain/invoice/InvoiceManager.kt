@@ -45,7 +45,7 @@ class InvoiceManager @Inject constructor(
                 )
             },
             adjustedAmount = order.adjustedAmount.coerceAtLeast(0),
-            advanceTotal = order.advanceTotal.coerceAtLeast(0)
+            paidTotal = order.paidTotal.coerceAtLeast(0)
         )
 
         val priced = pricing.price(input)
@@ -87,7 +87,7 @@ class InvoiceManager @Inject constructor(
             items = invoiceItems,
             subtotal = priced.subtotalBeforeAdjust.toDouble(),
             adjustedTotal = priced.adjustedAmount.toDouble(),
-            advanceTotal = priced.advanceTotal.toDouble(),
+            paidTotal = priced.paidTotal.toDouble(),
             remainingBalance = priced.remainingBalance.toDouble(),
             logoBitmap = logo
         )

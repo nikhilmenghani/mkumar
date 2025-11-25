@@ -48,7 +48,7 @@ data class OrderEntity(
     val adjustedAmount: Int = 0,
     val totalAmount: Int = 0,
     val remainingBalance: Int = 0,
-    val advanceTotal: Int = 0,
+    val paidTotal: Int = 0,
 
     /**
      * For searching/filtering:

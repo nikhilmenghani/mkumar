@@ -776,7 +776,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
             totalRow("Subtotal", data.subtotal)
             if (data.adjustedTotal != 0.0) totalRow("Adjusted Total", -kotlin.math.abs(data.adjustedTotal))
-            if (data.advanceTotal != 0.0) totalRow("Advance Total", data.advanceTotal)
+            if (data.paidTotal != 0.0) totalRow("Paid Total", data.paidTotal)
             totalRow("Total Due", data.remainingBalance, bold = true)
         }
     }

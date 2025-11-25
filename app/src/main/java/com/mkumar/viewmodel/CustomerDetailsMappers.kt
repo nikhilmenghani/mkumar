@@ -45,7 +45,7 @@ fun CustomerWithOrders.toUi(
             uiItems.toPricingInput(
                 orderId = order.id,
                 adjustedAmount = adjustedOf(order).coerceAtLeast(0),
-                advanceTotal = advanceOf(order).coerceAtLeast(0)
+                paidTotal = advanceOf(order).coerceAtLeast(0)
             )
         )
         order.toUiOrder(uiItems, priced.subtotalBeforeAdjust)
@@ -78,12 +78,12 @@ fun UiOrderItem.toItemInput(): PricingInput.ItemInput =
 fun List<UiOrderItem>.toPricingInput(
     orderId: String,
     adjustedAmount: Int = 0,
-    advanceTotal: Int = 0
+    paidTotal: Int = 0
 ): PricingInput = PricingInput(
     orderId = orderId,
     items = this.map { it.toItemInput() },
     adjustedAmount = adjustedAmount.coerceAtLeast(0),
-    advanceTotal = advanceTotal.coerceAtLeast(0)
+    paidTotal = paidTotal.coerceAtLeast(0)
 )
 
 fun UiOrderItem.toEntity(orderId: String): OrderItemEntity {
@@ -126,7 +126,7 @@ fun OrderEntity.toUiOrder(items: List<UiOrderItem> = emptyList(), subtotalBefore
         subtotalBeforeAdjust = subtotalBeforeAdjust,
         adjustedAmount = adjustedAmount,
         totalAmount = totalAmount,
-        advanceTotal = advanceTotal,
+        paidTotal = paidTotal,
         remainingBalance = remainingBalance,
         lastUpdatedAt = updatedAt,
         invoiceNumber = invoiceSeq?.let { globalClass.preferencesManager.invoicePrefs.invoicePrefix + "%d".format(it) } ?: (globalClass.preferencesManager.invoicePrefs.invoicePrefix + id.takeLast(6)

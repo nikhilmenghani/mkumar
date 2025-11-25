@@ -11,7 +11,7 @@ data class UiOrder(
     val subtotalBeforeAdjust: Int,
     val adjustedAmount: Int,
     val totalAmount: Int,
-    val advanceTotal: Int,
+    val paidTotal: Int,
     val remainingBalance: Int,
     val lastUpdatedAt: Long
 )

@@ -28,8 +28,8 @@ class OrderWriteCoordinatorImpl @Inject constructor(
 
             // Recalculate totals from items (minor units)
             val subtotal = items.sumOf { max(0, it.unitPrice) * max(1, it.quantity) }
-            val adjusted = order.adjustedAmount ?: 0
-            val advance = order.advanceTotal
+            val adjusted = order.adjustedAmount
+            val advance = order.paidTotal
             val grand = (subtotal - adjusted).coerceAtLeast(0)
             val remaining = (grand - advance).coerceAtLeast(0)
 

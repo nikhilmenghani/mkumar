@@ -25,15 +25,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import com.mkumar.ui.components.cards.OrderTotalsNoCard
+import com.mkumar.common.extension.toInstant
+import com.mkumar.model.UiPaymentItem
+import com.mkumar.ui.components.inputs.FieldMode
+import com.mkumar.ui.components.inputs.OLTextField
+import com.mkumar.ui.components.items.PaymentListItem
+import com.mkumar.ui.components.sections.AddPaymentSection
 
 @Composable
 fun OrderSummaryAccordion(
-    totalAmount: Int,
+    payments: List<UiPaymentItem> = emptyList(),
+    onAddPayment: (amount: Int, paymentAt: Long) -> Unit,
+    onDeletePayment: (paymentId: String) -> Unit,
     adjustedAmount: Int,
     onAdjustedAmountChange: (Int) -> Unit,
-    advanceTotal: Int,
-    onAdvanceTotalChange: (Int) -> Unit,
     remainingBalance: Int,                // read-only (precomputed in VM or state)
     modifier: Modifier = Modifier,
     initiallyExpanded: Boolean = false,
@@ -83,15 +88,53 @@ fun OrderSummaryAccordion(
 
             AnimatedVisibility(visible = expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
                     HorizontalDivider()
-                    OrderTotalsNoCard(
-                        initialAdvanceTotal = advanceTotal,
-                        onAdvanceTotalChange = onAdvanceTotalChange,
-                        adjustedAmount = adjustedAmount,
-                        onAdjustedAmountChange = onAdjustedAmountChange,
+
+                    // Adjusted total (unchanged)
+                    OLTextField(
+                        value = adjustedAmount.toString(),
+                        label = "Adjusted Total",
+                        placeholder = "4500",
+                        mode = FieldMode.Integer,
+                        onValueChange = {
+                            onAdjustedAmountChange(it.toIntOrNull() ?: 0)
+                        }
+                    )
+
+                    // ------------------------------------------------------------
+                    // PAYMENT ENTRIES LIST
+                    // ------------------------------------------------------------
+                    Text(
+                        text = "Payment Entries",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+
+                    if (payments.isEmpty()) {
+                        Text(
+                            text = "No payments yet.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        payments.forEach { payment ->
+                            PaymentListItem(
+                                amount = payment.amountPaid,
+                                date = payment.paymentAt.toInstant(),
+                                onDelete = { onDeletePayment(payment.id) }
+                            )
+                        }
+                    }
+
+                    // ------------------------------------------------------------
+                    // ADD PAYMENT INPUTS
+                    // ------------------------------------------------------------
+                    AddPaymentSection(
+                        onAdd = onAddPayment
                     )
                 }
             }
+
         }
     }
 }

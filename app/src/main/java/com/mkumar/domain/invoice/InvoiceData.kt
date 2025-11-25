@@ -17,7 +17,7 @@ data class InvoiceData(
     val items: List<InvoiceItemRow>,
     val subtotal: Double,
     val adjustedTotal: Double,
-    val advanceTotal: Double,
+    val paidTotal: Double,
     val remainingBalance: Double,
     val logoBitmap: Bitmap? = null
 )

@@ -34,7 +34,7 @@ fun ProductsSectionCard(
     totalAmount: Int,
     adjustedAmount: Int,
     remainingBalance: Int,
-    advanceTotal: Int,
+    paidTotal: Int,
     products: List<UiOrderItem>,
     productOwner: String,
     onFormSave: (String, ProductFormData) -> Unit,
@@ -47,7 +47,7 @@ fun ProductsSectionCard(
 
     // Animate values smoothly
     val animatedTotal by animateIntAsState(targetValue = if (adjustedAmount != 0) adjustedAmount else totalAmount, label = "")
-    val animatedPaid by animateIntAsState(targetValue = advanceTotal, label = "")
+    val animatedPaid by animateIntAsState(targetValue = paidTotal, label = "")
     val animatedDue by animateIntAsState(targetValue = remainingBalance, label = "")
 
     Card(
