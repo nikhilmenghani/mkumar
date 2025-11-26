@@ -121,7 +121,17 @@ fun OrderSheet(
                     pendingDeleteId = productId
                 },
                 getTypeForProduct = { it.productType },  // your existing type source
-                initiallyExpandedId = justAddedId
+                initiallyExpandedId = justAddedId,
+                onAddPayment = { amountPaid, paymentAt ->
+                    viewModel.onIntent(OrderEditorIntent.AddPayment(state.draft.orderId, amountPaid, paymentAt))
+                },
+                onDeletePayment = { paymentId ->
+                    viewModel.onIntent(OrderEditorIntent.DeletePayment(paymentId))
+                },
+                payments = state.draft.payments,
+                onAdjustedTotalChange = {
+                    viewModel.onIntent(OrderEditorIntent.UpdateAdjustedAmount(it))
+                },
             )
 
             if (state.draft.items.isNotEmpty()) {
