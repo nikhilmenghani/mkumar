@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.AssistChip
@@ -45,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.common.extension.toInstant
 import com.mkumar.common.extension.toLong
 import com.mkumar.data.ProductFormData
@@ -54,7 +56,6 @@ import com.mkumar.model.UiPaymentItem
 import com.mkumar.ui.components.cards.OrderAccordionItem
 import com.mkumar.ui.components.inputs.FieldMode
 import com.mkumar.ui.components.inputs.OLTextField
-import com.mkumar.ui.components.items.PaymentListItem
 import java.time.Instant
 
 @Composable
@@ -77,18 +78,22 @@ fun ProductsSectionCard(
 ) {
     if (products.isEmpty()) return
 
-    var expanded by remember {
-        mutableStateOf(adjustedAmount != 0 && adjustedAmount != totalAmount)
-    }
+    // Payment block expansion toggle
+    var expanded by remember { mutableStateOf(false) }
+
+    // Adjusted total field visibility logic
+    var adjustToggleClicked by remember { mutableStateOf(false) }
+
+    val showAdjustedField =
+        adjustToggleClicked || adjustedAmount != totalAmount
 
     val chevronRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
+        if (expanded) 180f else 0f,
         label = "productsChevron"
     )
 
     val animatedTotal by animateIntAsState(
-        targetValue = if (adjustedAmount != 0) adjustedAmount else totalAmount,
-        label = ""
+        if (adjustedAmount != 0) adjustedAmount else totalAmount, label = ""
     )
     val animatedPaid by animateIntAsState(targetValue = paidTotal, label = "")
     val animatedDue by animateIntAsState(targetValue = remainingBalance, label = "")
@@ -108,11 +113,9 @@ fun ProductsSectionCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
 
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column {
 
-            // ---------------------------------------------------------
-            // EXISTING PRODUCTS HEADER (unchanged visually)
-            // ---------------------------------------------------------
+            // EXISTING PRODUCTS HEADER (visually unchanged)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -125,15 +128,14 @@ fun ProductsSectionCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
 
+                    // Left block
                     Column {
                         Text(
                             text = "Products",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
+                        Spacer(Modifier.height(4.dp))
                         Text(
                             text = "${products.size} items in this order",
                             style = MaterialTheme.typography.bodySmall,
@@ -141,13 +143,12 @@ fun ProductsSectionCard(
                         )
                     }
 
+                    // Right block (totals)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-
                         Column(
                             horizontalAlignment = Alignment.End,
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            // ROW 1 → TOTAL
                             AmountBadge(
                                 label = "Total",
                                 amount = animatedTotal,
@@ -155,9 +156,7 @@ fun ProductsSectionCard(
                                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             )
 
-                            // ROW 2 → Paid + Due
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-
                                 AmountBadge(
                                     label = "Paid",
                                     amount = animatedPaid,
@@ -185,34 +184,33 @@ fun ProductsSectionCard(
                 }
             }
 
-            AnimatedVisibility(visible = expanded) {
+
+
+            // EXPANDED PAYMENT MODULE
+            AnimatedVisibility(expanded) {
+
                 Column(
-                    modifier = Modifier
+                    Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
 
-                    // ---------------------------------------------------------
-                    // Adjust Total Chip
-                    // ---------------------------------------------------------
-                    var showAdjusted by remember {
-                        mutableStateOf(adjustedAmount != totalAmount)
-                    }
-
+                    // Adjust Total
                     AssistChip(
-                        onClick = { showAdjusted = !showAdjusted },
+                        onClick = { adjustToggleClicked = !adjustToggleClicked },
                         label = { Text("Adjust Total") },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Outlined.Edit,
+                                Icons.Outlined.Edit,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     )
 
-                    if (showAdjusted) {
+                    // Adjusted Total Field (corrected logic)
+                    if (showAdjustedField) {
                         OLTextField(
                             value = adjustedAmount.toString(),
                             label = "Adjusted Total",
@@ -224,9 +222,7 @@ fun ProductsSectionCard(
                         )
                     }
 
-                    // ---------------------------------------------------------
-                    // Payment Entries Section
-                    // ---------------------------------------------------------
+                    // Payment Entries
                     Text(
                         text = "Payment Entries",
                         style = MaterialTheme.typography.titleSmall
@@ -235,12 +231,12 @@ fun ProductsSectionCard(
                     if (payments.isEmpty()) {
                         Text(
                             text = "No payments yet.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     } else {
                         payments.forEach { p ->
-                            PaymentListItem(
+                            CompactPaymentRow(
                                 amount = p.amountPaid,
                                 date = p.paymentAt.toInstant(),
                                 onDelete = { onDeletePayment(p.id) }
@@ -248,20 +244,14 @@ fun ProductsSectionCard(
                         }
                     }
 
-                    // ---------------------------------------------------------
                     // Add Payment Row
-                    // ---------------------------------------------------------
-                    AddPaymentRow(
-                        onAddPayment = onAddPayment
-                    )
+                    AddPaymentRow(onAddPayment = onAddPayment)
                 }
             }
 
             HorizontalDivider()
 
-            // ---------------------------------------------------------
             // PRODUCT LIST (unchanged)
-            // ---------------------------------------------------------
             products.forEachIndexed { index, product ->
                 OrderAccordionItem(
                     productOwner = productOwner,
@@ -280,6 +270,54 @@ fun ProductsSectionCard(
         }
     }
 }
+
+@Composable
+fun CompactPaymentRow(
+    amount: Int,
+    date: Instant,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+
+        // Left: Amount + dot + date
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "₹$amount",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+            )
+
+            Text(
+                text = "  ·  ${date.formatAsDateTime()}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Right: Icon + Delete (compact grouping)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { onDelete() }
+        ) {
+            Icon(
+                Icons.Outlined.Delete,
+                contentDescription = "Delete payment",
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = "Delete",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
 
 @Composable
 fun AddPaymentRow(
