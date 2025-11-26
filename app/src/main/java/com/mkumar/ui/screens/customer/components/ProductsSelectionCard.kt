@@ -1,8 +1,15 @@
 package com.mkumar.ui.screens.customer.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -97,9 +105,12 @@ fun ProductsSectionCard(
     val hasAdjusted = adjustedAmount != 0
     val showAdjustedField = hasAdjusted || adjustToggle
 
+    var addPaymentOpen by remember { mutableStateOf(false) }
+
     // Reset toggle when closing with 0 adjusted
     LaunchedEffect(expanded) {
         if (!expanded && adjustedAmount == 0) adjustToggle = false
+        if (!expanded) addPaymentOpen = false
     }
 
     val rotation by animateFloatAsState(
@@ -164,7 +175,11 @@ fun ProductsSectionCard(
                         }
                     }
 
-                    AddPaymentRow(onAddPayment)
+                    AddPaymentRow(
+                        isOpen = addPaymentOpen,
+                        onToggle = { addPaymentOpen = !addPaymentOpen },
+                        onAdd = onAddPayment
+                    )
                 }
             }
 
@@ -424,91 +439,178 @@ private const val ADD_DATE_WEIGHT = 1.4f
 private const val ADD_SAVE_WEIGHT = 0.8f
 private val ADD_ROW_MIN_HEIGHT = 44.dp
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AddPaymentRow(
-    onAddPayment: (amount: Int, at: Long) -> Unit
+    isOpen: Boolean,
+    onToggle: () -> Unit,
+    onAdd: (amount: Int, at: Long) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
     var date by remember { mutableStateOf(Instant.now()) }
     var showPicker by remember { mutableStateOf(false) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val rowHeight = 44.dp   // comfortable height; prevents uneven look
 
-        Text(
-            "Add Payment",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        )
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-
-            // AMOUNT (1/3)
-            OLTextField(
-                value = amount,
-                label = "Amount",
-                mode = FieldMode.Integer,
-                onValueChange = { amount = it },
-                modifier = Modifier.weight(1f)
-            )
-
-            // DATE PICKER (1/3)
-            FilledTonalButton(
-                onClick = { showPicker = true },
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 8.dp)
-            ) {
-                Icon(Icons.Outlined.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    date.formatAsDateTime(DateFormat.DEFAULT_DATE_ONLY),
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1
-                )
+        AnimatedContent(
+            targetState = isOpen,
+            transitionSpec = {
+                slideInHorizontally(
+                    initialOffsetX = { full -> -full / 2 }
+                ) + fadeIn() togetherWith
+                        slideOutHorizontally(
+                            targetOffsetX = { full -> full / 2 }
+                        ) + fadeOut()
             }
+        ) { open ->
 
-            // SAVE (1/3)
-            FilledTonalButton(
-                enabled = amount.isNotBlank(),
-                onClick = {
-                    onAddPayment(amount.toInt(), date.toEpochMilli())
-                    amount = ""
-                    date = Instant.now()
-                },
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 8.dp)
-            ) {
-                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Save", style = MaterialTheme.typography.labelSmall)
+            if (!open) {
+
+                // COLLAPSED BUTTON
+                FilledTonalButton(
+                    onClick = onToggle,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Outlined.Add, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add Payment")
+                }
+
+            } else {
+
+                // EXPANDED TWO-LINE FORM
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    // Header
+                    Text(
+                        text = "Add Payment",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+
+                    // -------------------------------------------------------
+                    // LINE 1 — Amount Field
+                    // -------------------------------------------------------
+                    OLTextField(
+                        value = amount,
+                        label = "Amount",
+                        mode = FieldMode.Integer,
+                        onValueChange = { amount = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp)
+                    )
+
+                    // -------------------------------------------------------
+                    // LINE 2 — Date Surface + Save + Close
+                    // -------------------------------------------------------
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+
+                        // ---------------------------------------------------
+                        // DATE CHIP (center aligned, slightly more width)
+                        // ---------------------------------------------------
+                        Surface(
+                            modifier = Modifier
+                                .weight(1.2f)
+                                .height(rowHeight)
+                                .clickable { showPicker = true },
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Outlined.DateRange, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = date.formatAsDateTime(DateFormat.DEFAULT_DATE_ONLY),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+
+                        // ---------------------------------------------------
+                        // SAVE BUTTON (icon + text)
+                        // ---------------------------------------------------
+                        FilledTonalButton(
+                            onClick = {
+                                if (amount.isNotBlank()) {
+                                    onAdd(amount.toInt(), date.toEpochMilli())
+                                    amount = ""
+                                    date = Instant.now()
+                                    onToggle()
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .height(rowHeight),
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            Icon(Icons.Outlined.Add, null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Save", style = MaterialTheme.typography.labelSmall)
+                        }
+
+                        // ---------------------------------------------------
+                        // Close Button (icon + text)
+                        // ---------------------------------------------------
+                        FilledTonalButton(
+                            onClick = onToggle,
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .height(rowHeight),
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            Icon(Icons.Outlined.Delete, null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Close", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
             }
         }
     }
 
+    // DATE PICKER
     if (showPicker) {
         val picker = rememberDatePickerState(initialSelectedDateMillis = date.toEpochMilli())
-
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    date = Instant.ofEpochMilli(picker.selectedDateMillis!!)
-                    showPicker = false
-                }) {
-                    Text("OK")
-                }
+                TextButton(
+                    onClick = {
+                        date = Instant.ofEpochMilli(picker.selectedDateMillis!!)
+                        showPicker = false
+                    }
+                ) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showPicker = false }) {
+                    Text("Cancel")
+                }
             }
         ) {
             DatePicker(state = picker)
         }
     }
 }
-
 
 // -----------------------------------------------------------------------------
 // BADGE + DIVIDER
