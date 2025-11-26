@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -26,9 +25,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -106,10 +107,13 @@ fun ProductsSectionCard(
     val showAdjustedField = hasAdjusted || adjustToggle
 
     var addPaymentOpen by remember { mutableStateOf(false) }
+    var adjustOpen by remember { mutableStateOf(false) }
 
     // Reset toggle when closing with 0 adjusted
     LaunchedEffect(expanded) {
-        if (!expanded && adjustedAmount == 0) adjustToggle = false
+        if (adjustedAmount != 0 && !adjustOpen) {
+            adjustOpen = true
+        }
         if (!expanded) addPaymentOpen = false
     }
 
@@ -142,16 +146,9 @@ fun ProductsSectionCard(
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-
-                    AdjustTotalRow(
-                        showAdjustedField = showAdjustedField,
-                        adjustedAmount = adjustedAmount,
-                        onAdjustedTotalChange = onAdjustedTotalChange,
-                        onToggleClick = { adjustToggle = !adjustToggle }
-                    )
 
                     Text(
                         "Payment Entries",
@@ -179,6 +176,13 @@ fun ProductsSectionCard(
                         isOpen = addPaymentOpen,
                         onToggle = { addPaymentOpen = !addPaymentOpen },
                         onAdd = onAddPayment
+                    )
+
+                    AdjustTotalRow(
+                        isOpen = adjustOpen,
+                        adjustedAmount = adjustedAmount,
+                        onAdjustedChange = onAdjustedTotalChange,
+                        onToggle = { adjustOpen = !adjustOpen }
                     )
                 }
             }
@@ -282,73 +286,114 @@ fun ProductsHeader(
 // -----------------------------------------------------------------------------
 // ADJUST TOTAL ROW — smooth animation, stable, no crashes
 // -----------------------------------------------------------------------------
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AdjustTotalRow(
-    showAdjustedField: Boolean,
+    isOpen: Boolean,
     adjustedAmount: Int,
-    onAdjustedTotalChange: (Int) -> Unit,
-    onToggleClick: () -> Unit
+    onAdjustedChange: (Int) -> Unit,
+    onToggle: () -> Unit
 ) {
-    val rowHeight = 64.dp  // your preferred height
+    var localValue by remember { mutableStateOf(adjustedAmount.toString()) }
+    val rowHeight = 64.dp
 
-    val animatedFieldWeight by animateFloatAsState(
-        targetValue = if (showAdjustedField) FIELD_RATIO else 0f,
-        animationSpec = tween(ANIM_DURATION),
-        label = "fieldRatio"
-    )
+    // When we open the row, sync local text with current adjustedAmount
+    LaunchedEffect(isOpen) {
+        if (isOpen) {
+            localValue = adjustedAmount.toString()
+        }
+    }
 
-    val animatedButtonWeight by animateFloatAsState(
-        targetValue = if (showAdjustedField) CHIP_RATIO else 1f,
-        animationSpec = tween(ANIM_DURATION),
-        label = "buttonRatio"
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = rowHeight),
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
-        // Adjusted Total Field
-        if (animatedFieldWeight > 0f) {
-            Box(
-                modifier = Modifier
-                    .weight(animatedFieldWeight)
-                    .padding(end = 8.dp)
-                    .height(rowHeight),
-                contentAlignment = Alignment.CenterStart
-            ) {
-
-                OLTextField(
-                    value = adjustedAmount.toString(),
-                    label = "Adjusted Total",
-                    placeholder = "4500",
-                    mode = FieldMode.Integer,
-                    onValueChange = { onAdjustedTotalChange(it.toIntOrNull() ?: 0) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(rowHeight)
-                )
+        AnimatedContent(
+            targetState = isOpen,
+            transitionSpec = {
+                slideInHorizontally(
+                    initialOffsetX = { full -> -full / 2 }
+                ) + fadeIn() togetherWith
+                        slideOutHorizontally(
+                            targetOffsetX = { full -> full / 2 }
+                        ) + fadeOut()
             }
-        }
+        ) { open ->
 
-        // New: FilledTonalButton instead of AssistChip
-        FilledTonalButton(
-            onClick = onToggleClick,
-            modifier = Modifier
-                .weight(animatedButtonWeight)
-                .height(rowHeight),
-            contentPadding = PaddingValues(horizontal = 12.dp),
-        ) {
-            Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Adjust Total")
+            if (!open) {
+
+                // COLLAPSED BUTTON (same pattern as Add Payment)
+                FilledTonalButton(
+                    onClick = { onToggle() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Outlined.Edit, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Adjust Total")
+                }
+
+            } else {
+
+                // EXPANDED: HEADER + ONE LINE FIELD + CLOSE
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    // Header
+                    Text(
+                        text = "Adjusted Total",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(rowHeight),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+
+                        // Adjusted Total field
+                        OLTextField(
+                            value = localValue,
+                            label = "Adjusted Total",
+                            mode = FieldMode.Integer,
+                            onValueChange = {
+                                localValue = it
+                                onAdjustedChange(it.toIntOrNull() ?: 0)
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(rowHeight)
+                        )
+
+                        // Close button – reset + collapse
+                        FilledTonalButton(
+                            onClick = {
+                                // Always reset back to 0 on close
+                                localValue = "0"
+                                onAdjustedChange(0)
+                                onToggle()
+                            },
+                            modifier = Modifier
+                                .height(rowHeight)
+                                .widthIn(min = 92.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            Icon(Icons.Outlined.Close, null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Close", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
         }
     }
 }
-
-
 
 // -----------------------------------------------------------------------------
 // PAYMENT ROW (aligned, responsive)
