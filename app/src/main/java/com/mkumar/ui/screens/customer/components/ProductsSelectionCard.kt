@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -102,25 +103,38 @@ fun ProductsSectionCard(
     if (products.isEmpty()) return
 
     var expanded by remember { mutableStateOf(false) }
-    var adjustToggle by remember { mutableStateOf(false) }
+    var addPaymentOpen by remember { mutableStateOf(false) }
+    var adjustOpen by remember { mutableStateOf(false) }
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
 
     val hasAdjusted = adjustedAmount != 0
 
-    var addPaymentOpen by remember { mutableStateOf(false) }
-    var adjustOpen by remember { mutableStateOf(false) }
+    // ---------------------------------------------------------------
+    // RESTORED ANIMATIONS (THIS WAS LOST EARLIER)
+    // ---------------------------------------------------------------
+    val animatedTotal by animateIntAsState(
+        targetValue = if (hasAdjusted) adjustedAmount else totalAmount,
+        label = ""
+    )
+    val animatedPaid by animateIntAsState(
+        targetValue = paidTotal,
+        label = ""
+    )
+    val animatedDue by animateIntAsState(
+        targetValue = remainingBalance,
+        label = ""
+    )
+    // ---------------------------------------------------------------
 
-    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
-
-    // Reset toggle when closing with 0 adjusted
+    // Sync adjust panel when expanding/collapsing
     LaunchedEffect(expanded) {
-        if (adjustedAmount != 0 && !adjustOpen) {
-            adjustOpen = true
-        }
+        if (adjustedAmount != 0 && !adjustOpen) adjustOpen = true
         if (!expanded) addPaymentOpen = false
     }
 
     val rotation by animateFloatAsState(
-        if (expanded) 180f else 0f, label = "chevron"
+        targetValue = if (expanded) 180f else 0f,
+        label = "chevron"
     )
 
     Card(
@@ -129,16 +143,19 @@ fun ProductsSectionCard(
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
 
         Column {
 
+            // -----------------------------------------------------------------
+            //   HEADER NOW RECEIVES THE RESTORED ANIMATED NUMBERS
+            // -----------------------------------------------------------------
             ProductsHeader(
                 products = products,
-                animatedTotal = if (hasAdjusted) adjustedAmount else totalAmount,
-                animatedPaid = paidTotal,
-                animatedDue = remainingBalance,
+                animatedTotal = animatedTotal,
+                animatedPaid = animatedPaid,
+                animatedDue = animatedDue,
                 chevronRotation = rotation,
                 onClick = { expanded = !expanded }
             )
@@ -157,7 +174,6 @@ fun ProductsSectionCard(
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
-
 
                     if (payments.isEmpty()) {
                         Text(
@@ -215,9 +231,7 @@ fun ProductsSectionCard(
                     icon = Icons.Outlined.DeleteForever,
                     highlightConfirmAsDestructive = true,
                     onConfirm = {
-                        pendingDeleteId?.let { id ->
-                            onDeletePayment(id)
-                        }
+                        pendingDeleteId?.let { id -> onDeletePayment(id) }
                         pendingDeleteId = null
                     },
                     onDismiss = { pendingDeleteId = null }
