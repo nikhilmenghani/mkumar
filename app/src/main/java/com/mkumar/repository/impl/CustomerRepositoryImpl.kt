@@ -76,7 +76,7 @@ class CustomerRepositoryImpl @Inject constructor(
             else -> "o.occurredAt"
         }
         val sql = """
-        SELECT o.id, o.invoiceSeq AS invoiceNumber, o.createdAt, o.totalAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
+        SELECT o.id, o.invoiceSeq AS invoiceNumber, o.createdAt, o.totalAmount, o.adjustedAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
         FROM orders o
         JOIN customers c ON c.id = o.customerId
         ORDER BY $sortColumn $order
@@ -220,6 +220,7 @@ class CustomerRepositoryImpl @Inject constructor(
                     invoiceNumber = order.invoiceSeq ?: 0L,
                     createdAt = order.createdAt,
                     totalAmount = order.totalAmount,
+                    adjustedAmount = order.adjustedAmount,
                     remainingBalance = order.remainingBalance,
                     customerId = order.customerId,
                     customerName = it.name,

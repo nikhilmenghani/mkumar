@@ -312,7 +312,7 @@ fun RecentOrderCardCompact(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "₹${order.totalAmount}",
+                            text = "₹${if (order.adjustedAmount != 0) order.adjustedAmount else order.totalAmount}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1
