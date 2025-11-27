@@ -24,7 +24,6 @@ import com.mkumar.common.extension.formatAsDate
 import com.mkumar.model.NewOrderIntent
 import com.mkumar.model.OrderEditorIntent
 import com.mkumar.model.OrderEditorUi
-import com.mkumar.ui.components.accordions.OrderSummaryAccordion
 import com.mkumar.ui.components.cards.OrderHeaderCardPro
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.viewmodel.OrderEditorViewModel
@@ -132,24 +131,6 @@ fun OrderSheet(
                     viewModel.onIntent(OrderEditorIntent.UpdateAdjustedAmount(it))
                 },
             )
-
-            if (state.draft.items.isNotEmpty()) {
-                OrderSummaryAccordion(
-                    payments = state.draft.payments,
-                    onAddPayment = { amountPaid, paymentAt  ->
-                        viewModel.onIntent(OrderEditorIntent.AddPayment(state.draft.orderId, amountPaid, paymentAt))
-                    },
-                    onDeletePayment = { paymentId ->
-                        viewModel.onIntent(OrderEditorIntent.DeletePayment(paymentId))
-                    },
-                    adjustedAmount = state.draft.adjustedAmount,
-                    onAdjustedAmountChange = {
-                        viewModel.onIntent(OrderEditorIntent.UpdateAdjustedAmount(it))
-                    },
-                    remainingBalance = state.draft.remainingBalance,
-                    initiallyExpanded = false
-                )
-            }
         }
     }
 

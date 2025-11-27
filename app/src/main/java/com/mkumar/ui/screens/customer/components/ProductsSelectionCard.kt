@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Card
@@ -62,6 +63,7 @@ import com.mkumar.model.ProductType
 import com.mkumar.model.UiOrderItem
 import com.mkumar.model.UiPaymentItem
 import com.mkumar.ui.components.cards.OrderAccordionItem
+import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.components.inputs.FieldMode
 import com.mkumar.ui.components.inputs.OLTextField
 import com.mkumar.ui.components.pickers.MKDatePickerDialog
@@ -103,10 +105,11 @@ fun ProductsSectionCard(
     var adjustToggle by remember { mutableStateOf(false) }
 
     val hasAdjusted = adjustedAmount != 0
-    val showAdjustedField = hasAdjusted || adjustToggle
 
     var addPaymentOpen by remember { mutableStateOf(false) }
     var adjustOpen by remember { mutableStateOf(false) }
+
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
 
     // Reset toggle when closing with 0 adjusted
     LaunchedEffect(expanded) {
@@ -166,7 +169,9 @@ fun ProductsSectionCard(
                             CompactPaymentRow(
                                 amount = it.amountPaid,
                                 date = it.paymentAt.toInstant(),
-                                onDelete = { onDeletePayment(it.id) }
+                                onDelete = {
+                                    pendingDeleteId = it.id
+                                }
                             )
                         }
                     }
@@ -199,6 +204,24 @@ fun ProductsSectionCard(
                     initiallyExpanded = (product.id == initiallyExpandedId)
                 )
                 if (index < products.lastIndex) ShortInsetDivider()
+            }
+
+            if (pendingDeleteId != null) {
+                ConfirmActionDialog(
+                    title = "Remove Payment?",
+                    message = "This Payment will be removed from the entries. You can add it again later if needed.",
+                    confirmLabel = "Delete",
+                    dismissLabel = "Cancel",
+                    icon = Icons.Outlined.DeleteForever,
+                    highlightConfirmAsDestructive = true,
+                    onConfirm = {
+                        pendingDeleteId?.let { id ->
+                            onDeletePayment(id)
+                        }
+                        pendingDeleteId = null
+                    },
+                    onDismiss = { pendingDeleteId = null }
+                )
             }
         }
     }
