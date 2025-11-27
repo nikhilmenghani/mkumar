@@ -95,8 +95,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
     // UI flags
     val haptic = LocalHapticFeedback.current
 
-    var deleteTarget by remember { mutableStateOf<UiCustomerMini?>(null) }
-
     val snackbarHostState = remember { SnackbarHostState() }
     val (pendingDeleteOrderId, setPendingDeleteOrderId) = remember { mutableStateOf<String?>(null) }
 
@@ -294,21 +292,6 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 setPendingDeleteOrderId(null)
             },
             onDismiss = { setPendingDeleteOrderId(null) }
-        )
-    }
-
-    if (deleteTarget != null) {
-        ConfirmActionDialog(
-            title = "Delete Customer",
-            message = "This action cannot be undone. Delete this customer?",
-            confirmLabel = "Delete",
-            dismissLabel = "Cancel",
-            highlightConfirmAsDestructive = true,
-            onConfirm = {
-                vm.removeCustomer(deleteTarget!!.id)
-                deleteTarget = null
-            },
-            onDismiss = { deleteTarget = null }
         )
     }
 }

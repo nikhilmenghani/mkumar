@@ -32,14 +32,15 @@ _Last updated: 2025-11-15_
 - [x] PDF: Move Subtotal and Grand Total under Discount %  #medium
 - [x] Standardize text field components (e.g. discount replaces 0 with actual text)  #medium
 - [x] Add required fields in product forms and align multiple fields per row  #medium
-- [ ] Move ConfirmActionDialog to delete the customer on Search Screen
+- [x] Move ConfirmActionDialog to delete the customer on Search Screen
 - [ ] Add Menu Items for Orders and Customers on Search Screen
 - [x] Fix the Menu Items for Orders on Dashboard/Home Screen
 - [ ] Add Filter on Customer Details Screen
 - [ ] Store actual Product type when General Product is selected in content column of search_fts
-- [ ] When last product is deleted, it should also delete all the payments?
-- [ ] Fix the total value on recents order screen
+- [ ] When last product is deleted, it should also delete all the payments? It should not, but need to confirm
+- [x] Fix the total value on recents order screen
 - [ ] Store everything in UTC format in database and then convert on UI based on local timezone
+- [ ] Store emailid and dob of the customer
 
 ---
 
