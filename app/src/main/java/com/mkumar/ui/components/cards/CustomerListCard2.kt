@@ -154,7 +154,7 @@ fun CustomerListCard2(
 }
 
 @Composable
-private fun InitialsAvatarCompact(name: String) {
+fun InitialsAvatarCompact(name: String) {
     val parts = name.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
     val initials = when {
         parts.size >= 2 -> "${parts.first().first()}${parts.last().first()}".uppercase()

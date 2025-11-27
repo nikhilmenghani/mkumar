@@ -200,6 +200,7 @@ class SearchViewModel @Inject constructor(
             // If you want "update if same phone exists", do a DAO lookup and reuse ID.
             repo.upsert(customer)
             // optional: update search index here if you wired SearchDao
+            loadRecent()
         }
         return customer.id
     }
@@ -213,8 +214,17 @@ class SearchViewModel @Inject constructor(
                     phone = phone.trim()
                 )
             )
+            loadRecent()
         }
     }
+
+    fun removeCustomer(customerID: String) {
+        viewModelScope.launch {
+            repo.deleteById(customerID)
+            loadRecent()
+        }
+    }
+
 
     fun shareInvoice(orderId: String, invoiceNumber: String) {
         viewModelScope.launch {

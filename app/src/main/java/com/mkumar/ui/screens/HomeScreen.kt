@@ -356,7 +356,7 @@ fun CustomerList(
         items(customers, key = { it.id }) { customer ->
             CustomerListCard2(
                 customer = customer,
-                onClick = onClick,
+                onClick = { onClick(customer) },
                 onEdit = onEdit,
                 onDelete = onDelete
             )

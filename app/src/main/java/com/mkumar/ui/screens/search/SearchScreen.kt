@@ -70,7 +70,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.mkumar.MainActivity
-import com.mkumar.common.extension.formatAsDate
 import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.CustomerSheetMode
 import com.mkumar.model.OrderWithCustomerInfo
@@ -82,7 +81,8 @@ import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.cards.CustomerInfoCard
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.navigation.Routes
-import com.mkumar.ui.screens.RecentCustomersSection
+import com.mkumar.ui.screens.RecentCustomerCard
+import com.mkumar.ui.screens.RecentCustomersList
 import com.mkumar.ui.screens.RecentOrdersList
 import com.mkumar.ui.screens.customer.humanReadableInvoiceLocation
 import com.mkumar.viewmodel.SearchViewModel
@@ -124,6 +124,7 @@ fun SearchScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalActivity.current as MainActivity
     val (pendingDeleteOrderId, setPendingDeleteOrderId) = remember { mutableStateOf<String?>(null) }
+    var deleteCustomer by remember { mutableStateOf<UiCustomerMini?>(null) }
 
     LaunchedEffect(Unit) {
         delay(100)
@@ -257,7 +258,17 @@ fun SearchScreen(
                     addPhone = prefillPhone ?: ""
                     showCustomerSheet = true
                 },
-                openCustomer = openCustomer
+                openCustomer = openCustomer,
+                onEdit = { customer ->
+                    editingCustomerId = customer.id
+                    addName = customer.name
+                    addPhone = customer.phone
+                    sheetMode = CustomerSheetMode.Edit
+                    showCustomerSheet = true
+                },
+                onDelete = { customer ->
+                    deleteCustomer = customer
+                },
             )
         }
         // RESULTS
@@ -279,6 +290,23 @@ fun SearchScreen(
             onDismiss = { setPendingDeleteOrderId(null) }
         )
     }
+
+    if (deleteCustomer != null) {
+        ConfirmActionDialog(
+            title = "Delete Customer",
+            message = "This action cannot be undone. Delete this customer?",
+            confirmLabel = "Delete",
+            dismissLabel = "Cancel",
+            highlightConfirmAsDestructive = true,
+            onConfirm = {
+                vm.removeCustomer(deleteCustomer!!.id)
+                vm.triggerSearch()
+                deleteCustomer = null
+            },
+            onDismiss = { deleteCustomer = null }
+        )
+    }
+
     // ===========================================================
     // ADD CUSTOMER BOTTOM SHEET
     // ===========================================================
@@ -302,10 +330,9 @@ fun SearchScreen(
                         }
                         if (sheetMode == CustomerSheetMode.Add) {
                             val customerId = vm.createOrUpdateCustomerCard(addName.trim(), addPhone.trim())
-//                            vm.selectCustomer(customerId)
                             navController.navigate(Routes.customerDetail(customerId))
                         } else {
-                            editingCustomerId?.let { vm.updateCustomer(it, addPhone.trim(), addPhone.trim()) }
+                            editingCustomerId?.let { vm.updateCustomer(it, addName.trim(), addPhone.trim()) }
                         }
                         showCustomerSheet = false
                     }
@@ -320,7 +347,6 @@ fun SearchScreen(
                 if (!canSubmit) return@ShortBottomSheet
                 if (sheetMode == CustomerSheetMode.Add) {
                     val customerId = vm.createOrUpdateCustomerCard(addName.trim(), addPhone.trim())
-//                    vm.selectCustomer(customerId)
                     navController.navigate(Routes.customerDetail(customerId))
                 } else {
                     editingCustomerId?.let { vm.updateCustomer(it, addName.trim(), addPhone.trim()) }
@@ -719,62 +745,6 @@ fun SearchOrderResultsSection(
     }
 }
 
-@Composable
-fun OrderResultItem(
-    order: OrderWithCustomerInfo,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clickable { onClick() },
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp,
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(Modifier.padding(14.dp)) {
-
-            // Invoice Number + Date ------------------------------------------------
-            Text(
-                text = "Invoice: ${order.invoiceNumber}",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(Modifier.height(4.dp))
-
-            Text(
-                text = order.customerName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(Modifier.height(4.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "₹${order.totalAmount}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = order.createdAt.formatAsDate(),   // you can replace
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-
 // ================================================================
 // RESULTS + RECENT + ADD CUSTOMER BUTTON
 // ================================================================
@@ -787,7 +757,9 @@ private fun SearchCustomerResultsSection(
     query: String,
     onClear: () -> Unit,
     onAddCustomer: (prefillName: String?, prefillPhone: String?) -> Unit,
-    openCustomer: (String) -> Unit
+    openCustomer: (String) -> Unit,
+    onEdit: (customer: UiCustomerMini) -> Unit,
+    onDelete: (customer: UiCustomerMini) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -832,9 +804,17 @@ private fun SearchCustomerResultsSection(
                     )
                 }
             } else {
-                RecentCustomersSection(
+                RecentCustomersList(
                     customers = recent,
-                    openCustomer = openCustomer
+                    onCustomerClick = { customer ->
+                        openCustomer(customer.id)
+                    },
+                    onEdit = { customer ->
+                        onEdit(customer)
+                    },
+                    onDelete = { customer ->
+                        onDelete(customer)
+                    }
                 )
             }
             return
@@ -873,9 +853,11 @@ private fun SearchCustomerResultsSection(
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
             itemsIndexed(results, key = { _, it -> it.id }) { _, c ->
-                SearchResultItem(
-                    c = c,
-                    onClick = { openCustomer(c.id) }
+                RecentCustomerCard(
+                    customer = c,
+                    onClick = { openCustomer(c.id) },
+                    onEdit = { onEdit(c) },
+                    onDelete = { onDelete(c) }
                 )
             }
         }
