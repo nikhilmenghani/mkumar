@@ -396,11 +396,13 @@ fun AdjustTotalRow(
                         // Adjusted Total field
                         OLTextField(
                             value = localValue,
-                            label = "Adjusted Total",
+                            label = "Adjusted Total (₹)",
+                            placeholder = "e.g. 1,200",
                             mode = FieldMode.Integer,
-                            onValueChange = {
-                                localValue = it
-                                onAdjustedChange(it.toIntOrNull() ?: 0)
+                            onValueChange = { txt ->
+                                val filtered = txt.filter { it.isDigit() || it == ',' }
+                                localValue = filtered.ifEmpty { "0" }
+                                onAdjustedChange(localValue.toIntOrNull() ?: 0)
                             },
                             modifier = Modifier
                                 .weight(1f)
