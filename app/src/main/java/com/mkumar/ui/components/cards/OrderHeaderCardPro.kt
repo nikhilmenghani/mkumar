@@ -2,6 +2,7 @@ package com.mkumar.ui.components.cards
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -28,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mkumar.App.Companion.globalClass
@@ -52,24 +56,20 @@ fun OrderHeaderCardPro(
 
     var showPicker by remember { mutableStateOf(false) }
     var date by remember { mutableStateOf(LocalDate.now()) }
-    val pattern = DateFormat.DEFAULT_DATE_ONLY.pattern // "dd-MMM-yyyy"
+    val clipboard = LocalClipboardManager.current
+
+    val pattern = DateFormat.DEFAULT_DATE_ONLY.pattern
     val formatter = DateTimeFormatter.ofPattern(pattern)
 
     val initialDate = if (displayedDate.isNotBlank()) {
         LocalDate.parse(displayedDate, formatter)
-    } else {
-        date
-    }
-
+    } else date
 
     val rotation by animateFloatAsState(
         targetValue = if (showPicker) 180f else 0f,
         label = "rotateCalendar"
     )
 
-    // ─────────────────────────────────────────────
-    // DATE PICKER (IST conversion — correct & stable)
-    // ─────────────────────────────────────────────
     if (showPicker) {
         MKDatePickerDialog(
             initialDate = initialDate,
@@ -82,9 +82,6 @@ fun OrderHeaderCardPro(
         )
     }
 
-    // ─────────────────────────────────────────────
-    // PROFESSIONAL ROUNDED CARD WITH BORDER
-    // ─────────────────────────────────────────────
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -93,7 +90,7 @@ fun OrderHeaderCardPro(
                 color = MaterialTheme.colorScheme.outlineVariant,
                 shape = RoundedCornerShape(12.dp)
             ),
-        tonalElevation = 0.dp, // border replaces elevation
+        tonalElevation = 0.dp,
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
@@ -103,19 +100,35 @@ fun OrderHeaderCardPro(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
 
-            // ─────────── Row 1: Name + Invoice Number
+            // ──────── Row 1: Customer Name + Copy + Invoice Number
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
-                Text(
-                    text = customerName,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.SemiBold
+                Row(verticalAlignment = Alignment.CenterVertically) {
+
+                    Text(
+                        text = customerName,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
                     )
-                )
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Icon(
+                        imageVector = Icons.Outlined.ContentCopy,
+                        contentDescription = "Copy name",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clickable {
+                                clipboard.setText(AnnotatedString(customerName))
+                            }
+                    )
+                }
 
                 Text(
                     text = "#" + globalClass.preferencesManager.invoicePrefs.invoicePrefix + invoiceNumber,
@@ -126,14 +139,14 @@ fun OrderHeaderCardPro(
                 )
             }
 
-            // ─────────── Row 2: Phone (left) + Received Date (right)
+            // ──────── Row 2: Phone + Copy + Date
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                // LEFT → Phone
                 Row(verticalAlignment = Alignment.CenterVertically) {
+
                     Icon(
                         imageVector = Icons.Outlined.Phone,
                         contentDescription = null,
@@ -148,11 +161,23 @@ fun OrderHeaderCardPro(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Icon(
+                        imageVector = Icons.Outlined.ContentCopy,
+                        contentDescription = "Copy phone",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clickable {
+                                clipboard.setText(AnnotatedString(mobile))
+                            }
+                    )
                 }
 
-                Spacer(Modifier.weight(1f))  // pushes date to the right
+                Spacer(Modifier.weight(1f))
 
-                // RIGHT → Received Date + Calendar Icon
                 Row(verticalAlignment = Alignment.CenterVertically) {
 
                     Text(
@@ -172,7 +197,7 @@ fun OrderHeaderCardPro(
                                 imageVector = Icons.Outlined.CalendarMonth,
                                 contentDescription = "Change date",
                                 modifier = Modifier
-                                    .size(16.dp) // same visual weight as text
+                                    .size(16.dp)
                                     .rotate(rotation),
                                 tint = MaterialTheme.colorScheme.primary
                             )
