@@ -25,6 +25,9 @@ data class CustomerEntity(
     val name: String,
 
     val phone: String,
+    val dateOfBirth: Long? = null,
+    val email: String? = null,
+    val address: String? = null,
 
     val createdAt: Long = nowUtcMillis(),
     val updatedAt: Long = nowUtcMillis(),
