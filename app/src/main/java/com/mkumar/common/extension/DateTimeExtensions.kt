@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
@@ -22,50 +23,112 @@ enum class DateFormat(val pattern: String) {
     DEFAULT_DATE_TIME("dd-MM-yyyy HH:mm")
 }
 
+/* ----------------------------------------------------------
+ *  FORMATTERS
+ * ---------------------------------------------------------- */
+
 fun Instant.format(
     format: DateFormat = DateFormat.DATE_ONLY,
     zoneId: ZoneId = ZoneId.systemDefault()
-): String {
-    return DateTimeFormatter.ofPattern(format.pattern)
+): String =
+    DateTimeFormatter.ofPattern(format.pattern)
         .format(this.atZone(zoneId))
-}
 
 fun Instant.formatAsDateTime(
     format: DateFormat = DateFormat.SHORT_DATE_TIME,
     zoneId: ZoneId = ZoneId.systemDefault()
-): String {
-    return this.format(format, zoneId)
-}
+): String = format(format, zoneId)
 
 fun Long.formatAsDate(
     format: DateFormat = DateFormat.DATE_ONLY,
     zoneId: ZoneId = ZoneId.systemDefault()
-): String {
-    return this.toInstant().format(format, zoneId)
-}
+): String = this.toInstant().format(format, zoneId)
 
 fun Long.formatAsDateTime(
     format: DateFormat = DateFormat.SHORT_DATE_TIME,
     zoneId: ZoneId = ZoneId.systemDefault()
-): String {
-    return this.toInstant().format(format, zoneId)
-}
+): String = this.toInstant().format(format, zoneId)
 
 fun Long.formatAsDate(): String =
     SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(this))
 
-fun LocalDate.toEpochLong(): Long = this.toEpochDay()
+/* ----------------------------------------------------------
+ *  LocalDate → Instant & Long
+ * ---------------------------------------------------------- */
 
-fun LocalDate.toInstant(): Instant =
+/**
+ * Convert LocalDate to UTC Instant at midnight.
+ * This is the safest way to store dates globally.
+ */
+fun LocalDate.toUtcInstant(): Instant =
+    this.atStartOfDay(ZoneOffset.UTC).toInstant()
+
+/**
+ * Convert LocalDate to Instant at local midnight.
+ * Use this only if business = device's region.
+ */
+fun LocalDate.toLocalMidnightInstant(
+    zoneId: ZoneId = ZoneId.systemDefault()
+): Instant =
+    this.atStartOfDay(zoneId).toInstant()
+
+fun LocalDate.toLocalInstant(): Instant =
     this.atStartOfDay(ZoneId.systemDefault()).toInstant()
 
+
+fun LocalDate.toEpochLong(): Long = this.toUtcInstant().toEpochMilli()
+
+/**
+ * Format a LocalDate safely using local timezone.
+ */
 fun LocalDate.formatAsDate(
     format: DateFormat = DateFormat.DEFAULT_DATE_ONLY,
     zoneId: ZoneId = ZoneId.systemDefault()
-): String {
-    return DateTimeFormatter.ofPattern(format.pattern)
+): String =
+    DateTimeFormatter.ofPattern(format.pattern)
         .format(this.atStartOfDay(zoneId))
-}
 
-fun Long.toLocalDate(): LocalDate = LocalDate.ofEpochDay(this)
+/* ----------------------------------------------------------
+ *  Instant → LocalDate
+ * ---------------------------------------------------------- */
 
+/** Convert UTC Instant → LocalDate in device's timezone. */
+fun Instant.toLocalDate(
+    zoneId: ZoneId = ZoneId.systemDefault()
+): LocalDate =
+    this.atZone(zoneId).toLocalDate()
+
+/** Convert millis → LocalDate */
+fun Long.toLocalDate(
+    zoneId: ZoneId = ZoneId.systemDefault()
+): LocalDate =
+    this.toInstant().toLocalDate(zoneId)
+
+/* ----------------------------------------------------------
+ *  Helpers for global correctness
+ * ---------------------------------------------------------- */
+
+/**
+ * Convert Instant.now() → LocalDate (local timezone)
+ * Use when UI wants to show today's date.
+ */
+fun todayLocalDate(): LocalDate =
+    Instant.now().toLocalDate()
+
+/**
+ * Create a UTC Instant for "now"
+ * Use for DB storage if you want global consistency.
+ */
+fun nowUtcInstant(): Instant = Instant.now()
+
+/**
+ * Create "today" as UTC Instant at midnight
+ * Useful when the app cares about date-only storage.
+ */
+fun todayUtcMidnight(): Instant =
+    LocalDate.now(ZoneOffset.UTC).toUtcInstant()
+
+/**
+ * Legacy replacement for System.currentTimeMillis()
+ */
+fun nowUtcMillis(): Long = Instant.now().toEpochMilli()

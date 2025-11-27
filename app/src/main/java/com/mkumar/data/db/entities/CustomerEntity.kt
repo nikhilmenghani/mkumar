@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.mkumar.common.extension.nowUtcMillis
 import java.util.UUID
 
 @Entity(
@@ -25,8 +26,8 @@ data class CustomerEntity(
 
     val phone: String,
 
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis(),
+    val createdAt: Long = nowUtcMillis(),
+    val updatedAt: Long = nowUtcMillis(),
 
     /** Sum of remainingBalance from all ACTIVE orders */
     val totalOutstanding: Int = 0,

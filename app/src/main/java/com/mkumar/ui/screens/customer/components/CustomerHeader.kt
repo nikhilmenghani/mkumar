@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.model.CustomerHeaderUi
 import com.mkumar.model.UiCustomer
 import java.time.ZoneId
@@ -92,7 +93,7 @@ fun CustomerHeaderPreview() {
         id = "123",
         name = "Mahendra Menghani",
         phone = "+91 98765 43210",
-        createdAt = System.currentTimeMillis() - 86400000L * 365, // 1 year ago
+        createdAt = nowUtcMillis() - 86400000L * 365, // 1 year ago
     )
     CustomerHeader(
         header = CustomerHeaderUi(

@@ -1,6 +1,7 @@
 package com.mkumar.repository.impl
 
 import androidx.room.withTransaction
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.db.AppDatabase
 import com.mkumar.data.db.dao.CustomerDao
 import com.mkumar.data.db.dao.OrderDao
@@ -25,7 +26,7 @@ class OrderRepositoryImpl @Inject constructor(
 ) : OrderRepository {
 
     override suspend fun upsert(order: OrderEntity) = db.withTransaction {
-        val now = System.currentTimeMillis()
+        val now = nowUtcMillis()
 
         val enriched = order.copy(
             productCategories = orderItemDao.getCategoriesForOrder(order.id),
@@ -62,7 +63,7 @@ class OrderRepositoryImpl @Inject constructor(
         orderDao.getById(orderId)
 
     override suspend fun createOrderWithItems(order: OrderEntity): OrderEntity = db.withTransaction {
-        val now = System.currentTimeMillis()
+        val now = nowUtcMillis()
         val invoiceSeq = invoiceNumberService.takeNextInvoiceNumberInCurrentTx()
 
         // Aggregate categories + owners

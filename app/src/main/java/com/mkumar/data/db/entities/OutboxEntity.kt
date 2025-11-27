@@ -3,6 +3,7 @@ package com.mkumar.data.db.entities
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.mkumar.common.extension.nowUtcMillis
 import java.util.UUID
 
 /**
@@ -33,8 +34,8 @@ data class OutboxEntity(
 
     val lastErrorMessage: String? = null,
 
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis(),
+    val createdAt: Long = nowUtcMillis(),
+    val updatedAt: Long = nowUtcMillis(),
 
     /** For sha-based concurrency on profiles/files if needed later */
     val lastKnownRemoteSha: String? = null

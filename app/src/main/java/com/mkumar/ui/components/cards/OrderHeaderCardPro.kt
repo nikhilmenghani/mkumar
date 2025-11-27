@@ -14,16 +14,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Phone
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,9 +31,12 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mkumar.App.Companion.globalClass
+import com.mkumar.common.extension.DateFormat
+import com.mkumar.common.extension.toLocalInstant
+import com.mkumar.ui.components.pickers.MKDatePickerDialog
 import java.time.Instant
-import java.time.ZoneId
-import java.time.ZoneOffset
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,50 +50,36 @@ fun OrderHeaderCardPro(
     modifier: Modifier = Modifier
 ) {
 
-    var showDateDialog by remember { mutableStateOf(false) }
+    var showPicker by remember { mutableStateOf(false) }
+    var date by remember { mutableStateOf(LocalDate.now()) }
+    val pattern = DateFormat.DEFAULT_DATE_ONLY.pattern // "dd-MMM-yyyy"
+    val formatter = DateTimeFormatter.ofPattern(pattern)
+
+    val initialDate = if (displayedDate.isNotBlank()) {
+        LocalDate.parse(displayedDate, formatter)
+    } else {
+        date
+    }
+
 
     val rotation by animateFloatAsState(
-        targetValue = if (showDateDialog) 180f else 0f,
+        targetValue = if (showPicker) 180f else 0f,
         label = "rotateCalendar"
     )
 
     // ─────────────────────────────────────────────
     // DATE PICKER (IST conversion — correct & stable)
     // ─────────────────────────────────────────────
-    if (showDateDialog) {
-        val pickerState = rememberDatePickerState()
-
-        DatePickerDialog(
-            onDismissRequest = { showDateDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val millis = pickerState.selectedDateMillis
-                        if (millis != null) {
-                            val ist = ZoneId.of("Asia/Kolkata")
-
-                            val pickedUtcDate = Instant.ofEpochMilli(millis)
-                                .atZone(ZoneOffset.UTC)
-                                .toLocalDate()
-
-                            val istInstant = pickedUtcDate
-                                .atStartOfDay(ist)
-                                .toInstant()
-
-                            onPickDateTime(istInstant)
-                        }
-                        showDateDialog = false
-                    }
-                ) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDateDialog = false }) {
-                    Text("Cancel")
-                }
+    if (showPicker) {
+        MKDatePickerDialog(
+            initialDate = initialDate,
+            onDismiss = { showPicker = false },
+            onConfirm = { pickedDate ->
+                date = pickedDate
+                onPickDateTime(date.toLocalInstant())
+                showPicker = false
             }
-        ) {
-            DatePicker(state = pickerState)
-        }
+        )
     }
 
     // ─────────────────────────────────────────────
@@ -180,7 +165,7 @@ fun OrderHeaderCardPro(
                         Spacer(Modifier.width(6.dp))
 
                         IconButton(
-                            onClick = { showDateDialog = true },
+                            onClick = { showPicker = true },
                             modifier = Modifier.size(22.dp)
                         ) {
                             Icon(

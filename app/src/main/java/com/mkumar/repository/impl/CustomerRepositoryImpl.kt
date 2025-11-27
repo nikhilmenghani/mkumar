@@ -1,6 +1,7 @@
 package com.mkumar.repository.impl
 
 import androidx.sqlite.db.SimpleSQLiteQuery
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.common.search.buildFtsPrefixMatch
 import com.mkumar.common.search.buildFtsTrigramMatch
 import com.mkumar.common.search.digitsOnly
@@ -31,7 +32,7 @@ class CustomerRepositoryImpl @Inject constructor(
 ) : CustomerRepository {
 
     override suspend fun upsert(customer: CustomerEntity) {
-        val updated = customer.copy(updatedAt = System.currentTimeMillis())
+        val updated = customer.copy(updatedAt = nowUtcMillis())
         customerDao.upsert(updated)
         reindexCustomerForSearch(updated)
     }

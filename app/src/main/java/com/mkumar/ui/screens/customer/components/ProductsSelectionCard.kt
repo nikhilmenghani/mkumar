@@ -36,16 +36,12 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.DateFormat
 import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.common.extension.toInstant
+import com.mkumar.common.extension.toLocalInstant
 import com.mkumar.data.ProductFormData
 import com.mkumar.model.ProductType
 import com.mkumar.model.UiOrderItem
@@ -67,7 +64,9 @@ import com.mkumar.model.UiPaymentItem
 import com.mkumar.ui.components.cards.OrderAccordionItem
 import com.mkumar.ui.components.inputs.FieldMode
 import com.mkumar.ui.components.inputs.OLTextField
+import com.mkumar.ui.components.pickers.MKDatePickerDialog
 import java.time.Instant
+import java.time.LocalDate
 
 // -----------------------------------------------------------------------------
 // CONFIGURATION — you can tune these freely
@@ -492,7 +491,7 @@ fun AddPaymentRow(
     onAdd: (amount: Int, at: Long) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(Instant.now()) }
+    var date by remember { mutableStateOf(LocalDate.now()) }
     var showPicker by remember { mutableStateOf(false) }
 
     val rowHeight = 44.dp   // comfortable height; prevents uneven look
@@ -584,7 +583,7 @@ fun AddPaymentRow(
                                 Icon(Icons.Outlined.DateRange, null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = date.formatAsDateTime(DateFormat.DEFAULT_DATE_ONLY),
+                                    text = date.toLocalInstant().formatAsDateTime(DateFormat.DEFAULT_DATE_ONLY),
                                     style = MaterialTheme.typography.labelSmall,
                                     maxLines = 1
                                 )
@@ -597,9 +596,9 @@ fun AddPaymentRow(
                         FilledTonalButton(
                             onClick = {
                                 if (amount.isNotBlank()) {
-                                    onAdd(amount.toInt(), date.toEpochMilli())
+                                    onAdd(amount.toInt(), date.toLocalInstant().toEpochMilli())
                                     amount = ""
-                                    date = Instant.now()
+                                    date = LocalDate.now()
                                     onToggle()
                                 }
                             },
@@ -633,27 +632,15 @@ fun AddPaymentRow(
         }
     }
 
-    // DATE PICKER
     if (showPicker) {
-        val picker = rememberDatePickerState(initialSelectedDateMillis = date.toEpochMilli())
-        DatePickerDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        date = Instant.ofEpochMilli(picker.selectedDateMillis!!)
-                        showPicker = false
-                    }
-                ) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) {
-                    Text("Cancel")
-                }
+        MKDatePickerDialog(
+            initialDate = date,
+            onDismiss = { showPicker = false },
+            onConfirm = { pickedDate ->
+                date = pickedDate
+                showPicker = false
             }
-        ) {
-            DatePicker(state = picker)
-        }
+        )
     }
 }
 

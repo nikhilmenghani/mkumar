@@ -1,6 +1,7 @@
 package com.mkumar.viewmodel
 
 import com.mkumar.App.Companion.globalClass
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
@@ -98,7 +99,7 @@ fun UiOrderItem.toEntity(orderId: String): OrderItemEntity {
         productOwnerName = formData?.productOwner ?: "Error",
         formDataJson = serializedFormData,
         finalTotal = finalTotal,
-        updatedAt = System.currentTimeMillis()
+        updatedAt = nowUtcMillis()
     )
 }
 

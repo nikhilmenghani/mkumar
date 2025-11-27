@@ -37,6 +37,9 @@ _Last updated: 2025-11-15_
 - [x] Fix the Menu Items for Orders on Dashboard/Home Screen
 - [ ] Add Filter on Customer Details Screen
 - [ ] Store actual Product type when General Product is selected in content column of search_fts
+- [ ] When last product is deleted, it should also delete all the payments?
+- [ ] Fix the total value on recents order screen
+- [ ] Store everything in UTC format in database and then convert on UI based on local timezone
 
 ---
 

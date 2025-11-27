@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.model.OrderStatus
 import java.util.UUID
 
@@ -37,8 +38,8 @@ data class OrderEntity(
 
     val customerId: String,
 
-    val occurredAt: Long = System.currentTimeMillis(),
-    val createdAt: Long = System.currentTimeMillis(),
+    val occurredAt: Long = nowUtcMillis(),
+    val createdAt: Long = nowUtcMillis(),
 
     /** Single numeric invoice identity */
     @ColumnInfo(name = "invoiceSeq")
@@ -63,12 +64,12 @@ data class OrderEntity(
      */
     val owners: List<String> = emptyList(),
 
-    val updatedAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = nowUtcMillis(),
 
     /** String-stored enum: DRAFT / ACTIVE / COMPLETED */
     val orderStatus: String = OrderStatus.DRAFT.value,
 
     // Future fields
-    val deliveryDate: Long? = System.currentTimeMillis(),
+    val deliveryDate: Long? = nowUtcMillis(),
     val warrantyMonths: Int? = 12
 )

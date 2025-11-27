@@ -1,5 +1,6 @@
 package com.mkumar.model
 
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.ProductFormData
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -17,7 +18,7 @@ data class UiOrderItem(
     val unitPrice: Int,
     val discountPercentage: Int,
     val finalTotal: Int = 0,
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = nowUtcMillis()
 ) {
     fun serializeFormData(): String? {
         return formData?.let { Json.encodeToString(it) }

@@ -1,6 +1,7 @@
 package com.mkumar.repository.impl
 
 import androidx.room.withTransaction
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.db.AppDatabase
 import com.mkumar.data.db.dao.CustomerDao
 import com.mkumar.data.db.dao.OrderDao
@@ -24,7 +25,7 @@ class ProductRepositoryImpl @Inject constructor(
 
     override suspend fun upsert(item: OrderItemEntity) {
         db.withTransaction {
-            val now = System.currentTimeMillis()
+            val now = nowUtcMillis()
 
             // 1. Update item
             orderItemDao.upsert(item.copy(updatedAt = now))
@@ -39,7 +40,7 @@ class ProductRepositoryImpl @Inject constructor(
         if (items.isEmpty()) return
 
         db.withTransaction {
-            val now = System.currentTimeMillis()
+            val now = nowUtcMillis()
             val stamped = items.map { it.copy(updatedAt = now) }
 
             // 1. Insert all items
@@ -58,7 +59,7 @@ class ProductRepositoryImpl @Inject constructor(
         db.withTransaction {
             orderItemDao.deleteByOrderId(orderId)
 
-            recomputeOrderAggregates(orderId, System.currentTimeMillis())
+            recomputeOrderAggregates(orderId, nowUtcMillis())
         }
     }
 
@@ -68,7 +69,7 @@ class ProductRepositoryImpl @Inject constructor(
 
             orderItemDao.deleteProductById(itemId)
 
-            recomputeOrderAggregates(orderId, System.currentTimeMillis())
+            recomputeOrderAggregates(orderId, nowUtcMillis())
         }
     }
 
@@ -117,7 +118,7 @@ class ProductRepositoryImpl @Inject constructor(
             c.copy(
                 totalOutstanding = totalOutstanding,
                 hasPendingOrder = hasPending,
-                updatedAt = System.currentTimeMillis()
+                updatedAt = nowUtcMillis()
             )
         )
     }

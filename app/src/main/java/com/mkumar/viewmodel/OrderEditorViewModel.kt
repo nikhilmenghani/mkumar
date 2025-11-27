@@ -2,6 +2,7 @@ package com.mkumar.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.common.extension.toLong
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.db.entities.OrderEntity
@@ -243,7 +244,7 @@ class OrderEditorViewModel @Inject constructor(
                     productCategories = updated.items.map { it.productType.toString() }.distinct(),
                     owners = updated.items.map { it.name }.distinct(),
                     remainingBalance = remaining,
-                    updatedAt = System.currentTimeMillis(),
+                    updatedAt = nowUtcMillis(),
                     occurredAt = updated.occurredAt.toLong(),
                     orderStatus = if (remaining > 0)
                         OrderStatus.ACTIVE.value
@@ -412,7 +413,7 @@ class OrderEditorViewModel @Inject constructor(
                 productCategories = categories,
                 owners = owners,
                 remainingBalance = draft.remainingBalance,
-                updatedAt = System.currentTimeMillis(),
+                updatedAt = nowUtcMillis(),
                 occurredAt = draft.occurredAt.toLong(),
                 orderStatus = if (draft.remainingBalance > 0)
                     OrderStatus.ACTIVE.value

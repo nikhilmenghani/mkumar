@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.mkumar.common.extension.nowUtcMillis
 import java.util.UUID
 
 @Entity(
@@ -38,5 +39,5 @@ data class OrderItemEntity(
     val subtotal: Int = unitPrice * quantity,
     val finalTotal: Int = 0,
 
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = nowUtcMillis()
 )
