@@ -2,6 +2,7 @@ package com.mkumar.viewmodel
 
 import com.mkumar.App.Companion.globalClass
 import com.mkumar.common.extension.nowUtcMillis
+import com.mkumar.data.ProductFormData
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.data.db.relations.CustomerWithOrders
@@ -89,13 +90,17 @@ fun List<UiOrderItem>.toPricingInput(
 
 fun UiOrderItem.toEntity(orderId: String): OrderItemEntity {
     val serializedFormData = serializeFormData()
+    val productTypeLabel = if (productType.name == "GeneralProduct") {
+        (formData as? ProductFormData.GeneralProductData)?.productType
+            ?: productType.toString()
+    } else productType.toString()
     return OrderItemEntity(
         id = id.ifBlank { UUID.randomUUID().toString() },
         orderId = orderId,
         quantity = quantity,
         unitPrice = unitPrice,
         discountPercentage = discountPercentage.coerceIn(0, 100),
-        productTypeLabel = productType.toString(),
+        productTypeLabel = productTypeLabel,
         productOwnerName = formData?.productOwner ?: "Error",
         formDataJson = serializedFormData,
         finalTotal = finalTotal,
@@ -105,12 +110,14 @@ fun UiOrderItem.toEntity(orderId: String): OrderItemEntity {
 
 fun OrderItemEntity.toUiItem(): UiOrderItem {
     val deserializedFormData = UiOrderItem.deserializeFormData(formDataJson)
+    val productType = runCatching { ProductType.valueOf(productTypeLabel) }
+        .getOrDefault(ProductType.GeneralProduct)
     return UiOrderItem(
         id = id,
         quantity = quantity,
         unitPrice = unitPrice,
         discountPercentage = discountPercentage,
-        productType = ProductType.valueOf(productTypeLabel),
+        productType = productType,
         name = deserializedFormData?.productOwner ?: productOwnerName,
         formData = deserializedFormData,
         finalTotal = finalTotal,

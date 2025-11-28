@@ -4,10 +4,12 @@ import androidx.room.withTransaction
 import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.db.AppDatabase
 import com.mkumar.data.db.dao.CustomerDao
+import com.mkumar.data.db.dao.CustomerFtsDao
 import com.mkumar.data.db.dao.OrderDao
+import com.mkumar.data.db.dao.OrderFtsDao
 import com.mkumar.data.db.dao.OrderItemDao
-import com.mkumar.data.db.dao.SearchDao
 import com.mkumar.data.db.entities.OrderEntity
+import com.mkumar.data.db.entities.OrderFts
 import com.mkumar.data.services.InvoiceNumberService
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.OrderRepository
@@ -21,7 +23,8 @@ class OrderRepositoryImpl @Inject constructor(
     private val orderDao: OrderDao,
     private val orderItemDao: OrderItemDao,
     private val customerDao: CustomerDao,
-    private val searchDao: SearchDao,
+    private val customerFtsDao: CustomerFtsDao,
+    private val orderFtsDao: OrderFtsDao,
     private val invoiceNumberService: InvoiceNumberService
 ) : OrderRepository {
 
@@ -35,7 +38,9 @@ class OrderRepositoryImpl @Inject constructor(
 
         orderDao.upsert(enriched)
 
-        // update customer outstanding
+        // Reindex FTS
+        reindexOrderFts(enriched)
+
         updateCustomerSummary(enriched.customerId)
     }
 
@@ -44,13 +49,9 @@ class OrderRepositoryImpl @Inject constructor(
 
         orderDao.deleteById(orderId)
 
-        // Delete FTS entries
-        searchDao.deleteByCustomerId(order.customerId)
-
-        // Reindex customer ONLY (we will rebuild new FTS)
+        orderFtsDao.deleteByOrderId(orderId)
         updateCustomerSummary(order.customerId)
     }
-
 
     override fun observeOrdersForCustomer(customerId: String): Flow<List<OrderEntity>> =
         orderDao.observeOrdersForCustomer(customerId)
@@ -65,7 +66,6 @@ class OrderRepositoryImpl @Inject constructor(
         val now = nowUtcMillis()
         val invoiceSeq = invoiceNumberService.takeNextInvoiceNumberInCurrentTx()
 
-        // Aggregate categories + owners
         val categories = orderItemDao.getCategoriesForOrder(order.id)
         val owners = orderItemDao.getOwnersForOrder(order.id)
 
@@ -78,8 +78,8 @@ class OrderRepositoryImpl @Inject constructor(
 
         orderDao.upsert(stamped)
 
-        // update customer summary
-        updateCustomerSummary(order.customerId)
+        reindexOrderFts(stamped)
+        updateCustomerSummary(stamped.customerId)
 
         stamped
     }
@@ -92,7 +92,6 @@ class OrderRepositoryImpl @Inject constructor(
         remainingOnly: Boolean
     ): List<OrderEntity> {
 
-        // We use the DAO-level dynamic filter
         return orderDao.filterOrders(
             customerId = customerId,
             remainingOnly = if (remainingOnly) 1 else 0,
@@ -108,22 +107,54 @@ class OrderRepositoryImpl @Inject constructor(
         return UiCustomerMini(
             id = customer.id,
             name = customer.name,
-            phone = customer.phone,
+            phone = customer.phone
         )
     }
 
+    // --------------------------
+    // FTS index for each ORDER
+    // --------------------------
+    private suspend fun reindexOrderFts(order: OrderEntity) {
+        val tokens = buildList {
+            add(order.invoiceSeq?.toString().orEmpty())
+            addAll(order.productCategories)
+            addAll(order.owners)
+        }
+
+        val cleanedTokens = tokens
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+
+        val content = cleanedTokens.joinToString(" ")
+
+        orderFtsDao.upsert(
+            OrderFts(
+                customerId = order.customerId,
+                orderId = order.id,
+                invoiceSeq = order.invoiceSeq?.toString(),
+                productCategories = order.productCategories.joinToString(" "),
+                owners = order.owners.joinToString(" "),
+                productTypes = "", // if needed, add later
+                content = content
+            )
+        )
+    }
+
+
     private suspend fun updateCustomerSummary(customerId: String) {
         val orders = orderDao.getForCustomer(customerId)
-        val totalOutstanding = orders.sumOf { it.remainingBalance }
+        val outstanding = orders.sumOf { it.remainingBalance }
         val hasPending = orders.any { it.remainingBalance > 0 }
 
-        val customer = customerDao.getById(customerId) ?: return
+        val c = customerDao.getById(customerId) ?: return
 
         customerDao.upsert(
-            customer.copy(
-                totalOutstanding = totalOutstanding,
+            c.copy(
+                totalOutstanding = outstanding,
                 hasPendingOrder = hasPending,
-                updatedAt = System.currentTimeMillis()
+                updatedAt = nowUtcMillis()
             )
         )
     }

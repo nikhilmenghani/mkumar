@@ -33,7 +33,7 @@ _Last updated: 2025-11-15_
 - [x] Standardize text field components (e.g. discount replaces 0 with actual text)  #medium
 - [x] Add required fields in product forms and align multiple fields per row  #medium
 - [x] Move ConfirmActionDialog to delete the customer on Search Screen
-- [ ] Add Menu Items for Orders and Customers on Search Screen
+- [x] Add Menu Items for Orders and Customers on Search Screen
 - [x] Fix the Menu Items for Orders on Dashboard/Home Screen
 - [ ] Add Filter on Customer Details Screen
 - [ ] Store actual Product type when General Product is selected in content column of search_fts

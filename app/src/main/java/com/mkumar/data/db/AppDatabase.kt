@@ -6,18 +6,20 @@ import androidx.room.TypeConverters
 import com.mkumar.data.db.converters.OrderStatusConverter
 import com.mkumar.data.db.converters.StringListConverter
 import com.mkumar.data.db.dao.CustomerDao
+import com.mkumar.data.db.dao.CustomerFtsDao
 import com.mkumar.data.db.dao.InvoiceCounterDao
 import com.mkumar.data.db.dao.OrderDao
+import com.mkumar.data.db.dao.OrderFtsDao
 import com.mkumar.data.db.dao.OrderItemDao
 import com.mkumar.data.db.dao.PaymentDao
-import com.mkumar.data.db.dao.SearchDao
 import com.mkumar.data.db.entities.CustomerEntity
+import com.mkumar.data.db.entities.CustomerFts
 import com.mkumar.data.db.entities.InvoiceCounterEntity
 import com.mkumar.data.db.entities.OrderEntity
+import com.mkumar.data.db.entities.OrderFts
 import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.data.db.entities.OutboxEntity
 import com.mkumar.data.db.entities.PaymentEntity
-import com.mkumar.data.db.entities.SearchFts
 import com.mkumar.data.utils.Converters
 
 @Database(
@@ -26,7 +28,8 @@ import com.mkumar.data.utils.Converters
         OrderEntity::class,
         OrderItemEntity::class,
         OutboxEntity::class,
-        SearchFts::class,
+        CustomerFts::class,
+        OrderFts::class,
         InvoiceCounterEntity::class,
         PaymentEntity::class
     ],
@@ -39,7 +42,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun customerDao(): CustomerDao
     abstract fun orderDao(): OrderDao
     abstract fun orderItemDao(): OrderItemDao
-    abstract fun searchDao(): SearchDao
     abstract fun invoiceCounterDao(): InvoiceCounterDao
     abstract fun paymentDao(): PaymentDao
+    abstract fun customerFtsDao(): CustomerFtsDao
+    abstract fun orderFtsDao(): OrderFtsDao
 }

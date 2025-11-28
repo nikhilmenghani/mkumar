@@ -14,6 +14,7 @@ import com.mkumar.model.OrderEditorUi
 import com.mkumar.model.OrderStatus
 import com.mkumar.model.ProductType
 import com.mkumar.model.UiOrderItem
+import com.mkumar.model.productTypeDisplayNames
 import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
 import com.mkumar.repository.PaymentRepository
@@ -231,9 +232,16 @@ class OrderEditorViewModel @Inject constructor(
                         )
                     )
                 }
-
                 // 2) Persist to DB
                 val updated = _ui.value.draft
+
+                val categories = updated.items.mapNotNull {
+                    if (it.productType.name == "GeneralProduct") {
+                        (it.formData as? ProductFormData.GeneralProductData)?.productType
+                            ?: productTypeDisplayNames[it.productType]
+                    } else productTypeDisplayNames[it.productType]
+                }.distinct()
+
                 val entity = OrderEntity(
                     id = updated.orderId,
                     customerId = updated.customerId,
@@ -242,7 +250,7 @@ class OrderEditorViewModel @Inject constructor(
                     adjustedAmount = updated.adjustedAmount,
                     totalAmount = updated.totalAmount,       // actual total only
                     paidTotal = paid,
-                    productCategories = updated.items.map { it.productType.toString() }.distinct(),
+                    productCategories = categories,
                     owners = updated.items.map { it.name }.distinct(),
                     remainingBalance = remaining,
                     updatedAt = updated.updatedAt,
@@ -400,9 +408,14 @@ class OrderEditorViewModel @Inject constructor(
         if (draft.items.isEmpty()) return
 
         viewModelScope.launch {
-
+            // the owners and categories don't matter here since they will be overridden at upsert
             val owners = draft.items.map { it.name }.distinct()
-            val categories = draft.items.map { it.productType.toString() }.distinct()
+            val categories = draft.items.mapNotNull {
+                if (it.productType.name == "GeneralProduct") {
+                    (it.formData as? ProductFormData.GeneralProductData)?.productType
+                        ?: productTypeDisplayNames[it.productType]
+                } else productTypeDisplayNames[it.productType]
+            }.distinct()
 
             val entity = OrderEntity(
                 id = draft.orderId,
