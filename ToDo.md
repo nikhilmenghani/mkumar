@@ -36,10 +36,10 @@ _Last updated: 2025-11-15_
 - [x] Add Menu Items for Orders and Customers on Search Screen
 - [x] Fix the Menu Items for Orders on Dashboard/Home Screen
 - [ ] Add Filter on Customer Details Screen
-- [ ] Store actual Product type when General Product is selected in content column of search_fts
+- [x] Store actual Product type when General Product is selected in content column of search_fts
 - [ ] When last product is deleted, it should also delete all the payments? It should not, but need to confirm
 - [x] Fix the total value on recents order screen
-- [ ] Store everything in UTC format in database and then convert on UI based on local timezone
+- [x] Store everything in UTC format in database and then convert on UI based on local timezone
 - [x] Store emailid, address and dob of the customer
 
 ---
@@ -48,16 +48,16 @@ _Last updated: 2025-11-15_
 - [x] Update Customer Details card on order sheet to look professional  #low
 - [x] Align accordion card UI to match bottom sheet design  #low
 - [x] Add confirmation dialog when deleting an item from order  #low
-- [ ] Add toast/snackbar notification for add/update/delete actions  #low
-- [ ] Code cleanup — remove redundant code  #low
 - [x] Show app version in header (“M Kumar vX.Y”)  #low
 - [x] Add setting to choose invoice date format  #low
 - [x] Make phone number text field accept exactly 10 digits  #low
-- [ ] Update Terms & Conditions with last-change date  #low
-- [x] Change the name of the invoice file
-- [ ] Make the row with dismiss and confirm buttons generic
-- [x] when Orders is selected on Advanced Filter, force search by to Invoice
-- [ ] Check how we are storing multiple orderids in search_fts for one customer with multiple orders
+- [x] Change the name of the invoice file #low 
+- [x] when Orders is selected on Advanced Filter, force search by to Invoice #low
+- [x] Check how we are storing multiple orderids in search_fts for one customer with multiple orders #low
+- [ ] Make the row with dismiss and confirm buttons generic #low 
+- [ ] Update Terms & Conditions with last-change date  #low 
+- [ ] Add toast/snackbar notification for add/update/delete actions  #low
+- [ ] Code cleanup — remove redundant code  #low
 
 ---
 
