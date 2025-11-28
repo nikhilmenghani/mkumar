@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 @Immutable
 data class OrderRowUi(
     val id: String,
-    val occurredAt: Long,
+    val receivedAt: Long,
     val lastUpdatedAt: Long,
     val invoiceNumber: String,
     val amount: Int,

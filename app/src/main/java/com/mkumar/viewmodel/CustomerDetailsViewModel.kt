@@ -86,7 +86,7 @@ class CustomerDetailsViewModel @Inject constructor(
                 .map { orders ->
                     orders.map { order ->
                         order.toUiOrder()
-                    }.sortedByDescending { it.occurredAt }
+                    }.sortedByDescending { it.receivedAt }
                 }
 
             combine(customerFlow, ordersFlow) { customer, orders ->

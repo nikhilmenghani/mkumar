@@ -50,7 +50,7 @@ fun CustomerWithOrders.toUi(
             )
         )
         order.toUiOrder(uiItems, priced.subtotalBeforeAdjust)
-    }.sortedByDescending { it.occurredAt }
+    }.sortedByDescending { it.receivedAt }
 
     return UiBundle(uiCustomer, uiOrders)
 }
@@ -58,7 +58,7 @@ fun CustomerWithOrders.toUi(
 fun UiOrder.toOrderRowUi(): OrderRowUi =
     OrderRowUi(
         id = id,
-        occurredAt = occurredAt,
+        receivedAt = receivedAt,
         invoiceNumber = invoiceNumber,
         amount = totalAmount,
         remainingBalance = remainingBalance,
@@ -122,7 +122,7 @@ fun OrderItemEntity.toUiItem(): UiOrderItem {
 fun OrderEntity.toUiOrder(items: List<UiOrderItem> = emptyList(), subtotalBeforeAdjust: Int = 0): UiOrder =
     UiOrder(
         id = id,
-        occurredAt = occurredAt,
+        receivedAt = receivedAt,
         items = items,
         subtotalBeforeAdjust = subtotalBeforeAdjust,
         adjustedAmount = adjustedAmount,

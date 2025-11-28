@@ -3,7 +3,6 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.common.extension.nowUtcMillis
-import com.mkumar.common.extension.toLong
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.domain.pricing.PricingInput
@@ -28,7 +27,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
@@ -143,6 +141,7 @@ class OrderEditorViewModel @Inject constructor(
                     draft = OrderEditorUi.Draft(
                         orderId = draftId,
                         editingOrderId = draftId,
+                        createdAt = nowUtcMillis(),
                         customerId = customerId,
                         items = emptyList(),
                         adjustedAmount = 0,
@@ -150,7 +149,7 @@ class OrderEditorViewModel @Inject constructor(
                         paidTotal = 0,
                         remainingBalance = 0,
                         invoiceNumber = created.invoiceSeq ?: 0L,
-                        occurredAt = Instant.now(),
+                        receivedAt = nowUtcMillis(),
                         payments = emptyList()
                     )
                 )
@@ -174,7 +173,6 @@ class OrderEditorViewModel @Inject constructor(
             val uiCustomer = customerWithOrders?.toUi(pricing)?.customer
 
             val items = productRepo.getItemsForOrder(orderId).map { it.toUiItem() }
-            val occurred = Instant.ofEpochMilli(order.occurredAt)
 
             _ui.update {
                 it.copy(
@@ -185,13 +183,14 @@ class OrderEditorViewModel @Inject constructor(
                         orderId = order.id,
                         editingOrderId = order.id,
                         customerId = order.customerId,
+                        createdAt = order.createdAt,
                         items = items,
                         adjustedAmount = order.adjustedAmount,
                         paidTotal = order.paidTotal,
                         totalAmount = order.totalAmount,
                         remainingBalance = order.remainingBalance,
                         invoiceNumber = order.invoiceSeq ?: -1,
-                        occurredAt = occurred,
+                        receivedAt = order.receivedAt,
                         payments = emptyList() // will be updated by collector
                     )
                 )
@@ -237,6 +236,7 @@ class OrderEditorViewModel @Inject constructor(
                 val entity = OrderEntity(
                     id = updated.orderId,
                     customerId = updated.customerId,
+                    createdAt = updated.createdAt,
                     invoiceSeq = updated.invoiceNumber,
                     adjustedAmount = updated.adjustedAmount,
                     totalAmount = updated.totalAmount,       // actual total only
@@ -245,7 +245,7 @@ class OrderEditorViewModel @Inject constructor(
                     owners = updated.items.map { it.name }.distinct(),
                     remainingBalance = remaining,
                     updatedAt = nowUtcMillis(),
-                    occurredAt = updated.occurredAt.toLong(),
+                    receivedAt = updated.receivedAt,
                     orderStatus = if (remaining > 0)
                         OrderStatus.ACTIVE.value
                     else
@@ -345,9 +345,9 @@ class OrderEditorViewModel @Inject constructor(
         recalc(d.copy(adjustedAmount = value))
     }
 
-    private fun updateOccurredAt(instant: Instant) {
+    private fun updateOccurredAt(long: Long) {
         val d = _ui.value.draft
-        recalc(d.copy(occurredAt = instant))
+        recalc(d.copy(receivedAt = long))
     }
 
     private fun recalc(draft: OrderEditorUi.Draft) {
@@ -414,7 +414,7 @@ class OrderEditorViewModel @Inject constructor(
                 owners = owners,
                 remainingBalance = draft.remainingBalance,
                 updatedAt = nowUtcMillis(),
-                occurredAt = draft.occurredAt.toLong(),
+                receivedAt = draft.receivedAt,
                 orderStatus = if (draft.remainingBalance > 0)
                     OrderStatus.ACTIVE.value
                 else

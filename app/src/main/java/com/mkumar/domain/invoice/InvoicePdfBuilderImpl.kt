@@ -662,7 +662,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             )
 
             // date
-            val dateValue = data.occurredAtText
+            val dateValue = data.receivedAtText
             val dateValueWidth = rightValue.measureText(dateValue)
             val dateLabelX = rightX - dateValueWidth - 4f
 

@@ -7,10 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mkumar.common.extension.toLong
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.model.OrderRowAction
 import com.mkumar.model.OrderRowUi
-import java.time.Instant
 
 @Composable
 fun OrderList(
@@ -34,19 +33,19 @@ fun OrderListPreview() {
     val sampleOrders = listOf(
         OrderRowUi(
             id = "1",
-            occurredAt = Instant.now().toLong(),
+            receivedAt = nowUtcMillis(),
             invoiceNumber = "2",
             amount = 1250,
             remainingBalance = 300,
-            lastUpdatedAt = Instant.now().toLong(),
+            lastUpdatedAt = nowUtcMillis(),
             adjustedTotal = 1200
         ),
         OrderRowUi(
             id = "2",
-            occurredAt = Instant.now().toLong(),
+            receivedAt = nowUtcMillis(),
             invoiceNumber = "103",
             amount = 750,
-            lastUpdatedAt = Instant.now().toLong(),
+            lastUpdatedAt = nowUtcMillis(),
             remainingBalance = 0
         )
     )

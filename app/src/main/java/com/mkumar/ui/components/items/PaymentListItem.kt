@@ -12,12 +12,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.mkumar.common.extension.formatAsDateTime
-import java.time.Instant
 
 @Composable
 fun PaymentListItem(
     amount: Int,
-    date: Instant,
+    date: Long,
     onDelete: () -> Unit
 ) {
     Row(

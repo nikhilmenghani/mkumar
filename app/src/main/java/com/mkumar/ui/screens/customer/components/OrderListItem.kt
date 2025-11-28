@@ -47,12 +47,11 @@ import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.DateFormat
 import com.mkumar.common.extension.formatAsDate
 import com.mkumar.common.extension.formatAsDateTime
-import com.mkumar.common.extension.toLong
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.model.OrderRowAction
 import com.mkumar.model.OrderRowUi
 import com.mkumar.ui.components.ProMenuItem
 import com.mkumar.ui.components.ProOverflowMenuIcons
-import java.time.Instant
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -243,7 +242,7 @@ private fun TimeBadges(row: OrderRowUi) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = row.occurredAt.formatAsDate(DateFormat.SHORT_DATE_TIME),
+                        text = row.receivedAt.formatAsDate(DateFormat.SHORT_DATE_TIME),
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
@@ -251,7 +250,7 @@ private fun TimeBadges(row: OrderRowUi) {
         )
 
         // Updated badge (only show if different from created)
-        if (row.lastUpdatedAt != row.occurredAt) {
+        if (row.lastUpdatedAt != row.receivedAt) {
             AssistChip(
                 onClick = {},
                 label = {
@@ -282,11 +281,11 @@ private fun OrderListItem4Preview() {
         OrderListItem(
             row = OrderRowUi(
                 id = "1",
-                occurredAt = Instant.now().toLong(),
+                receivedAt = nowUtcMillis(),
                 invoiceNumber = "2",
                 amount = 1250,
                 remainingBalance = 0,
-                lastUpdatedAt = Instant.now().toLong(),
+                lastUpdatedAt = nowUtcMillis(),
                 adjustedTotal = 1200
             ),
 //            productTypeCounts = listOf("Lens" to 2, "Frame" to 1),
@@ -295,11 +294,11 @@ private fun OrderListItem4Preview() {
         OrderListItem(
             row = OrderRowUi(
                 id = "2",
-                occurredAt = Instant.now().toLong(),
+                receivedAt = nowUtcMillis(),
                 invoiceNumber = "25",
                 amount = 1250,
                 remainingBalance = 300,
-                lastUpdatedAt = Instant.now().toLong(),
+                lastUpdatedAt = nowUtcMillis(),
                 adjustedTotal = 1200
             ),
 //            productTypeCounts = listOf("Lens" to 1, "Frame" to 1, "Accessories" to 2),

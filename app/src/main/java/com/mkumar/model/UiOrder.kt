@@ -6,7 +6,7 @@ package com.mkumar.model
 data class UiOrder(
     val id: String,
     val invoiceNumber: String,
-    val occurredAt: Long,
+    val receivedAt: Long,
     val items: List<UiOrderItem>,
     val subtotalBeforeAdjust: Int,
     val adjustedAmount: Int,

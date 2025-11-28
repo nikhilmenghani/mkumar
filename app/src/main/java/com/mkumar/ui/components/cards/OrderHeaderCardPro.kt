@@ -36,10 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mkumar.App.Companion.globalClass
 import com.mkumar.common.extension.DateFormat
-import com.mkumar.common.extension.toLocalInstant
 import com.mkumar.ui.components.pickers.MKDatePickerDialog
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,41 +47,65 @@ import java.time.format.DateTimeFormatter
 fun OrderHeaderCardPro(
     customerName: String,
     mobile: String,
-    displayedDate: String,
+    receivedAt: Long?,              // raw UTC millis from DB
     invoiceNumber: String,
     isDateReadOnly: Boolean,
-    onPickDateTime: (Instant) -> Unit,
+    onPickDateTime: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val zone = ZoneId.systemDefault()
+
+    // 1) Convert receivedAt (UTC) → LocalDate
+    val currentLocalDate: LocalDate = if (receivedAt != null) {
+        Instant.ofEpochMilli(receivedAt)
+            .atZone(zone)
+            .toLocalDate()
+    } else {
+        LocalDate.now(zone)
+    }
+
+    // 2) For initial picker value
+    var selectedDate by remember { mutableStateOf(currentLocalDate) }
+
+    // 3) Display text
+    val displayedDate = selectedDate.format(
+        DateTimeFormatter.ofPattern(DateFormat.DEFAULT_DATE_ONLY.pattern)
+    )
 
     var showPicker by remember { mutableStateOf(false) }
-    var date by remember { mutableStateOf(LocalDate.now()) }
-    val clipboard = LocalClipboardManager.current
-
-    val pattern = DateFormat.DEFAULT_DATE_ONLY.pattern
-    val formatter = DateTimeFormatter.ofPattern(pattern)
-
-    val initialDate = if (displayedDate.isNotBlank()) {
-        LocalDate.parse(displayedDate, formatter)
-    } else date
 
     val rotation by animateFloatAsState(
         targetValue = if (showPicker) 180f else 0f,
         label = "rotateCalendar"
     )
 
+    // ───────────────────────────
+    // DATE PICKER
+    // ───────────────────────────
     if (showPicker) {
         MKDatePickerDialog(
-            initialDate = initialDate,
+            initialDate = selectedDate,    // CORRECT: LocalDate
             onDismiss = { showPicker = false },
-            onConfirm = { pickedDate ->
-                date = pickedDate
-                onPickDateTime(date.toLocalInstant())
+            onConfirm = { pickedLocalDate ->   // returns LocalDate
+                selectedDate = pickedLocalDate
+
+                // Convert local date → local midnight → UTC millis
+                val pickedUtc = pickedLocalDate
+                    .atStartOfDay(zone)
+                    .toInstant()
+                    .toEpochMilli()
+
+                onPickDateTime(pickedUtc)
                 showPicker = false
             }
         )
     }
 
+    val clipboard = LocalClipboardManager.current
+
+    // ───────────────────────────
+    // UI CARD CONTENT
+    // ───────────────────────────
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -100,7 +124,7 @@ fun OrderHeaderCardPro(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
 
-            // ──────── Row 1: Customer Name + Copy + Invoice Number
+            // Row 1 — Name + Copy + Invoice
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -108,7 +132,6 @@ fun OrderHeaderCardPro(
             ) {
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-
                     Text(
                         text = customerName,
                         style = MaterialTheme.typography.titleSmall.copy(
@@ -139,14 +162,13 @@ fun OrderHeaderCardPro(
                 )
             }
 
-            // ──────── Row 2: Phone + Copy + Date
+            // Row 2 — Phone + Copy + Date
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-
                     Icon(
                         imageVector = Icons.Outlined.Phone,
                         contentDescription = null,
@@ -208,3 +230,4 @@ fun OrderHeaderCardPro(
         }
     }
 }
+

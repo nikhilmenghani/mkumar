@@ -1,12 +1,12 @@
 package com.mkumar.model
 
-import java.time.Instant
+import com.mkumar.common.extension.nowUtcMillis
 
 /**
  * Live editing state used ONLY in OrderEditorViewModel.
  */
 data class OrderDraft(
-    val occurredAt: Instant = Instant.now(),
+    val occurredAt: Long = nowUtcMillis(),
     val invoiceNumber: Long = 0,
     val items: List<UiOrderItem> = emptyList(),
     val subtotalBeforeAdjust: Int = 0,

@@ -1,6 +1,6 @@
 package com.mkumar.model
 
-import java.time.Instant
+import com.mkumar.common.extension.nowUtcMillis
 
 // -----------------------------------------------------
 // UI STATE
@@ -15,7 +15,8 @@ data class OrderEditorUi(
     data class Draft(
         val orderId: String = "",
         val customerId: String = "",
-        val occurredAt: Instant = Instant.now(),
+        val receivedAt: Long = nowUtcMillis(),
+        val createdAt: Long = nowUtcMillis(),
         val invoiceNumber: Long = 0,
         val items: List<UiOrderItem> = emptyList(),
         val adjustedAmount: Int = 0,

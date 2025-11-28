@@ -132,3 +132,16 @@ fun todayUtcMidnight(): Instant =
  * Legacy replacement for System.currentTimeMillis()
  */
 fun nowUtcMillis(): Long = Instant.now().toEpochMilli()
+
+// 1) UTC millis (DB) -> LocalDate (device zone)
+fun utcMillisToLocalDate(millis: Long): LocalDate =
+    Instant.ofEpochMilli(millis)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+
+// 2) LocalDate (device zone) -> UTC millis (DB)
+//    representing local midnight of that date
+fun LocalDate.toUtcMillisForLocalDay(): Long =
+    this.atStartOfDay(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()

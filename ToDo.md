@@ -40,12 +40,12 @@ _Last updated: 2025-11-15_
 - [ ] When last product is deleted, it should also delete all the payments? It should not, but need to confirm
 - [x] Fix the total value on recents order screen
 - [ ] Store everything in UTC format in database and then convert on UI based on local timezone
-- [ ] Store emailid and dob of the customer
+- [x] Store emailid, address and dob of the customer
 
 ---
 
 ## 🔵 Low Priority
-- [ ] Update Customer Details card on order sheet to look professional  #low
+- [x] Update Customer Details card on order sheet to look professional  #low
 - [x] Align accordion card UI to match bottom sheet design  #low
 - [x] Add confirmation dialog when deleting an item from order  #low
 - [ ] Add toast/snackbar notification for add/update/delete actions  #low

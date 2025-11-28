@@ -83,7 +83,7 @@ class InvoiceManager @Inject constructor(
             ownerEmail = "menghani.mahendra@gmail.com",
             orderId = order.id,
             invoiceNumber = order.invoiceSeq.toString(),
-            occurredAtText = order.occurredAt.formatAsDate(format = DateFormat.DEFAULT_DATE_TIME),
+            receivedAtText = order.receivedAt.formatAsDate(format = DateFormat.DEFAULT_DATE_TIME),
             items = invoiceItems,
             subtotal = priced.subtotalBeforeAdjust.toDouble(),
             adjustedTotal = priced.adjustedAmount.toDouble(),

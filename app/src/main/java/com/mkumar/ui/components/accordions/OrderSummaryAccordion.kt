@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import com.mkumar.common.extension.toInstant
 import com.mkumar.model.UiPaymentItem
 import com.mkumar.ui.components.inputs.FieldMode
 import com.mkumar.ui.components.inputs.OLTextField
@@ -120,7 +119,7 @@ fun OrderSummaryAccordion(
                         payments.forEach { payment ->
                             PaymentListItem(
                                 amount = payment.amountPaid,
-                                date = payment.paymentAt.toInstant(),
+                                date = payment.paymentAt,
                                 onDelete = { onDeletePayment(payment.id) }
                             )
                         }

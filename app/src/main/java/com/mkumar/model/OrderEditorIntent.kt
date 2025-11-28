@@ -1,7 +1,6 @@
 package com.mkumar.model
 
 import com.mkumar.data.ProductFormData
-import java.time.Instant
 
 // -----------------------------------------------------
 // INTENTS
@@ -14,7 +13,7 @@ sealed class OrderEditorIntent {
     data class UpdateAdjustedAmount(val value: Int) : OrderEditorIntent()
     data class UpdateAdvanceTotal(val value: Int) : OrderEditorIntent()
     object SaveOrder : OrderEditorIntent()
-    data class UpdateOccurredAt(val occurredAt: Instant) : OrderEditorIntent()
+    data class UpdateOccurredAt(val occurredAt: Long) : OrderEditorIntent()
     data class AddPayment(val orderId: String, val amountPaid: Int, val paymentAt: Long) : OrderEditorIntent()
     data class DeletePayment(val paymentId: String) : OrderEditorIntent()
 }

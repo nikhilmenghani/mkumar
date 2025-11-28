@@ -11,7 +11,6 @@ import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.model.OrderWithCustomerInfo
 import kotlinx.coroutines.flow.Flow
-import java.time.Instant
 
 @Dao
 interface OrderDao {
@@ -43,7 +42,7 @@ interface OrderDao {
     SELECT o.id, o.invoiceSeq AS invoiceNumber, o.createdAt, o.totalAmount, o.adjustedAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
     FROM orders o
     JOIN customers c ON c.id = o.customerId
-    ORDER BY o.occurredAt DESC
+    ORDER BY o.receivedAt DESC
     LIMIT :limit
 """)
     fun getRecentOrdersWithCustomer(limit: Int): Flow<List<OrderWithCustomerInfo>>
@@ -51,21 +50,21 @@ interface OrderDao {
     @Query("""
         SELECT * FROM orders 
         WHERE customerId = :customerId 
-        ORDER BY occurredAt DESC
+        ORDER BY receivedAt DESC
     """)
     fun observeForCustomer(customerId: String): Flow<List<OrderEntity>>
 
     @Query("""
         SELECT * FROM orders 
         WHERE customerId = :customerId 
-        ORDER BY occurredAt DESC
+        ORDER BY receivedAt DESC
     """)
     suspend fun getForCustomer(customerId: String): List<OrderEntity>
 
     @Query("""
         SELECT * FROM orders 
         WHERE customerId = :customerId 
-        ORDER BY occurredAt DESC 
+        ORDER BY receivedAt DESC 
         LIMIT 1
     """)
     suspend fun getLatestForCustomer(customerId: String): OrderEntity?
@@ -73,12 +72,12 @@ interface OrderDao {
     // Optional: date range queries (handy for reports)
     @Query("""
         SELECT * FROM orders 
-        WHERE occurredAt BETWEEN :from AND :to
-        ORDER BY occurredAt DESC
+        WHERE receivedAt BETWEEN :from AND :to
+        ORDER BY receivedAt DESC
     """)
-    suspend fun getBetween(from: Instant, to: Instant): List<OrderEntity>
+    suspend fun getBetween(from: Long, to: Long): List<OrderEntity>
 
-    @Query("SELECT * FROM orders WHERE customerId = :customerId ORDER BY occurredAt DESC")
+    @Query("SELECT * FROM orders WHERE customerId = :customerId ORDER BY receivedAt DESC")
     fun observeOrdersForCustomer(customerId: String): Flow<List<OrderEntity>>
     @Query("SELECT * FROM orders WHERE id = :orderId")
     fun observeOrder(orderId: String): Flow<OrderEntity?>
@@ -86,7 +85,7 @@ interface OrderDao {
     @Query("""
 SELECT * FROM orders
 WHERE invoiceSeq LIKE '%' || :invoice || '%'
-ORDER BY occurredAt DESC
+ORDER BY receivedAt DESC
 """)
     suspend fun searchOrdersByInvoice(invoice: String): List<OrderEntity>
 
@@ -94,7 +93,7 @@ ORDER BY occurredAt DESC
 SELECT * FROM orders
 WHERE customerId = :customerId
 AND remainingBalance > 0
-ORDER BY occurredAt DESC
+ORDER BY receivedAt DESC
 """)
 
     suspend fun getPendingOrders(customerId: String): List<OrderEntity>
@@ -102,7 +101,7 @@ ORDER BY occurredAt DESC
 SELECT * FROM orders
 WHERE customerId = :customerId
 AND (:category IS NULL OR :category IN (productCategories))
-ORDER BY occurredAt DESC
+ORDER BY receivedAt DESC
 """)
     suspend fun getOrdersByCategory(customerId: String, category: String?): List<OrderEntity>
 
@@ -110,7 +109,7 @@ ORDER BY occurredAt DESC
 SELECT * FROM orders
 WHERE customerId = :customerId
 AND (:owner IS NULL OR :owner IN (owners))
-ORDER BY occurredAt DESC
+ORDER BY receivedAt DESC
 """)
     suspend fun getOrdersByOwner(customerId: String, owner: String?): List<OrderEntity>
 
@@ -120,7 +119,7 @@ WHERE customerId = :customerId
 AND (:remainingOnly = 0 OR remainingBalance > 0)
 AND (:category IS NULL OR :category IN (productCategories))
 AND (:owner IS NULL OR :owner IN (owners))
-ORDER BY occurredAt DESC
+ORDER BY receivedAt DESC
 """)
     suspend fun filterOrders(
         customerId: String,

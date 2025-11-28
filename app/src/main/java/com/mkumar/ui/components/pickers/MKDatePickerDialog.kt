@@ -10,19 +10,31 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
+/**
+ * Generic date picker that:
+ *
+ * - Accepts UTC epochMillis from DB
+ * - Converts to LocalDate in device timezone for display
+ * - Lets user pick a LocalDate
+ * - Converts chosen LocalDate back to UTC epochMillis
+ */
 @Composable
 fun MKDatePickerDialog(
-    initialDate: LocalDate = LocalDate.now(),
+    initialDate: LocalDate = LocalDate.now(ZoneId.systemDefault()),
     onDismiss: () -> Unit,
     onConfirm: (LocalDate) -> Unit
 ) {
-    // Convert initial LocalDate → UTC millis for Compose
+    val utcZone = ZoneId.of("UTC")
+
+    // LocalDate -> millis (UTC midnight)
     val initialMillis = initialDate
-        .atStartOfDay(ZoneId.of("UTC"))
+        .atStartOfDay(utcZone)
         .toInstant()
         .toEpochMilli()
 
-    val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    val pickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialMillis
+    )
 
     DatePickerDialog(
         onDismissRequest = onDismiss,
@@ -31,9 +43,9 @@ fun MKDatePickerDialog(
                 onClick = {
                     val millis = pickerState.selectedDateMillis
                     if (millis != null) {
-                        // FIX: interpret as UTC → extract LocalDate
+                        // millis is UTC midnight -> LocalDate
                         val selectedDate = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.of("UTC"))
+                            .atZone(utcZone)
                             .toLocalDate()
 
                         onConfirm(selectedDate)

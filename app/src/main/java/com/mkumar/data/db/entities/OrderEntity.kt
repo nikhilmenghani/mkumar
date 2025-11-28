@@ -22,7 +22,7 @@ import java.util.UUID
     ],
     indices = [
         Index(value = ["customerId"]),
-        Index(value = ["occurredAt"]),
+        Index(value = ["receivedAt"]),
         Index(value = ["remainingBalance"]),
         Index(value = ["invoiceSeq"]),
         Index(value = ["orderStatus"]),
@@ -38,7 +38,7 @@ data class OrderEntity(
 
     val customerId: String,
 
-    val occurredAt: Long = nowUtcMillis(),
+    val receivedAt: Long = nowUtcMillis(),
     val createdAt: Long = nowUtcMillis(),
 
     /** Single numeric invoice identity */

@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.DateFormat
 import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.common.extension.toInstant
-import com.mkumar.common.extension.toLocalInstant
+import com.mkumar.common.extension.toUtcMillisForLocalDay
 import com.mkumar.data.ProductFormData
 import com.mkumar.model.ProductType
 import com.mkumar.model.UiOrderItem
@@ -70,6 +70,8 @@ import com.mkumar.ui.components.inputs.OLTextField
 import com.mkumar.ui.components.pickers.MKDatePickerDialog
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 // -----------------------------------------------------------------------------
 // CONFIGURATION — you can tune these freely
@@ -526,13 +528,16 @@ private val ADD_ROW_MIN_HEIGHT = 44.dp
 fun AddPaymentRow(
     isOpen: Boolean,
     onToggle: () -> Unit,
-    onAdd: (amount: Int, at: Long) -> Unit
+    onAdd: (amount: Int, atUtcMillis: Long) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now()) }
+    var date by remember { mutableStateOf(LocalDate.now(ZoneId.systemDefault())) }
     var showPicker by remember { mutableStateOf(false) }
 
-    val rowHeight = 44.dp   // comfortable height; prevents uneven look
+    val rowHeight = 44.dp
+
+    val pattern = DateFormat.DEFAULT_DATE_ONLY.pattern
+    val formatter = DateTimeFormatter.ofPattern(pattern)
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -553,7 +558,6 @@ fun AddPaymentRow(
 
             if (!open) {
 
-                // COLLAPSED BUTTON
                 FilledTonalButton(
                     onClick = onToggle,
                     modifier = Modifier.fillMaxWidth()
@@ -565,12 +569,10 @@ fun AddPaymentRow(
 
             } else {
 
-                // EXPANDED TWO-LINE FORM
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
 
-                    // Header
                     Text(
                         text = "Add Payment",
                         style = MaterialTheme.typography.titleMedium.copy(
@@ -578,9 +580,7 @@ fun AddPaymentRow(
                         )
                     )
 
-                    // -------------------------------------------------------
-                    // LINE 1 — Amount Field
-                    // -------------------------------------------------------
+                    // LINE 1 — Amount
                     OLTextField(
                         value = amount,
                         label = "Amount",
@@ -591,18 +591,14 @@ fun AddPaymentRow(
                             .heightIn(min = 56.dp)
                     )
 
-                    // -------------------------------------------------------
-                    // LINE 2 — Date Surface + Save + Close
-                    // -------------------------------------------------------
+                    // LINE 2 — Date + Save + Close
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
 
-                        // ---------------------------------------------------
-                        // DATE CHIP (center aligned, slightly more width)
-                        // ---------------------------------------------------
+                        // Date chip
                         Surface(
                             modifier = Modifier
                                 .weight(1.2f)
@@ -621,22 +617,22 @@ fun AddPaymentRow(
                                 Icon(Icons.Outlined.DateRange, null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = date.toLocalInstant().formatAsDateTime(DateFormat.DEFAULT_DATE_ONLY),
+                                    text = date.format(formatter),
                                     style = MaterialTheme.typography.labelSmall,
                                     maxLines = 1
                                 )
                             }
                         }
 
-                        // ---------------------------------------------------
-                        // SAVE BUTTON (icon + text)
-                        // ---------------------------------------------------
+                        // Save
                         FilledTonalButton(
                             onClick = {
                                 if (amount.isNotBlank()) {
-                                    onAdd(amount.toInt(), date.toLocalInstant().toEpochMilli())
+                                    val utcMillis = date.toUtcMillisForLocalDay()
+                                    onAdd(amount.toInt(), utcMillis)
+
                                     amount = ""
-                                    date = LocalDate.now()
+                                    date = LocalDate.now(ZoneId.systemDefault())
                                     onToggle()
                                 }
                             },
@@ -650,9 +646,7 @@ fun AddPaymentRow(
                             Text("Save", style = MaterialTheme.typography.labelSmall)
                         }
 
-                        // ---------------------------------------------------
-                        // Close Button (icon + text)
-                        // ---------------------------------------------------
+                        // Close
                         FilledTonalButton(
                             onClick = onToggle,
                             modifier = Modifier
