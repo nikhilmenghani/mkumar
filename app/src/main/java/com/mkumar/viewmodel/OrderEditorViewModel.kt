@@ -184,6 +184,7 @@ class OrderEditorViewModel @Inject constructor(
                         editingOrderId = order.id,
                         customerId = order.customerId,
                         createdAt = order.createdAt,
+                        updatedAt = order.updatedAt,
                         items = items,
                         adjustedAmount = order.adjustedAmount,
                         paidTotal = order.paidTotal,
@@ -244,7 +245,7 @@ class OrderEditorViewModel @Inject constructor(
                     productCategories = updated.items.map { it.productType.toString() }.distinct(),
                     owners = updated.items.map { it.name }.distinct(),
                     remainingBalance = remaining,
-                    updatedAt = nowUtcMillis(),
+                    updatedAt = updated.updatedAt,
                     receivedAt = updated.receivedAt,
                     orderStatus = if (remaining > 0)
                         OrderStatus.ACTIVE.value
@@ -408,6 +409,7 @@ class OrderEditorViewModel @Inject constructor(
                 customerId = draft.customerId,
                 invoiceSeq = draft.invoiceNumber,
                 adjustedAmount = draft.adjustedAmount,
+                createdAt = draft.createdAt,
                 totalAmount = draft.totalAmount,
                 paidTotal = draft.paidTotal,
                 productCategories = categories,
@@ -421,11 +423,12 @@ class OrderEditorViewModel @Inject constructor(
                     OrderStatus.COMPLETED.value
             )
 
+            orderRepo.upsert(entity)
+
             val newEntities = draft.items.map {
                 it.toEntity(draft.orderId)
             }
 
-            orderRepo.upsert(entity)
             newEntities.forEach { productRepo.upsert(it) }
 
             _effects.emit(OrderEditorEffect.CloseEditor)

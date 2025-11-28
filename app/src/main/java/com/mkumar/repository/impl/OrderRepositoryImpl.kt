@@ -30,8 +30,7 @@ class OrderRepositoryImpl @Inject constructor(
 
         val enriched = order.copy(
             productCategories = orderItemDao.getCategoriesForOrder(order.id),
-            owners = orderItemDao.getOwnersForOrder(order.id),
-            updatedAt = now
+            owners = orderItemDao.getOwnersForOrder(order.id)
         )
 
         orderDao.upsert(enriched)
