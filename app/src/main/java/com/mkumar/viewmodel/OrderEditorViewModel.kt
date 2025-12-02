@@ -211,18 +211,17 @@ class OrderEditorViewModel @Inject constructor(
         paymentsRepo.getPaymentsForOrder(orderId)
             .onEach { list ->
 
+                // Update only UI state
                 val paid = list.sumOf { it.amountPaid }
-                val d = _ui.value.draft
+                val draft = _ui.value.draft
 
-                // Effective total based on adjusted OR actual
-                val effectiveTotal = if (d.adjustedAmount > 0)
-                    d.adjustedAmount
+                val effectiveTotal = if (draft.adjustedAmount > 0)
+                    draft.adjustedAmount
                 else
-                    d.totalAmount
+                    draft.totalAmount
 
                 val remaining = effectiveTotal - paid
 
-                // 1) Update draft for UI
                 _ui.update { s ->
                     s.copy(
                         draft = s.draft.copy(
@@ -232,38 +231,10 @@ class OrderEditorViewModel @Inject constructor(
                         )
                     )
                 }
-                // 2) Persist to DB
-                val updated = _ui.value.draft
 
-                val categories = updated.items.mapNotNull {
-                    if (it.productType.name == "GeneralProduct") {
-                        (it.formData as? ProductFormData.GeneralProductData)?.productType
-                            ?: productTypeDisplayNames[it.productType]
-                    } else productTypeDisplayNames[it.productType]
-                }.distinct()
-
-                val entity = OrderEntity(
-                    id = updated.orderId,
-                    customerId = updated.customerId,
-                    createdAt = updated.createdAt,
-                    invoiceSeq = updated.invoiceNumber,
-                    adjustedAmount = updated.adjustedAmount,
-                    totalAmount = updated.totalAmount,       // actual total only
-                    paidTotal = paid,
-                    productCategories = categories,
-                    owners = updated.items.map { it.name }.distinct(),
-                    remainingBalance = remaining,
-                    updatedAt = updated.updatedAt,
-                    receivedAt = updated.receivedAt,
-                    orderStatus = if (remaining > 0)
-                        OrderStatus.ACTIVE.value
-                    else
-                        OrderStatus.COMPLETED.value
-                )
-
-                viewModelScope.launch {
-                    orderRepo.upsert(entity)
-                }
+                // DO NOT update the order here.
+                // PaymentRepositoryImpl already updates the Order
+                // and triggers proper sync + FTS + customer summary.
             }
             .launchIn(viewModelScope)
     }

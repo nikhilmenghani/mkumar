@@ -24,4 +24,7 @@ interface PaymentDao {
 
     @Query("SELECT id FROM payments")
     suspend fun getAllIds(): List<String>
+
+    @Query("SELECT * FROM payments WHERE orderId = :orderId ORDER BY paymentAt ASC")
+    suspend fun getPaymentsList(orderId: String): List<PaymentEntity>
 }

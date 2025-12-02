@@ -12,6 +12,7 @@ import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderFts
 import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.repository.ProductRepository
+import com.mkumar.repository.helpers.OrderSyncHelper
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,14 +24,20 @@ class ProductRepositoryImpl @Inject constructor(
     private val orderDao: OrderDao,
     private val customerDao: CustomerDao,
     private val customerFtsDao: CustomerFtsDao,
-    private val orderFtsDao: OrderFtsDao
+    private val orderFtsDao: OrderFtsDao,
+    private val orderSyncHelper: OrderSyncHelper
 ) : ProductRepository {
 
     override suspend fun upsert(item: OrderItemEntity) {
         db.withTransaction {
             val now = nowUtcMillis()
-            orderItemDao.upsert(item.copy(updatedAt = now))
-            recomputeOrderAggregates(item.orderId, now)
+
+            // 1) Update the OrderItem
+            val updatedItem = item.copy(updatedAt = now)
+            orderItemDao.upsert(updatedItem)
+
+            // 2) Recompute order aggregates + sync
+            recomputeOrderAggregates(updatedItem.orderId, now)
         }
     }
 
@@ -75,6 +82,10 @@ class ProductRepositoryImpl @Inject constructor(
     override fun countItemsForOrder(orderId: String): Int =
         orderItemDao.countForOrder(orderId)
 
+    // -----------------------------------------------------
+    // PRIVATE HELPERS
+    // -----------------------------------------------------
+
     private suspend fun recomputeOrderAggregates(orderId: String, now: Long) {
         val order = orderDao.getById(orderId) ?: return
         val items = orderItemDao.getItemsForOrder(orderId)
@@ -82,15 +93,23 @@ class ProductRepositoryImpl @Inject constructor(
         val categories = items.map { it.productTypeLabel }.filter { it.isNotBlank() }
         val owners = items.map { it.productOwnerName }.filter { it.isNotBlank() }
 
-        val updated = order.copy(
+        // 1) Update OrderEntity in Room
+        val updatedOrder = order.copy(
             productCategories = categories,
             owners = owners,
             updatedAt = now
         )
 
-        orderDao.upsert(updated)
+        orderDao.upsert(updatedOrder)
+
+        // 2) Update customer summary
         updateCustomerSummary(order.customerId)
-        reindexOrderFts(updated, items)
+
+        // 3) Update FTS index
+        reindexOrderFts(updatedOrder, items)
+
+        // 4) ENQUEUE ORDER_UPSERT for sync
+        orderSyncHelper.enqueueOrderUpsert(updatedOrder, items)
     }
 
     private suspend fun updateCustomerSummary(customerId: String) {
@@ -98,10 +117,10 @@ class ProductRepositoryImpl @Inject constructor(
         val outstanding = orders.sumOf { it.remainingBalance }
         val hasPending = orders.any { it.remainingBalance > 0 }
 
-        val c = customerDao.getById(customerId) ?: return
+        val customer = customerDao.getById(customerId) ?: return
 
         customerDao.upsert(
-            c.copy(
+            customer.copy(
                 totalOutstanding = outstanding,
                 hasPendingOrder = hasPending,
                 updatedAt = nowUtcMillis()
@@ -109,10 +128,6 @@ class ProductRepositoryImpl @Inject constructor(
         )
     }
 
-
-    // --------------------------
-    // ORDER FTS INDEXING
-    // --------------------------
     private suspend fun reindexOrderFts(order: OrderEntity, items: List<OrderItemEntity>) {
         val tokens = buildList {
             add(order.invoiceSeq?.toString().orEmpty())

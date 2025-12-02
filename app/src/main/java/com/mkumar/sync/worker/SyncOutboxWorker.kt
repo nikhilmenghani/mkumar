@@ -21,14 +21,46 @@ class SyncOutboxWorker @Inject constructor(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val ops = outboxDao.getQueuedOperations(limit = 20)
+
+        // 1. Requeue stale IN_PROGRESS
+        val cutoff = nowUtcMillis() - (5 * 60 * 1000) // 5 min
+        outboxDao.requeueStaleInProgress(cutoff)
+
+        // 2. Get QUEUED rows
+        val ops = outboxDao.getByStatus(OutboxEntity.STATUS_QUEUED, 20)
         if (ops.isEmpty()) return@withContext Result.success()
 
-        ops.forEach { op ->
+        // 3. Process each operation
+        for (op in ops) {
             try {
                 outboxDao.markInProgress(op.id, nowUtcMillis())
-                processOperation(op)
+
+                when (op.type) {
+
+                    "CUSTOMER_UPSERT" ->
+                        cloud.putJson(op.cloudPath!!, op.payloadJson)
+
+                    "CUSTOMER_DELETE" ->
+                        cloud.delete(op.cloudPath!!)
+
+                    "ORDER_UPSERT" ->
+                        cloud.putJson(op.cloudPath!!, op.payloadJson)
+
+                    "ORDER_DELETE" ->
+                        cloud.delete(op.cloudPath!!)
+
+                    "PAYMENT_UPSERT" ->
+                        cloud.putJson(op.cloudPath!!, op.payloadJson)
+
+                    "PAYMENT_DELETE" ->
+                        cloud.delete(op.cloudPath!!)
+
+                    else ->
+                        throw IllegalArgumentException("Unknown op type: ${op.type}")
+                }
+
                 outboxDao.markDone(op.id, nowUtcMillis())
+
             } catch (e: Exception) {
                 outboxDao.markFailed(op.id, e.message ?: "Unknown error", nowUtcMillis())
                 return@withContext Result.retry()
@@ -37,44 +69,5 @@ class SyncOutboxWorker @Inject constructor(
 
         Result.success()
     }
-
-    private suspend fun processOperation(op: OutboxEntity) {
-        when (op.type) {
-
-            // -----------------------------------------
-            // CUSTOMER
-            // -----------------------------------------
-            "CUSTOMER_UPSERT" -> {
-                cloud.putJson(path = op.cloudPath!!, content = op.payloadJson)
-            }
-
-            "CUSTOMER_DELETE" -> {
-                cloud.delete(op.cloudPath!!)   // Remove customers/<id>/profile.json
-            }
-
-            // -----------------------------------------
-            // ORDER
-            // -----------------------------------------
-            "ORDER_UPSERT" -> {
-                cloud.putJson(path = op.cloudPath!!, content = op.payloadJson)
-            }
-
-            "ORDER_DELETE" -> {
-                cloud.delete(op.cloudPath!!)
-            }
-
-            // -----------------------------------------
-            // PAYMENT
-            // -----------------------------------------
-            "PAYMENT_UPSERT" -> {
-                cloud.putJson(path = op.cloudPath!!, content = op.payloadJson)
-            }
-
-            "PAYMENT_DELETE" -> {
-                cloud.delete(path = op.cloudPath!!)
-            }
-
-            else -> throw IllegalArgumentException("Unknown Outbox op type: ${op.type}")
-        }
-    }
 }
+
