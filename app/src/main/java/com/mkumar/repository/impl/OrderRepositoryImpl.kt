@@ -34,6 +34,9 @@ class OrderRepositoryImpl @Inject constructor(
     private val json: Json
 ) : OrderRepository {
 
+    // ---------------------------------------------------------------------
+    // UPSERT
+    // ---------------------------------------------------------------------
     override suspend fun upsert(order: OrderEntity) = db.withTransaction {
         val now = nowUtcMillis()
 
@@ -48,42 +51,55 @@ class OrderRepositoryImpl @Inject constructor(
         // Reindex FTS
         reindexOrderFts(enriched)
 
-        // Update customer summary totals
+        // Update customer summary
         updateCustomerSummary(enriched.customerId)
 
-        // Enqueue sync operation
+        // Enqueue SYNC
         enqueueOrderUpsert(enriched)
     }
 
+    // ---------------------------------------------------------------------
+    // DELETE  (Consistent with CustomerRepository.deleteById)
+    // ---------------------------------------------------------------------
     override suspend fun delete(orderId: String) = db.withTransaction {
+
         val order = orderDao.getById(orderId) ?: return@withTransaction
 
-        // Remove local data
+        // --- 1) Capture timestamp for "latest write wins"
+        val deletedAt = nowUtcMillis()
+
+        // --- 2) Local DB delete
         orderDao.deleteById(orderId)
         orderItemDao.deleteItemsForOrder(orderId)
         orderFtsDao.deleteByOrderId(orderId)
+
         updateCustomerSummary(order.customerId)
 
-        // ---- Sync: DELETE overrides UPSERT ----
+        // --- 3) Sync: DELETE overrides any pending UPSERT
         syncRepository.cancelUpsertsFor("ORDER_UPSERT", orderId)
 
+        // --- 4) Construct DELETE DTO payload
         val dto = OrderDeleteDto(
             id = order.id,
             customerId = order.customerId,
-            deletedAt = nowUtcMillis()
+            deletedAt = deletedAt
         )
         val payload = json.encodeToString(dto)
 
+        // --- 5) Enqueue DELETE operation
         syncRepository.enqueueOperation(
             type = "ORDER_DELETE",
             payloadJson = payload,
             entityId = order.id,
             cloudPath = "customers/${order.customerId}/orders/${order.id}.json",
             priority = 10,
-            opUpdatedAt = dto.deletedAt
+            opUpdatedAt = deletedAt
         )
     }
 
+    // ---------------------------------------------------------------------
+    // OBSERVERS
+    // ---------------------------------------------------------------------
     override fun observeOrdersForCustomer(customerId: String): Flow<List<OrderEntity>> =
         orderDao.observeOrdersForCustomer(customerId)
 
@@ -93,6 +109,9 @@ class OrderRepositoryImpl @Inject constructor(
     override suspend fun getOrder(orderId: String): OrderEntity? =
         orderDao.getById(orderId)
 
+    // ---------------------------------------------------------------------
+    // CREATE ORDER
+    // ---------------------------------------------------------------------
     override suspend fun createOrderWithItems(order: OrderEntity): OrderEntity = db.withTransaction {
         val now = nowUtcMillis()
         val invoiceSeq = invoiceNumberService.takeNextInvoiceNumberInCurrentTx()
@@ -112,30 +131,30 @@ class OrderRepositoryImpl @Inject constructor(
         reindexOrderFts(stamped)
         updateCustomerSummary(stamped.customerId)
 
-        // Enqueue sync operation
         enqueueOrderUpsert(stamped)
-
         stamped
     }
 
+    // ---------------------------------------------------------------------
+    // SEARCH + HELPERS
+    // ---------------------------------------------------------------------
     override suspend fun searchOrders(
         customerId: String,
         invoice: String?,
         category: String?,
         owner: String?,
         remainingOnly: Boolean
-    ): List<OrderEntity> {
-        return orderDao.filterOrders(
+    ): List<OrderEntity> =
+        orderDao.filterOrders(
             customerId = customerId,
             remainingOnly = if (remainingOnly) 1 else 0,
             category = category,
             owner = owner
         )
-    }
 
     override suspend fun getCustomerMiniForOrder(customerId: String): UiCustomerMini {
         val customer = customerDao.getById(customerId)
-            ?: throw IllegalArgumentException("Customer not found for customer: $customerId")
+            ?: error("Customer not found: $customerId")
 
         return UiCustomerMini(
             id = customer.id,
@@ -144,9 +163,9 @@ class OrderRepositoryImpl @Inject constructor(
         )
     }
 
-    // --------------------------
-    // FTS index for each ORDER
-    // --------------------------
+    // ---------------------------------------------------------------------
+    // ORDER FTS INDEX
+    // ---------------------------------------------------------------------
     private suspend fun reindexOrderFts(order: OrderEntity) {
         val tokens = buildList {
             add(order.invoiceSeq?.toString().orEmpty())
@@ -169,12 +188,15 @@ class OrderRepositoryImpl @Inject constructor(
                 invoiceSeq = order.invoiceSeq?.toString(),
                 productCategories = order.productCategories.joinToString(" "),
                 owners = order.owners.joinToString(" "),
-                productTypes = "", // if needed, add later
+                productTypes = "",
                 content = content
             )
         )
     }
 
+    // ---------------------------------------------------------------------
+    // CUSTOMER SUMMARY UPDATE
+    // ---------------------------------------------------------------------
     private suspend fun updateCustomerSummary(customerId: String) {
         val orders = orderDao.getForCustomer(customerId)
         val outstanding = orders.sumOf { it.remainingBalance }
@@ -191,12 +213,12 @@ class OrderRepositoryImpl @Inject constructor(
         )
     }
 
-    // --------------------------
-    // SYNC ENQUEUE HELPERS
-    // --------------------------
+    // ---------------------------------------------------------------------
+    // SYNC HELPERS
+    // ---------------------------------------------------------------------
     private suspend fun enqueueOrderUpsert(order: OrderEntity) {
         val items = orderItemDao.getItemsForOrder(order.id)
-        val dto = order.toSyncDto(items)            // you define this mapper
+        val dto = order.toSyncDto(items)
         val payload = json.encodeToString(dto)
 
         syncRepository.enqueueOperation(

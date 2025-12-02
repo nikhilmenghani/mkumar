@@ -40,14 +40,15 @@ class CustomerRepositoryImpl @Inject constructor(
     private val json: Json
 ) : CustomerRepository {
 
+    // ---------------------------------------------------------------------
+    // UPSERT (Already existed)
+    // ---------------------------------------------------------------------
     override suspend fun upsert(customer: CustomerEntity) {
         val updated = customer.copy(updatedAt = nowUtcMillis())
 
-        // 1) Write to local DB
         customerDao.upsert(updated)
 
-        // 2) Enqueue sync operation (Google Keep-style: full snapshot)
-        val dto = updated.toSyncDto()                 // you define this mapper
+        val dto = updated.toSyncDto()
         val payload = json.encodeToString(dto)
 
         syncRepository.enqueueOperation(
@@ -59,18 +60,43 @@ class CustomerRepositoryImpl @Inject constructor(
             opUpdatedAt = updated.updatedAt
         )
 
-        // 3) Update FTS index (local search)
         reindexCustomerForSearch(updated)
     }
 
+    // ---------------------------------------------------------------------
+    // DELETE (NEW — Correct outbox behaviour here)
+    // ---------------------------------------------------------------------
     override suspend fun deleteById(customerId: String) {
+
+        // Capture timestamp BEFORE delete (latest write wins)
+        val local = customerDao.getById(customerId)
+        val opUpdated = local?.updatedAt ?: nowUtcMillis()
+
+        // Local delete
         customerDao.deleteById(customerId)
         customerFtsDao.deleteByCustomerId(customerId)
         orderFtsDao.deleteByCustomerId(customerId)
 
-        // NOTE: For now we are NOT enqueuing a delete op to cloud.
-        // We can add "CUSTOMER_DELETE" later with a small payload DTO.
+        // Clean related order FTS (FK will delete orders but not FTS)
+        val orderIds = orderDao.getForCustomer(customerId).map { it.id }
+        for (oid in orderIds) {
+            orderFtsDao.deleteByOrderId(oid)
+        }
+
+        // Enqueue cloud delete (outbox handles DELETE > UPSERT override)
+        syncRepository.enqueueOperation(
+            type = "CUSTOMER_DELETE",
+            payloadJson = "{}",  // minimal payload
+            entityId = customerId,
+            cloudPath = "customers/$customerId/profile.json",
+            priority = 10,
+            opUpdatedAt = opUpdated
+        )
     }
+
+    // ---------------------------------------------------------------------
+    // OBSERVERS, SEARCH, INDEXING — UNCHANGED
+    // ---------------------------------------------------------------------
 
     override fun observeAll(): Flow<List<CustomerEntity>> =
         customerDao.observeAll()
@@ -134,9 +160,6 @@ class CustomerRepositoryImpl @Inject constructor(
         return orderDao.getRecentOrdersWithCustomerRaw(query)
     }
 
-    // --------------------------
-    // FTS CUSTOMER INDEXING
-    // --------------------------
     override suspend fun reindexCustomerForSearch(customer: CustomerEntity) =
         withContext(Dispatchers.IO) {
 
@@ -162,10 +185,11 @@ class CustomerRepositoryImpl @Inject constructor(
             )
         }
 
-    // --------------------------
-    // SEARCH
-    // --------------------------
-    override suspend fun searchCustomers(q: String, mode: SearchMode, limit: Int): List<UiCustomerMini> {
+    override suspend fun searchCustomers(
+        q: String,
+        mode: SearchMode,
+        limit: Int
+    ): List<UiCustomerMini> {
         val query = q.trim()
         if (query.isEmpty()) return emptyList()
 

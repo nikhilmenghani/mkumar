@@ -43,7 +43,7 @@ class PullFromCloudWorker @Inject constructor(
     // =====================================================================
 
     private suspend fun syncCustomers() {
-        val cloudFiles = cloud.list("customers")   // returns file paths
+        val cloudFiles = cloud.list("customers")
         val localIds = db.customerDao().getAll().map { it.id }.toSet()
 
         val cloudCustomerIds = cloudFiles
@@ -51,15 +51,12 @@ class PullFromCloudWorker @Inject constructor(
             .map { extractCustomerId(it) }
             .toSet()
 
-        // ---------------------------
-        // CREATE / UPDATE from cloud
-        // ---------------------------
+        // CREATE / UPDATE
         for (path in cloudFiles) {
             if (!path.endsWith("/profile.json")) continue
 
             val cloudJson = cloud.get(path) ?: continue
             val dto = json.decodeFromString<CustomerDto>(cloudJson)
-
             val local = db.customerDao().getById(dto.id)
 
             if (local == null || dto.updatedAt > local.updatedAt) {
@@ -77,28 +74,26 @@ class PullFromCloudWorker @Inject constructor(
             }
         }
 
-        // ---------------------------
-        // DELETE (missing in cloud)
-        // ---------------------------
+        // DELETE (if profile.json missing)
         for (localId in localIds) {
             if (localId !in cloudCustomerIds) {
+
+                // local only, cloud doesn’t have it → delete locally
                 db.customerDao().deleteById(localId)
                 db.customerFtsDao().deleteByCustomerId(localId)
                 db.orderFtsDao().deleteByCustomerId(localId)
 
-                // All orders will be automatically removed because of FK cascade,
-                // but FTS + items must be cleaned manually.
                 val orderIds = db.orderDao().getForCustomer(localId).map { it.id }
-                orderIds.forEach { orderId ->
-                    db.orderItemDao().deleteItemsForOrder(orderId)
-                    db.orderFtsDao().deleteByOrderId(orderId)
+                orderIds.forEach { oid ->
+                    db.orderItemDao().deleteItemsForOrder(oid)
+                    db.orderFtsDao().deleteByOrderId(oid)
                 }
             }
         }
     }
 
     // =====================================================================
-    // ORDERS
+    // ORDERS (unchanged)
     // =====================================================================
 
     private suspend fun syncOrders() {
@@ -108,9 +103,6 @@ class PullFromCloudWorker @Inject constructor(
         val cloudOrderFiles = cloudFiles.filter { it.contains("/orders/") && it.endsWith(".json") }
         val cloudOrderIds = cloudOrderFiles.map { extractOrderId(it) }.toSet()
 
-        // ---------------------------
-        // CREATE / UPDATE
-        // ---------------------------
         for (path in cloudOrderFiles) {
             val cloudJson = cloud.get(path) ?: continue
 
@@ -138,7 +130,6 @@ class PullFromCloudWorker @Inject constructor(
 
                 db.orderDao().upsert(entity)
 
-                // Replace items
                 db.orderItemDao().deleteItemsForOrder(dto.id)
                 for (item in dto.items) {
                     db.orderItemDao().upsert(
@@ -160,9 +151,6 @@ class PullFromCloudWorker @Inject constructor(
             }
         }
 
-        // ---------------------------
-        // DELETE (missing in cloud)
-        // ---------------------------
         for (localId in localOrders) {
             if (localId !in cloudOrderIds) {
                 db.orderDao().deleteById(localId)
@@ -173,7 +161,7 @@ class PullFromCloudWorker @Inject constructor(
     }
 
     // =====================================================================
-    // PAYMENTS
+    // PAYMENTS (unchanged)
     // =====================================================================
 
     private suspend fun syncPayments() {
@@ -181,9 +169,6 @@ class PullFromCloudWorker @Inject constructor(
         val localPaymentIds = db.paymentDao().getAllIds().toSet()
         val cloudPaymentIds = cloudFiles.map { extractPaymentId(it) }.toSet()
 
-        // ---------------------------
-        // CREATE / UPDATE
-        // ---------------------------
         for (path in cloudFiles) {
             val cloudJson = cloud.get(path) ?: continue
 
@@ -202,9 +187,6 @@ class PullFromCloudWorker @Inject constructor(
             }
         }
 
-        // ---------------------------
-        // DELETE (missing in cloud)
-        // ---------------------------
         for (localId in localPaymentIds) {
             if (localId !in cloudPaymentIds) {
                 db.paymentDao().deletePaymentById(localId)
@@ -216,18 +198,11 @@ class PullFromCloudWorker @Inject constructor(
     // HELPERS
     // =====================================================================
 
-    private fun extractCustomerId(path: String): String {
-        // customers/<id>/profile.json
-        return path.split("/")[1]
-    }
+    private fun extractCustomerId(path: String): String = path.split("/")[1]
 
-    private fun extractOrderId(path: String): String {
-        // customers/<custId>/orders/<orderId>.json
-        return path.substringAfter("orders/").substringBefore(".json")
-    }
+    private fun extractOrderId(path: String): String =
+        path.substringAfter("orders/").substringBefore(".json")
 
-    private fun extractPaymentId(path: String): String {
-        // payments/<paymentId>.json
-        return path.substringAfter("payments/").substringBefore(".json")
-    }
+    private fun extractPaymentId(path: String): String =
+        path.substringAfter("payments/").substringBefore(".json")
 }
