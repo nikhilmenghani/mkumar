@@ -3,6 +3,7 @@ package com.mkumar.sync.worker
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.db.dao.OutboxDao
 import com.mkumar.data.db.entities.OutboxEntity
 import com.mkumar.sync.remote.CloudRemote
@@ -25,11 +26,11 @@ class SyncOutboxWorker @Inject constructor(
 
         ops.forEach { op ->
             try {
-                outboxDao.markInProgress(op.id)
+                outboxDao.markInProgress(op.id, nowUtcMillis())
                 processOperation(op)
-                outboxDao.markDone(op.id)
+                outboxDao.markDone(op.id, nowUtcMillis())
             } catch (e: Exception) {
-                outboxDao.markFailed(op.id, e.message ?: "Unknown error")
+                outboxDao.markFailed(op.id, e.message ?: "Unknown error", nowUtcMillis())
                 return@withContext Result.retry()
             }
         }
@@ -47,16 +48,19 @@ class SyncOutboxWorker @Inject constructor(
                 cloud.putJson(path = op.cloudPath!!, content = op.payloadJson)
             }
 
-            "ORDER_DELETE" -> {
-                cloud.delete(op.cloudPath!!)
-                outboxDao.markDone(op.id)
-            }
-
             // -----------------------------------------
             // ORDER
             // -----------------------------------------
+
+            "ORDER_DELETE" -> {
+                cloud.delete(op.cloudPath!!)
+                outboxDao.markDone(op.id, nowUtcMillis())
+            }
+
             "ORDER_UPSERT" -> {
-                cloud.putJson(path = op.cloudPath!!, content = op.payloadJson)
+                val content = op.payloadJson
+                cloud.putJson(op.cloudPath!!, content)
+                outboxDao.markDone(op.id, nowUtcMillis())
             }
 
             // -----------------------------------------

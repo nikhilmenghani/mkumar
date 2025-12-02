@@ -9,13 +9,6 @@ import com.mkumar.data.db.entities.OutboxEntity.Companion.STATUS_QUEUED
 import com.mkumar.repository.SyncRepository
 import javax.inject.Inject
 
-/**
- * SyncRepository with de-duplication:
- *
- * - UPSERT ops merge if same (type + entityId) exists in QUEUED or IN_PROGRESS.
- * - DELETE ops always insert new (never merged).
- * - Ensures most recent payload is persisted.
- */
 class SyncRepositoryImpl @Inject constructor(
     private val outboxDao: OutboxDao
 ) : SyncRepository {
@@ -32,12 +25,16 @@ class SyncRepositoryImpl @Inject constructor(
 
         val now = opUpdatedAt ?: nowUtcMillis()
 
-        val isUpsert = type.endsWith("_UPSERT", ignoreCase = true)
-        val isDelete = type.endsWith("_DELETE", ignoreCase = true)
+        val isUpsert = type.endsWith("_UPSERT", true)
+        val isDelete = type.endsWith("_DELETE", true)
 
-        // ------------------------------------------------------------
-        // 1. For UPSERT ops: try merging with existing QUEUED/IN_PROGRESS entry
-        // ------------------------------------------------------------
+        // ---- DELETE overrides any pending UPSERT ----
+        if (isDelete && entityId != null) {
+            val upsertType = type.replace("_DELETE", "_UPSERT")
+            outboxDao.deleteQueuedUpsertForEntity(upsertType, entityId)
+        }
+
+        // ---- UPSERT merge (dedup) ----
         if (isUpsert && entityId != null) {
             val existing = outboxDao.findQueuedOrInProgress(type, entityId)
             if (existing != null) {
@@ -51,13 +48,7 @@ class SyncRepositoryImpl @Inject constructor(
             }
         }
 
-        // ------------------------------------------------------------
-        // 2. For DELETE ops: ALWAYS insert (override any pending upsert)
-        // ------------------------------------------------------------
-
-        // ------------------------------------------------------------
-        // 3. Insert new entry
-        // ------------------------------------------------------------
+        // ---- Insert new entry ----
         val entity = OutboxEntity(
             type = type,
             payloadJson = payloadJson,
@@ -77,30 +68,36 @@ class SyncRepositoryImpl @Inject constructor(
         return entity.id
     }
 
+    override suspend fun cancelUpsertsFor(type: String, entityId: String) {
+        outboxDao.deleteQueuedUpsertForEntity(type, entityId)
+    }
+
     override suspend fun getPendingBatch(limit: Int): List<OutboxEntity> {
         return outboxDao.getByStatus(STATUS_QUEUED, limit)
     }
 
     override suspend fun markSuccess(id: String, newRemoteSha: String?) {
         val existing = outboxDao.getById(id) ?: return
-        val updated = existing.copy(
-            status = STATUS_DONE,
-            updatedAt = nowUtcMillis(),
-            lastErrorMessage = null,
-            lastKnownRemoteSha = newRemoteSha ?: existing.lastKnownRemoteSha
+        outboxDao.update(
+            existing.copy(
+                status = STATUS_DONE,
+                updatedAt = nowUtcMillis(),
+                lastKnownRemoteSha = newRemoteSha ?: existing.lastKnownRemoteSha,
+                lastErrorMessage = null
+            )
         )
-        outboxDao.update(updated)
     }
 
     override suspend fun markFailure(id: String, errorMessage: String) {
         val existing = outboxDao.getById(id) ?: return
-        val updated = existing.copy(
-            status = STATUS_ERROR,
-            updatedAt = nowUtcMillis(),
-            attemptCount = existing.attemptCount + 1,
-            lastErrorMessage = errorMessage
+        outboxDao.update(
+            existing.copy(
+                status = STATUS_ERROR,
+                updatedAt = nowUtcMillis(),
+                attemptCount = existing.attemptCount + 1,
+                lastErrorMessage = errorMessage
+            )
         )
-        outboxDao.update(updated)
     }
 
     override suspend fun clearAll() {

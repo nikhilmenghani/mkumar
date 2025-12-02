@@ -58,25 +58,26 @@ class OrderRepositoryImpl @Inject constructor(
     override suspend fun delete(orderId: String) = db.withTransaction {
         val order = orderDao.getById(orderId) ?: return@withTransaction
 
-        // 1) Delete locally
+        // Remove local data
         orderDao.deleteById(orderId)
         orderItemDao.deleteItemsForOrder(orderId)
         orderFtsDao.deleteByOrderId(orderId)
         updateCustomerSummary(order.customerId)
 
-        // 2) Enqueue DELETE sync op
+        // ---- Sync: DELETE overrides UPSERT ----
+        syncRepository.cancelUpsertsFor("ORDER_UPSERT", orderId)
+
         val dto = OrderDeleteDto(
             id = order.id,
             customerId = order.customerId,
             deletedAt = nowUtcMillis()
         )
-
         val payload = json.encodeToString(dto)
 
         syncRepository.enqueueOperation(
             type = "ORDER_DELETE",
             payloadJson = payload,
-            entityId = order.id,  // same id used for dedup logic
+            entityId = order.id,
             cloudPath = "customers/${order.customerId}/orders/${order.id}.json",
             priority = 10,
             opUpdatedAt = dto.deletedAt
