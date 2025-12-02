@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.mkumar.common.extension.nowUtcMillis
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Entity(
@@ -38,3 +39,26 @@ data class CustomerEntity(
     /** true if any order remainingBalance > 0 */
     val hasPendingOrder: Boolean = false
 )
+
+@Serializable
+data class CustomerDto(
+    val id: String,
+    val name: String,
+    val phone: String?,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val totalOutstanding: Int,
+    val hasPendingOrder: Boolean
+)
+
+fun CustomerEntity.toSyncDto(): CustomerDto {
+    return CustomerDto(
+        id = id,
+        name = name,
+        phone = phone,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        totalOutstanding = totalOutstanding,
+        hasPendingOrder = hasPendingOrder
+    )
+}

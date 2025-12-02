@@ -11,6 +11,7 @@ import com.mkumar.data.db.dao.InvoiceCounterDao
 import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.OrderFtsDao
 import com.mkumar.data.db.dao.OrderItemDao
+import com.mkumar.data.db.dao.OutboxDao
 import com.mkumar.data.db.dao.PaymentDao
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.entities.CustomerFts
@@ -36,9 +37,13 @@ import com.mkumar.data.utils.Converters
     version = 1,
     exportSchema = true
 )
-
-@TypeConverters(Converters::class, OrderStatusConverter::class, StringListConverter::class,)
+@TypeConverters(
+    Converters::class,
+    OrderStatusConverter::class,
+    StringListConverter::class,
+)
 abstract class AppDatabase : RoomDatabase() {
+
     abstract fun customerDao(): CustomerDao
     abstract fun orderDao(): OrderDao
     abstract fun orderItemDao(): OrderItemDao
@@ -46,4 +51,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun paymentDao(): PaymentDao
     abstract fun customerFtsDao(): CustomerFtsDao
     abstract fun orderFtsDao(): OrderFtsDao
+    // NEW
+    abstract fun outboxDao(): OutboxDao
 }

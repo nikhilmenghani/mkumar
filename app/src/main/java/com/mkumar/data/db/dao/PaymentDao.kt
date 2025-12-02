@@ -18,4 +18,10 @@ interface PaymentDao {
 
     @Query("DELETE FROM payments WHERE id = :id")
     suspend fun deletePaymentById(id: String)
+
+    @Query("SELECT * FROM payments WHERE id = :id LIMIT 1")
+    suspend fun getPaymentById(id: String): PaymentEntity?
+
+    @Query("SELECT id FROM payments")
+    suspend fun getAllIds(): List<String>
 }

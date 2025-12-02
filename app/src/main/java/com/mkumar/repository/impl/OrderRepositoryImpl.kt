@@ -8,12 +8,16 @@ import com.mkumar.data.db.dao.CustomerFtsDao
 import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.OrderFtsDao
 import com.mkumar.data.db.dao.OrderItemDao
+import com.mkumar.data.db.entities.OrderDeleteDto
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderFts
+import com.mkumar.data.db.entities.toSyncDto
 import com.mkumar.data.services.InvoiceNumberService
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.OrderRepository
+import com.mkumar.repository.SyncRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +29,9 @@ class OrderRepositoryImpl @Inject constructor(
     private val customerDao: CustomerDao,
     private val customerFtsDao: CustomerFtsDao,
     private val orderFtsDao: OrderFtsDao,
-    private val invoiceNumberService: InvoiceNumberService
+    private val invoiceNumberService: InvoiceNumberService,
+    private val syncRepository: SyncRepository,
+    private val json: Json
 ) : OrderRepository {
 
     override suspend fun upsert(order: OrderEntity) = db.withTransaction {
@@ -33,7 +39,8 @@ class OrderRepositoryImpl @Inject constructor(
 
         val enriched = order.copy(
             productCategories = orderItemDao.getCategoriesForOrder(order.id),
-            owners = orderItemDao.getOwnersForOrder(order.id)
+            owners = orderItemDao.getOwnersForOrder(order.id),
+            updatedAt = now
         )
 
         orderDao.upsert(enriched)
@@ -41,16 +48,39 @@ class OrderRepositoryImpl @Inject constructor(
         // Reindex FTS
         reindexOrderFts(enriched)
 
+        // Update customer summary totals
         updateCustomerSummary(enriched.customerId)
+
+        // Enqueue sync operation
+        enqueueOrderUpsert(enriched)
     }
 
     override suspend fun delete(orderId: String) = db.withTransaction {
         val order = orderDao.getById(orderId) ?: return@withTransaction
 
+        // 1) Delete locally
         orderDao.deleteById(orderId)
-
+        orderItemDao.deleteItemsForOrder(orderId)
         orderFtsDao.deleteByOrderId(orderId)
         updateCustomerSummary(order.customerId)
+
+        // 2) Enqueue DELETE sync op
+        val dto = OrderDeleteDto(
+            id = order.id,
+            customerId = order.customerId,
+            deletedAt = nowUtcMillis()
+        )
+
+        val payload = json.encodeToString(dto)
+
+        syncRepository.enqueueOperation(
+            type = "ORDER_DELETE",
+            payloadJson = payload,
+            entityId = order.id,  // same id used for dedup logic
+            cloudPath = "customers/${order.customerId}/orders/${order.id}.json",
+            priority = 10,
+            opUpdatedAt = dto.deletedAt
+        )
     }
 
     override fun observeOrdersForCustomer(customerId: String): Flow<List<OrderEntity>> =
@@ -81,6 +111,9 @@ class OrderRepositoryImpl @Inject constructor(
         reindexOrderFts(stamped)
         updateCustomerSummary(stamped.customerId)
 
+        // Enqueue sync operation
+        enqueueOrderUpsert(stamped)
+
         stamped
     }
 
@@ -91,7 +124,6 @@ class OrderRepositoryImpl @Inject constructor(
         owner: String?,
         remainingOnly: Boolean
     ): List<OrderEntity> {
-
         return orderDao.filterOrders(
             customerId = customerId,
             remainingOnly = if (remainingOnly) 1 else 0,
@@ -142,7 +174,6 @@ class OrderRepositoryImpl @Inject constructor(
         )
     }
 
-
     private suspend fun updateCustomerSummary(customerId: String) {
         val orders = orderDao.getForCustomer(customerId)
         val outstanding = orders.sumOf { it.remainingBalance }
@@ -156,6 +187,24 @@ class OrderRepositoryImpl @Inject constructor(
                 hasPendingOrder = hasPending,
                 updatedAt = nowUtcMillis()
             )
+        )
+    }
+
+    // --------------------------
+    // SYNC ENQUEUE HELPERS
+    // --------------------------
+    private suspend fun enqueueOrderUpsert(order: OrderEntity) {
+        val items = orderItemDao.getItemsForOrder(order.id)
+        val dto = order.toSyncDto(items)            // you define this mapper
+        val payload = json.encodeToString(dto)
+
+        syncRepository.enqueueOperation(
+            type = "ORDER_UPSERT",
+            payloadJson = payload,
+            entityId = order.id,
+            cloudPath = "customers/${order.customerId}/orders/${order.id}.json",
+            priority = 5,
+            opUpdatedAt = order.updatedAt
         )
     }
 }

@@ -76,4 +76,6 @@ WHERE orderId = :orderId
 """)
     suspend fun getOwnersForOrder(orderId: String): List<String>
 
+    @Query("DELETE FROM order_items WHERE orderId = :orderId")
+    suspend fun deleteItemsForOrder(orderId: String)
 }

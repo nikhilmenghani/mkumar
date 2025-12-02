@@ -128,4 +128,6 @@ ORDER BY receivedAt DESC
         owner: String?
     ): List<OrderEntity>
 
+    @Query("SELECT * FROM orders")
+    suspend fun getAll(): List<OrderEntity>
 }

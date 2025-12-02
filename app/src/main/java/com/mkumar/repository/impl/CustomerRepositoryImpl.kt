@@ -13,17 +13,20 @@ import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.OrderFtsDao
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.entities.CustomerFts
+import com.mkumar.data.db.entities.toSyncDto
 import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.model.SearchMode
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.CustomerRepository
+import com.mkumar.repository.SyncRepository
 import com.mkumar.repository.orderByIds
 import com.mkumar.viewmodel.toUiModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,12 +35,31 @@ class CustomerRepositoryImpl @Inject constructor(
     private val customerDao: CustomerDao,
     private val orderDao: OrderDao,
     private val customerFtsDao: CustomerFtsDao,
-    private val orderFtsDao: OrderFtsDao
+    private val orderFtsDao: OrderFtsDao,
+    private val syncRepository: SyncRepository,
+    private val json: Json
 ) : CustomerRepository {
 
     override suspend fun upsert(customer: CustomerEntity) {
         val updated = customer.copy(updatedAt = nowUtcMillis())
+
+        // 1) Write to local DB
         customerDao.upsert(updated)
+
+        // 2) Enqueue sync operation (Google Keep-style: full snapshot)
+        val dto = updated.toSyncDto()                 // you define this mapper
+        val payload = json.encodeToString(dto)
+
+        syncRepository.enqueueOperation(
+            type = "CUSTOMER_UPSERT",
+            payloadJson = payload,
+            entityId = updated.id,
+            cloudPath = "customers/${updated.id}/profile.json",
+            priority = 5,
+            opUpdatedAt = updated.updatedAt
+        )
+
+        // 3) Update FTS index (local search)
         reindexCustomerForSearch(updated)
     }
 
@@ -45,6 +67,9 @@ class CustomerRepositoryImpl @Inject constructor(
         customerDao.deleteById(customerId)
         customerFtsDao.deleteByCustomerId(customerId)
         orderFtsDao.deleteByCustomerId(customerId)
+
+        // NOTE: For now we are NOT enqueuing a delete op to cloud.
+        // We can add "CUSTOMER_DELETE" later with a small payload DTO.
     }
 
     override fun observeAll(): Flow<List<CustomerEntity>> =
@@ -75,8 +100,11 @@ class CustomerRepositoryImpl @Inject constructor(
         return getRecentOrdersWithCustomer(limit, sortBy, ascending)
     }
 
-    fun getRecentOrdersWithCustomer(limit: Int, sortBy: String, ascending: Boolean):
-            Flow<List<OrderWithCustomerInfo>> {
+    fun getRecentOrdersWithCustomer(
+        limit: Int,
+        sortBy: String,
+        ascending: Boolean
+    ): Flow<List<OrderWithCustomerInfo>> {
         val order = if (ascending) "ASC" else "DESC"
         val sortColumn = when (sortBy) {
             "Invoice" -> "o.invoiceSeq"
@@ -100,7 +128,7 @@ class CustomerRepositoryImpl @Inject constructor(
         JOIN customers c ON c.id = o.customerId
         ORDER BY $sortColumn $order
         LIMIT ?
-    """.trimIndent()
+        """.trimIndent()
 
         val query = SimpleSQLiteQuery(sql, arrayOf(limit))
         return orderDao.getRecentOrdersWithCustomerRaw(query)
@@ -133,7 +161,6 @@ class CustomerRepositoryImpl @Inject constructor(
                 )
             )
         }
-
 
     // --------------------------
     // SEARCH
@@ -171,7 +198,6 @@ class CustomerRepositoryImpl @Inject constructor(
         val minis = rows.map { UiCustomerMini(it.id, it.name, it.phone) }
         return minis.orderByIds(ids) { it.id }
     }
-
 
     override suspend fun searchCustomersByInvoice(invoice: String): List<UiCustomerMini> {
         if (invoice.isBlank()) return emptyList()
