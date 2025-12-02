@@ -48,37 +48,33 @@ class SyncOutboxWorker @Inject constructor(
                 cloud.putJson(path = op.cloudPath!!, content = op.payloadJson)
             }
 
+            "CUSTOMER_DELETE" -> {
+                cloud.delete(op.cloudPath!!)   // Remove customers/<id>/profile.json
+            }
+
             // -----------------------------------------
             // ORDER
             // -----------------------------------------
+            "ORDER_UPSERT" -> {
+                cloud.putJson(path = op.cloudPath!!, content = op.payloadJson)
+            }
 
             "ORDER_DELETE" -> {
                 cloud.delete(op.cloudPath!!)
-                outboxDao.markDone(op.id, nowUtcMillis())
-            }
-
-            "ORDER_UPSERT" -> {
-                val content = op.payloadJson
-                cloud.putJson(op.cloudPath!!, content)
-                outboxDao.markDone(op.id, nowUtcMillis())
             }
 
             // -----------------------------------------
             // PAYMENT
             // -----------------------------------------
             "PAYMENT_UPSERT" -> {
-                // Write/update payment JSON
                 cloud.putJson(path = op.cloudPath!!, content = op.payloadJson)
             }
 
             "PAYMENT_DELETE" -> {
-                // Delete remote file OR mark as tombstone file
                 cloud.delete(path = op.cloudPath!!)
             }
 
-            else -> {
-                throw IllegalArgumentException("Unknown Outbox op type: ${op.type}")
-            }
+            else -> throw IllegalArgumentException("Unknown Outbox op type: ${op.type}")
         }
     }
 }
