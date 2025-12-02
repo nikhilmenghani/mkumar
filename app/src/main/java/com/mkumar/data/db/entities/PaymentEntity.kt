@@ -21,6 +21,14 @@ data class PaymentDto(
     val paymentAt: Long
 )
 
+@kotlinx.serialization.Serializable
+data class PaymentDeleteDto(
+    val id: String,
+    val orderId: String,
+    val deletedAt: Long
+)
+
+
 fun PaymentEntity.toSyncDto(): PaymentDto {
     return PaymentDto(
         id = id,

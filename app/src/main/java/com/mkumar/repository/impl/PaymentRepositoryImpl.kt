@@ -1,6 +1,8 @@
 package com.mkumar.repository.impl
 
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.db.dao.PaymentDao
+import com.mkumar.data.db.entities.PaymentDeleteDto
 import com.mkumar.data.db.entities.PaymentEntity
 import com.mkumar.data.db.entities.toSyncDto
 import com.mkumar.repository.PaymentRepository
@@ -32,12 +34,11 @@ class PaymentRepositoryImpl @Inject constructor(
                 paymentAt = paymentAt
             )
 
-            // 1) Insert into local Room DB
+            // 1) Insert local
             dao.insertPayment(payment)
 
-            // 2) Enqueue "PAYMENT_UPSERT" sync op
-            val dto = payment.toSyncDto()
-            val payload = json.encodeToString(dto)
+            // 2) Enqueue UPSERT
+            val payload = json.encodeToString(payment.toSyncDto())
 
             syncRepository.enqueueOperation(
                 type = "PAYMENT_UPSERT",
@@ -53,30 +54,33 @@ class PaymentRepositoryImpl @Inject constructor(
     override suspend fun deletePaymentById(id: String) {
         withContext(Dispatchers.IO) {
 
-            // 1) Get the payment to know which order it belonged to
-            val existing = dao.getPaymentById(id)
+            // 1) Load first (required for cloud delete)
+            val existing = dao.getPaymentById(id) ?: return@withContext
+
+            // 2) Local delete
             dao.deletePaymentById(id)
 
-            // 2) Enqueue delete event only if payment existed
-            // This ensures sync can delete from cloud
-            if (existing != null) {
-                val deletePayload = json.encodeToString(
-                    mapOf(
-                        "id" to existing.id,
-                        "orderId" to existing.orderId,
-                        "deletedAt" to System.currentTimeMillis()
-                    )
-                )
+            // 3) Cancel any pending UPSERT (consistent with Order + Customer)
+            syncRepository.cancelUpsertsFor("PAYMENT_UPSERT", id)
 
-                syncRepository.enqueueOperation(
-                    type = "PAYMENT_DELETE",
-                    payloadJson = deletePayload,
-                    entityId = existing.id,
-                    cloudPath = "payments/${existing.id}.json",
-                    priority = 1,
-                    opUpdatedAt = System.currentTimeMillis()
-                )
-            }
+            // 4) Build DELETE DTO
+            val deletedAt = nowUtcMillis()
+            val dto = PaymentDeleteDto(
+                id = existing.id,
+                orderId = existing.orderId,
+                deletedAt = deletedAt
+            )
+            val payload = json.encodeToString(dto)
+
+            // 5) Enqueue DELETE
+            syncRepository.enqueueOperation(
+                type = "PAYMENT_DELETE",
+                payloadJson = payload,
+                entityId = existing.id,
+                cloudPath = "payments/${existing.id}.json",
+                priority = 1,
+                opUpdatedAt = deletedAt
+            )
         }
     }
 }
