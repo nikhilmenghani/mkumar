@@ -50,12 +50,8 @@ class OrderEditorViewModel @Inject constructor(
     // PUBLIC ENTRY (LOAD DRAFT / ORDER)
     // --------------------------------------------------------------
 
-    fun load(customerId: String, orderId: String?) {
-        if (orderId.isNullOrBlank()) {
-            createDraft(customerId)
-        } else {
-            loadExistingOrder(orderId)
-        }
+    fun load(orderId: String) {
+        loadExistingOrder(orderId)
     }
 
     // --------------------------------------------------------------
@@ -112,52 +108,6 @@ class OrderEditorViewModel @Inject constructor(
                 mutateDraft { it.copy(justAddedItemId = null) }
             }
             else -> {}
-        }
-    }
-
-    // --------------------------------------------------------------
-    // CREATE NEW DRAFT
-    // --------------------------------------------------------------
-
-    private fun createDraft(customerId: String) {
-        val draftId = UUID.randomUUID().toString()
-
-        viewModelScope.launch {
-            // create empty DRAFT row
-            val entity = OrderEntity(
-                id = draftId,
-                customerId = customerId,
-                orderStatus = OrderStatus.DRAFT.value
-            )
-            val created = orderRepo.createOrderWithItems(entity)
-
-            val customerWithOrders = customerRepo.getWithOrders(customerId)
-            val uiCustomer = customerWithOrders?.toUi(pricing)?.customer
-
-            _ui.update {
-                it.copy(
-                    isLoading = false,
-                    customer = uiCustomer,
-                    orders = customerWithOrders?.orders?.map { o -> o.toUiOrder() }.orEmpty(),
-                    draft = OrderEditorUi.Draft(
-                        orderId = draftId,
-                        editingOrderId = draftId,
-                        createdAt = nowUtcMillis(),
-                        customerId = customerId,
-                        items = emptyList(),
-                        adjustedAmount = 0,
-                        totalAmount = 0,
-                        paidTotal = 0,
-                        remainingBalance = 0,
-                        invoiceNumber = created.invoiceSeq ?: 0L,
-                        receivedAt = nowUtcMillis(),
-                        payments = emptyList()
-                    )
-                )
-            }
-
-            // Start real-time payment monitoring
-            collectPayments(draftId)
         }
     }
 

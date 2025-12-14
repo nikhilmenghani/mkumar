@@ -70,7 +70,9 @@ fun OrderEditorScreen(
 
     // Kick off draft load/create once on enter
     LaunchedEffect(customerId, editingOrderId) {
-        viewModel.load(customerId, editingOrderId)
+        // we probably don't need to monitor customerId changes here
+        // low priority - review for performance improvements later
+        viewModel.load(editingOrderId)
     }
 
     LaunchedEffect(Unit) {
