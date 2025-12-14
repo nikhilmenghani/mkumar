@@ -1,5 +1,6 @@
 package com.mkumar.ui.screens.search
 
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.Intent
 import androidx.activity.compose.LocalActivity
@@ -92,6 +93,7 @@ import kotlinx.coroutines.flow.collectLatest
 // ================================================================
 // MAIN SCREEN
 // ================================================================
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun SearchScreen(
     navController: NavHostController,
@@ -165,6 +167,8 @@ fun SearchScreen(
                             )
                         }
                 }
+
+                else -> {}
             }
         }
     }

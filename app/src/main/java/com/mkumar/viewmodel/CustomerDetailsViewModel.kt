@@ -104,9 +104,22 @@ class CustomerDetailsViewModel @Inject constructor(
 
     fun onIntent(intent: CustomerDetailsIntent) {
         when (intent) {
+            is CustomerDetailsIntent.CreateOrder -> createOrder(intent.customerId)
             is CustomerDetailsIntent.DeleteOrder -> deleteOrder(intent.orderId)
             is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId, intent.invoiceNumber)
             is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId, intent.invoiceNumber)
+        }
+    }
+
+    private fun createOrder(customerId: String){
+        viewModelScope.launch {
+            try {
+                val newOrderId = orderRepo.createDraftOrder(customerId)
+                emitMessage("Order created.")
+                _effects.emit(CustomerDetailsEffect.OrderCreated(newOrderId))
+            } catch (t: Throwable) {
+                emitMessage("Failed to create order: ${t.message}")
+            }
         }
     }
 

@@ -22,4 +22,5 @@ interface OrderRepository {
     ): List<OrderEntity>
 
     suspend fun getCustomerMiniForOrder(customerId: String): UiCustomerMini
+    suspend fun createDraftOrder(customerId: String): String
 }

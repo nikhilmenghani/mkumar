@@ -65,6 +65,8 @@ fun CustomerDetailsScreen(
     LaunchedEffect(Unit) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
+                is CustomerDetailsEffect.OrderCreated ->
+                    navController.navigate(Routes.orderEditor(customerId = ui.customer?.id.orEmpty(), orderId = effect.orderId))
                 is CustomerDetailsEffect.ShowMessage ->
                     snackbarHostState.showSnackbar(effect.message)
 
@@ -126,7 +128,7 @@ fun CustomerDetailsScreen(
                 ExtendedFloatingActionButton(
                     onClick = {
                         val cid = ui.customer?.id.orEmpty()
-                        navController.navigate(Routes.orderEditor(customerId = cid))
+                        viewModel.onIntent(CustomerDetailsIntent.CreateOrder(cid))
                     },
                     icon = { Icon(Icons.Outlined.AddShoppingCart, contentDescription = null) },
                     text = { Text("New Sale") }

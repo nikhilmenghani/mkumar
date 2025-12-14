@@ -204,7 +204,7 @@ class OrderEditorViewModel @Inject constructor(
     }
 
     // --------------------------------------------------------------
-    // REAL-TIME PAYMENT UPDATES (CRITICAL FIX)
+    // REAL-TIME PAYMENT UPDATES
     // --------------------------------------------------------------
 
     private suspend fun collectPayments(orderId: String) {
@@ -233,8 +233,7 @@ class OrderEditorViewModel @Inject constructor(
                 }
 
                 // DO NOT update the order here.
-                // PaymentRepositoryImpl already updates the Order
-                // and triggers proper sync + FTS + customer summary.
+                // PaymentRepositoryImpl already updates the Order.
             }
             .launchIn(viewModelScope)
     }
@@ -299,7 +298,8 @@ class OrderEditorViewModel @Inject constructor(
                 productRepo.upsert(entity)
                 val newList = d.items.map { if (it.id == productId) updated else it }
                 recalc(d.copy(items = newList))
-            } catch (_: Throwable) {}
+            } catch (_: Throwable) {
+            }
         }
     }
 
@@ -312,7 +312,8 @@ class OrderEditorViewModel @Inject constructor(
                 val newList = d.items.filterNot { it.id == productId }
 
                 recalc(d.copy(items = newList))
-            } catch (_: Throwable) {}
+            } catch (_: Throwable) {
+            }
         }
     }
 

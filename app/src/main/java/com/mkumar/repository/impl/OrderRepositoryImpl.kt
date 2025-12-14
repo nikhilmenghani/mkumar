@@ -13,11 +13,13 @@ import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderFts
 import com.mkumar.data.db.entities.toSyncDto
 import com.mkumar.data.services.InvoiceNumberService
+import com.mkumar.model.OrderStatus
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.OrderRepository
 import com.mkumar.repository.SyncRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -96,6 +98,22 @@ class OrderRepositoryImpl @Inject constructor(
             opUpdatedAt = deletedAt
         )
     }
+
+    override suspend fun createDraftOrder(customerId: String): String {
+        val orderId = UUID.randomUUID().toString()
+
+        val entity = OrderEntity(
+            id = orderId,
+            customerId = customerId,
+            orderStatus = OrderStatus.DRAFT.value,
+            createdAt = nowUtcMillis(),
+            receivedAt = nowUtcMillis()
+        )
+
+        createOrderWithItems(entity)
+        return orderId
+    }
+
 
     // ---------------------------------------------------------------------
     // OBSERVERS

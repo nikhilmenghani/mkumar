@@ -137,6 +137,8 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                                 )
                             }
                     }
+
+                    else -> {}
                 }
             }
         }
