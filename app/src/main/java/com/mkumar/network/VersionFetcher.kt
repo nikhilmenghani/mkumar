@@ -6,24 +6,38 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Request
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object VersionFetcher {
+@Singleton
+class VersionFetcher @Inject constructor(
+    private val networkClient: NetworkClient,
+    private val json: Json
+) {
+
     suspend fun fetchLatestVersion(): String {
         return try {
-            val request = Request.Builder().url(latestVersionUrl).build()
-            val response = NetworkClient.executeRequest(request)
+            val request = Request.Builder()
+                .url(latestVersionUrl)
+                .build()
 
-            if (response.isSuccessful) {
-                response.body?.string()?.let { responseBody ->
-                    val jsonElement: JsonElement = Json.decodeFromString(JsonElement.serializer(), responseBody)
-                    val jsonObject = jsonElement as? JsonObject
-                    jsonObject?.get("name")?.jsonPrimitive?.content?.replace("v", "") ?: "Unknown"
-                } ?: "Unknown"
-            } else {
-                "Unknown"
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+            val response = networkClient.executeRequest(request)
+
+            if (!response.isSuccessful) return "Unknown"
+
+            response.body?.string()?.let { body ->
+                val element: JsonElement =
+                    json.decodeFromString(JsonElement.serializer(), body)
+
+                (element as? JsonObject)
+                    ?.get("name")
+                    ?.jsonPrimitive
+                    ?.content
+                    ?.removePrefix("v")
+                    ?: "Unknown"
+            } ?: "Unknown"
+
+        } catch (_: Exception) {
             "Unknown"
         }
     }

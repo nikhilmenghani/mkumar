@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.mkumar.App.Companion.globalClass
 import com.mkumar.data.ThemePreference
 
 // ---------- Brand palette (static) ----------
@@ -204,21 +203,23 @@ fun Color.applyOpacity(enabled: Boolean): Color =
 // ---------- Theme selection ----------
 @Composable
 fun NikTheme(content: @Composable () -> Unit) {
-    val manager = globalClass.preferencesManager
+
+    val manager = LocalPreferencesManager.current
     val context = LocalContext.current
 
     val useDynamicColor = manager.displayPrefs.useDynamicColor
-    val darkTheme: Boolean = if (useDynamicColor) {
-        isSystemInDarkTheme()
-    } else {
+
+    val darkTheme: Boolean =
         if (manager.displayPrefs.theme == ThemePreference.SYSTEM.ordinal) {
             isSystemInDarkTheme()
-        } else manager.displayPrefs.theme == ThemePreference.DARK.ordinal
-    }
+        } else {
+            manager.displayPrefs.theme == ThemePreference.DARK.ordinal
+        }
 
     val colorScheme = when {
         useDynamicColor -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (darkTheme) dynamicDarkColorScheme(context)
+            else dynamicLightColorScheme(context)
         }
         darkTheme -> StaticDarkColorScheme
         else -> StaticLightColorScheme

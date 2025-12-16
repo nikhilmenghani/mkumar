@@ -3,6 +3,7 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.common.extension.nowUtcMillis
+import com.mkumar.data.PreferencesManager
 import com.mkumar.data.ProductFormData
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.domain.pricing.PricingInput
@@ -37,7 +38,8 @@ class OrderEditorViewModel @Inject constructor(
     private val productRepo: ProductRepository,
     private val customerRepo: CustomerRepository,
     private val pricing: PricingService,
-    private val paymentsRepo: PaymentRepository
+    private val paymentsRepo: PaymentRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(OrderEditorUi())
@@ -111,6 +113,9 @@ class OrderEditorViewModel @Inject constructor(
         }
     }
 
+    fun getInvoicePrefix(): String =
+        preferencesManager.invoicePrefs.invoicePrefix
+
     // --------------------------------------------------------------
     // LOAD EXISTING ORDER
     // --------------------------------------------------------------
@@ -121,7 +126,7 @@ class OrderEditorViewModel @Inject constructor(
             val order = orderRepo.getOrder(orderId) ?: return@launch
 
             val customerWithOrders = customerRepo.getWithOrders(order.customerId)
-            val uiCustomer = customerWithOrders?.toUi(pricing)?.customer
+            val uiCustomer = customerWithOrders?.toUi(pricing, preferencesManager.invoicePrefs.invoicePrefix)?.customer
 
             val items = productRepo.getItemsForOrder(orderId).map { it.toUiItem() }
 
@@ -129,7 +134,7 @@ class OrderEditorViewModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     customer = uiCustomer,
-                    orders = customerWithOrders?.orders?.map { o -> o.toUiOrder() }.orEmpty(),
+                    orders = customerWithOrders?.orders?.map { o -> o.toUiOrder(invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix) }.orEmpty(),
                     draft = OrderEditorUi.Draft(
                         orderId = order.id,
                         editingOrderId = order.id,

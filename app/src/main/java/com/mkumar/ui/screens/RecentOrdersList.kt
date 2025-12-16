@@ -36,7 +36,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mkumar.App.Companion.globalClass
 import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.ui.components.LongPressMenuAnchor
@@ -46,6 +45,7 @@ import com.mkumar.ui.components.ProOverflowMenuIcons
 @Composable
 fun RecentOrdersList(
     orders: List<OrderWithCustomerInfo>,
+    invoicePrefix: String,
     onOrderClick: (orderId: String, customerId: String) -> Unit,
     onInvoiceClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onShareClick: (orderId: String, invoiceNumber: Long) -> Unit,
@@ -65,6 +65,7 @@ fun RecentOrdersList(
             items(orders) { order ->
                 RecentOrderCardCompact(
                     order,
+                    invoicePrefix = invoicePrefix,
                     onOpen = {
                         onOrderClick(order.id, order.customerId)
                     },
@@ -164,6 +165,7 @@ fun RecentOrderCard(
 @Composable
 fun RecentOrderCardCompact(
     order: OrderWithCustomerInfo,
+    invoicePrefix: String,
     onOpen: () -> Unit,
     onInvoice: () -> Unit,
     onShare: () -> Unit,
@@ -298,7 +300,7 @@ fun RecentOrderCardCompact(
                         Text("•", style = MaterialTheme.typography.bodySmall)
 
                         Text(
-                            text = "#" + globalClass.preferencesManager.invoicePrefs.invoicePrefix + "${order.invoiceNumber}",
+                            text = "#" + invoicePrefix + "${order.invoiceNumber}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,

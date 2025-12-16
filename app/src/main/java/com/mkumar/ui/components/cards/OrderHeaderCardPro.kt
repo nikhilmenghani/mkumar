@@ -34,7 +34,6 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mkumar.App.Companion.globalClass
 import com.mkumar.common.extension.DateFormat
 import com.mkumar.ui.components.pickers.MKDatePickerDialog
 import java.time.Instant
@@ -50,6 +49,7 @@ fun OrderHeaderCardPro(
     receivedAt: Long?,              // raw UTC millis from DB
     invoiceNumber: String,
     isDateReadOnly: Boolean,
+    invoicePrefix: String,
     onPickDateTime: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -154,7 +154,7 @@ fun OrderHeaderCardPro(
                 }
 
                 Text(
-                    text = "#" + globalClass.preferencesManager.invoicePrefs.invoicePrefix + invoiceNumber,
+                    text = "#$invoicePrefix$invoiceNumber",
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Medium
                     ),

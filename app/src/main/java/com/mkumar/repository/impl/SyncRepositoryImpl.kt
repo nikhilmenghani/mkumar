@@ -1,13 +1,17 @@
 package com.mkumar.repository.impl
 
+import android.content.Context
 import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.db.dao.OutboxDao
 import com.mkumar.data.db.entities.OutboxEntity
 import com.mkumar.repository.SyncRepository
+import com.mkumar.sync.SyncScheduler
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 class SyncRepositoryImpl @Inject constructor(
-    private val outboxDao: OutboxDao
+    private val outboxDao: OutboxDao,
+    @ApplicationContext private val context: Context
 ) : SyncRepository {
 
     override suspend fun enqueueOperation(
@@ -68,6 +72,7 @@ class SyncRepositoryImpl @Inject constructor(
         )
 
         outboxDao.insert(entity)
+        SyncScheduler.enqueuePushSync(context)
         return entity.id
     }
 

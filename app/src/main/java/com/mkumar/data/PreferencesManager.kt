@@ -7,10 +7,14 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.mkumar.common.extension.DateFormat
 import com.mkumar.common.util.dataStoreMutableState
+import javax.inject.Inject
+import javax.inject.Singleton
 
 const val emptyString = ""
 
-class PreferencesManager {
+
+@Singleton
+class PreferencesManager @Inject constructor() {
     val displayPrefs = DisplayPrefs
     val githubPrefs = GithubPrefs
     val invoicePrefs = InvoicePrefs
@@ -46,6 +50,18 @@ object GithubPrefs {
     var token by dataStoreMutableState(
         keyName = "token",
         defaultValue = emptyString,
+        getPreferencesKey = { stringPreferencesKey(it) }
+    )
+
+    var githubOwner by dataStoreMutableState(
+        keyName = "githubOwner",
+        defaultValue = "nikhilmenghani",
+        getPreferencesKey = { stringPreferencesKey(it) }
+    )
+
+    var githubRepo by dataStoreMutableState(
+        keyName = "githubRepo",
+        defaultValue = "tracker",
         getPreferencesKey = { stringPreferencesKey(it) }
     )
 }

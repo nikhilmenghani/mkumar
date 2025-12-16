@@ -9,40 +9,49 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.mkumar.data.PreferencesManager
 import com.mkumar.permission.Permissions
 import com.mkumar.ui.navigation.ScreenNavigator
+import com.mkumar.ui.theme.LocalPreferencesManager
 import com.mkumar.ui.theme.MKumarTheme
 import com.mkumar.ui.theme.NikTheme
-//import com.mkumar.viewmodel.CustomerDetailsViewModel
 import com.mkumar.viewmodel.CustomerViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var preferencesManager: PreferencesManager
+
+    private val customerViewModel: CustomerViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        val customerViewModel: CustomerViewModel by viewModels()
-//        val customerDetailsViewModel: CustomerDetailsViewModel by viewModels()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (Build.VERSION.RELEASE.toInt()  <= 13 || Permissions.hasAllRequiredPermissions(this)) {
+
+        if (Build.VERSION.RELEASE.toInt() <= 13 || Permissions.hasAllRequiredPermissions(this)) {
             setContent {
-                NikTheme {
-                    // Your composable content
-                    ScreenNavigator(customerViewModel)
+                CompositionLocalProvider(
+                    LocalPreferencesManager provides preferencesManager
+                ) {
+                    NikTheme {
+                        ScreenNavigator(customerViewModel)
+                    }
                 }
             }
         } else {
-            // Launch PermissionsActivity if any permissions are missing
             startActivity(Intent(this, PermissionsActivity::class.java))
             finish()
         }
     }
 
     fun restartActivity() {
-        val intent = Intent(this, MainActivity::class.java)
-        startActivity(intent)
+        startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
 }

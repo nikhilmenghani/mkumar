@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.mkumar.common.constant.CustomerDetailsConstants
 import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.CustomerDetailsIntent
 import com.mkumar.model.CustomerHeaderUi
@@ -79,7 +78,7 @@ fun CustomerDetailsScreen(
                     val chooser = Intent.createChooser(intent, "Open invoice")
                     runCatching { context.startActivity(chooser) }
                         .onFailure { _ ->
-                            val hint = humanReadableInvoiceLocation(effect.orderId, effect.invoiceNumber)
+                            val hint = viewModel.humanReadableInvoiceLocation(effect.orderId, effect.invoiceNumber)
                             snackbarHostState.showSnackbar(
                                 "No PDF app found. Invoice saved at: $hint"
                             )
@@ -211,9 +210,4 @@ fun CustomerDetailsScreen(
             }
         }
     }
-}
-
-fun humanReadableInvoiceLocation(orderId: String, invoiceNumber: String): String {
-    val fileName = CustomerDetailsConstants.getInvoiceFileName(orderId = orderId, invoiceNumber = invoiceNumber) + ".pdf"
-    return "Files > Downloads > Documents > MKumar > Invoices > $fileName"
 }

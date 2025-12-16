@@ -1,6 +1,7 @@
 package com.mkumar.sync.worker
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.mkumar.data.db.AppDatabase
@@ -12,14 +13,16 @@ import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.data.db.entities.PaymentDto
 import com.mkumar.data.db.entities.PaymentEntity
 import com.mkumar.sync.remote.CloudRemote
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import javax.inject.Inject
 
-class PullFromCloudWorker @Inject constructor(
-    context: Context,
-    params: WorkerParameters,
+@HiltWorker
+class PullFromCloudWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
     private val cloud: CloudRemote,
     private val db: AppDatabase,
     private val json: Json

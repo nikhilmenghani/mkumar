@@ -85,7 +85,6 @@ import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.RecentCustomerCard
 import com.mkumar.ui.screens.RecentCustomersList
 import com.mkumar.ui.screens.RecentOrdersList
-import com.mkumar.ui.screens.customer.humanReadableInvoiceLocation
 import com.mkumar.viewmodel.SearchViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -146,7 +145,7 @@ fun SearchScreen(
                     val chooser = Intent.createChooser(intent, "Open invoice")
                     runCatching { context.startActivity(chooser) }
                         .onFailure { _ ->
-                            val hint = humanReadableInvoiceLocation(effect.orderId, effect.invoiceNumber)
+                            val hint = vm.humanReadableInvoiceLocation(effect.orderId, effect.invoiceNumber)
                             snackbarHostState.showSnackbar(
                                 "No PDF app found. Invoice saved at: $hint"
                             )
@@ -230,6 +229,7 @@ fun SearchScreen(
         if (ui.searchType == SearchType.ORDERS) {
             SearchOrderResultsSection(
                 orderResults = ui.orderResults,
+                invoicePrefix = vm.getInvoicePrefix(),
                 isSearching = ui.isSearching,
                 query = ui.query,
                 onClear = vm::clearResults,
@@ -687,6 +687,7 @@ private fun SearchProgress() {
 @Composable
 fun SearchOrderResultsSection(
     orderResults: List<OrderWithCustomerInfo>,
+    invoicePrefix: String,
     isSearching: Boolean,
     query: String,
     onClear: () -> Unit,
@@ -739,6 +740,7 @@ fun SearchOrderResultsSection(
         Column(Modifier.padding(14.dp)) {
             RecentOrdersList(
                 orders = orderResults,
+                invoicePrefix = invoicePrefix,
                 onOrderClick = onOrderClick,
                 onInvoiceClick = onInvoiceClick,
                 onShareClick = onShareClick,

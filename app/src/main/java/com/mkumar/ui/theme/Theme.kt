@@ -8,7 +8,6 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import com.mkumar.App.Companion.globalClass
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -37,8 +36,8 @@ fun MKumarTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val manager = globalClass.preferencesManager.displayPrefs
-    var dynamicColor = manager.useDynamicColor
+    val manager = LocalPreferencesManager.current
+    var dynamicColor = manager.displayPrefs.useDynamicColor
     val colorScheme = when {
         dynamicColor && true -> {
             val context = LocalContext.current

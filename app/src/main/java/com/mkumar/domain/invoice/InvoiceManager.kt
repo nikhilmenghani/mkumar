@@ -7,6 +7,7 @@ import com.mkumar.common.constant.CustomerDetailsConstants
 import com.mkumar.common.extension.DateFormat
 import com.mkumar.common.extension.formatAsDate
 import com.mkumar.common.files.saveInvoicePdf
+import com.mkumar.data.PreferencesManager
 import com.mkumar.data.ProductFormData
 import com.mkumar.domain.logo.LogoProvider
 import com.mkumar.domain.pricing.PricingInput
@@ -25,10 +26,16 @@ class InvoiceManager @Inject constructor(
     private val orderItemRepo: ProductRepository,
     private val pricing: PricingService,
     private val logoProvider: LogoProvider,
+    private val preferencesManager: PreferencesManager,
     @ApplicationContext private val app: Context,
 ) {
     suspend fun generateInvoicePdf(orderId: String, invoiceNumber: String, logo: Bitmap): Uri? {
-        val fileName = CustomerDetailsConstants.getInvoiceFileName(orderId, invoiceNumber, withTimeStamp = true) + ".pdf"
+        val fileName = CustomerDetailsConstants.getInvoiceFileName(
+            orderId,
+            invoiceNumber,
+            preferencesManager.invoicePrefs.invoicePrefix,
+            preferencesManager.invoicePrefs.invoiceDateFormat,
+            withTimeStamp = true) + ".pdf"
 
         val order = orderRepo.getOrder(orderId) ?: return null
         val itemEntities = orderItemRepo.getItemsForOrder(orderId)
@@ -92,7 +99,7 @@ class InvoiceManager @Inject constructor(
             logoBitmap = logo
         )
 
-        val bytes = InvoicePdfBuilderImpl().build(invoiceData)
+        val bytes = InvoicePdfBuilderImpl(preferencesManager).build(invoiceData)
         return saveInvoicePdf(app, fileName, bytes)
     }
 

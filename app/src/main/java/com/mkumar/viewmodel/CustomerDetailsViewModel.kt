@@ -3,6 +3,8 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mkumar.common.constant.CustomerDetailsConstants
+import com.mkumar.data.PreferencesManager
 import com.mkumar.domain.invoice.InvoiceManager
 import com.mkumar.domain.pricing.PricingService
 import com.mkumar.model.CustomerDetailsEffect
@@ -32,6 +34,7 @@ class CustomerDetailsViewModel @Inject constructor(
     private val orderRepo: OrderRepository,
     private val pricing: PricingService,
     private val invoiceManager: InvoiceManager,
+    private val preferencesManager: PreferencesManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -57,7 +60,7 @@ class CustomerDetailsViewModel @Inject constructor(
                 .map { rel ->
                     // If you have an OrderItemDao, plug it here:
                     // itemsOf = { id -> orderItemDao.getItemsForOrderSync(id).map { it.toUi() } }
-                    rel.toUi(pricing = pricing)
+                    rel.toUi(pricing = pricing, invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix)
                 }
                 .onEach { mapped ->
                     _ui.value = _ui.value.copy(
@@ -85,7 +88,7 @@ class CustomerDetailsViewModel @Inject constructor(
             val ordersFlow = orderRepo.observeOrdersForCustomer(customerId)
                 .map { orders ->
                     orders.map { order ->
-                        order.toUiOrder()
+                        order.toUiOrder(invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix)
                     }.sortedByDescending { it.receivedAt }
                 }
 
@@ -109,6 +112,15 @@ class CustomerDetailsViewModel @Inject constructor(
             is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId, intent.invoiceNumber)
             is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId, intent.invoiceNumber)
         }
+    }
+
+    fun humanReadableInvoiceLocation(orderId: String, invoiceNumber: String): String {
+        val fileName = CustomerDetailsConstants.getInvoiceFileName(
+            orderId = orderId,
+            invoiceNumber = invoiceNumber,
+            invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix,
+            invoiceDateFormatOrdinal = preferencesManager.invoicePrefs.invoiceDateFormat) + ".pdf"
+        return "Files > Downloads > Documents > MKumar > Invoices > $fileName"
     }
 
     private fun createOrder(customerId: String){

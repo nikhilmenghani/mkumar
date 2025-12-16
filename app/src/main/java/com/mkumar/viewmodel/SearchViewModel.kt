@@ -3,6 +3,8 @@ package com.mkumar.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mkumar.common.constant.CustomerDetailsConstants
+import com.mkumar.data.PreferencesManager
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.domain.invoice.InvoiceManager
 import com.mkumar.model.CustomerDetailsEffect
@@ -38,7 +40,8 @@ import javax.inject.Inject
 class SearchViewModel @Inject constructor(
     private val repo: CustomerRepository,
     private val invoiceManager: InvoiceManager,
-    private val orderRepo: OrderRepository
+    private val orderRepo: OrderRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
     data class UiState(
@@ -98,6 +101,17 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    fun getInvoicePrefix(): String =
+        preferencesManager.invoicePrefs.invoicePrefix
+
+    fun humanReadableInvoiceLocation(orderId: String, invoiceNumber: String): String {
+        val fileName = CustomerDetailsConstants.getInvoiceFileName(
+            orderId = orderId,
+            invoiceNumber = invoiceNumber,
+            invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix,
+            invoiceDateFormatOrdinal = preferencesManager.invoicePrefs.invoiceDateFormat) + ".pdf"
+        return "Files > Downloads > Documents > MKumar > Invoices > $fileName"
+    }
 
     fun updateSearchBy(by: SearchBy) {
         _ui.update {

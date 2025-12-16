@@ -59,6 +59,7 @@ fun OrderSheet(
             invoiceNumber = state.draft.invoiceNumber.toString(),
             receivedAt = state.draft.receivedAt,   // <-- raw UTC millis
             isDateReadOnly = false,
+            invoicePrefix = viewModel.getInvoicePrefix(),
             onPickDateTime = { pickedUtc ->
                 viewModel.onIntent(OrderEditorIntent.UpdateOccurredAt(pickedUtc))
             }

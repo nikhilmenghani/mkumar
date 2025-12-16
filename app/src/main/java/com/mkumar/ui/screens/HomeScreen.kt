@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -29,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -44,13 +43,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
@@ -65,167 +61,192 @@ import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
 import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.UiCustomerMini
-import com.mkumar.network.VersionFetcher.fetchLatestVersion
 import com.mkumar.ui.components.cards.CustomerListCard2
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.components.fabs.StandardFab
 import com.mkumar.ui.components.sort.SortBar
-import com.mkumar.ui.navigation.Material3BottomNavigationBar
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.navigation.Screen
 import com.mkumar.ui.navigation.Screens
-import com.mkumar.ui.screens.customer.humanReadableInvoiceLocation
 import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.worker.DownloadWorker
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
+fun HomeScreen(
+    navController: NavHostController,
+    vm: CustomerViewModel
+) {
     val context = LocalActivity.current as MainActivity
     val workManager = WorkManager.getInstance(context)
-    val currentVersion by remember { mutableStateOf(getCurrentVersion(context)) }
-    var latestVersion by remember { mutableStateOf(currentVersion) }
-    var isLatestVersion by remember { mutableStateOf(true) }
-    var isDownloading by remember { mutableStateOf(false) }
 
-    // UI flags
-    val haptic = LocalHapticFeedback.current
+    val homeUi by vm.homeUi.collectAsStateWithLifecycle()
+    val recentOrders by vm.recentOrders.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val (pendingDeleteOrderId, setPendingDeleteOrderId) = remember { mutableStateOf<String?>(null) }
+    val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+
+    var fabBlockHeight by remember { mutableStateOf(0.dp) }
+    var pendingDeleteOrderId by remember { mutableStateOf<String?>(null) }
+
+    /* ------------------------------------------------------------------ */
+    /* BOOTSTRAP + EFFECTS                                                 */
+    /* ------------------------------------------------------------------ */
 
     LaunchedEffect(Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            latestVersion = fetchLatestVersion()
-            isLatestVersion = (currentVersion == latestVersion) || (latestVersion == "Unknown")
-            vm.effects.collectLatest { effect ->
-                when (effect) {
-                    is CustomerDetailsEffect.ShowMessage ->
-                        snackbarHostState.showSnackbar(effect.message)
+        // 🔑 This restores "update icon on first load"
+        vm.bootstrap(getCurrentVersion(context))
 
-                    is CustomerDetailsEffect.ViewInvoice -> {
-                        val uri = effect.uri
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, "application/pdf")
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                        val chooser = Intent.createChooser(intent, "Open invoice")
-                        runCatching { context.startActivity(chooser) }
-                            .onFailure { _ ->
-                                val hint = humanReadableInvoiceLocation(effect.orderId, effect.invoiceNumber)
-                                snackbarHostState.showSnackbar(
-                                    "No PDF app found. Invoice saved at: $hint"
-                                )
-                            }
+        vm.effects.collectLatest { effect ->
+            when (effect) {
+                is CustomerDetailsEffect.ShowMessage ->
+                    snackbarHostState.showSnackbar(effect.message)
+
+                is CustomerDetailsEffect.ViewInvoice -> {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(effect.uri, "application/pdf")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-
-                    is CustomerDetailsEffect.ShareInvoice -> {
-                        val send = Intent(Intent.ACTION_SEND).apply {
-                            type = "application/pdf"
-                            putExtra(Intent.EXTRA_STREAM, effect.uri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            clipData = ClipData.newRawUri("invoice", effect.uri)
-                        }
-                        runCatching { context.startActivity(Intent.createChooser(send, "Share invoice")) }
-                            .onFailure {
-                                snackbarHostState.showSnackbar(
-                                    "No app to share PDF. File is in Files > Downloads > Documents > MKumar > Invoices"
-                                )
-                            }
+                    runCatching {
+                        context.startActivity(Intent.createChooser(intent, "Open invoice"))
+                    }.onFailure {
+                        snackbarHostState.showSnackbar(
+                            "Invoice saved locally. No PDF viewer found."
+                        )
                     }
-
-                    else -> {}
                 }
+
+                is CustomerDetailsEffect.ShareInvoice -> {
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, effect.uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        clipData = ClipData.newRawUri("invoice", effect.uri)
+                    }
+                    runCatching {
+                        context.startActivity(Intent.createChooser(send, "Share invoice"))
+                    }.onFailure {
+                        snackbarHostState.showSnackbar("No app available to share PDF")
+                    }
+                }
+
+                else -> Unit
             }
         }
     }
 
-    val density = LocalDensity.current
-    var fabBlockHeight by remember { mutableStateOf(0.dp) }
+    /* ------------------------------------------------------------------ */
+    /* UI                                                                 */
+    /* ------------------------------------------------------------------ */
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(text = "M Kumar")
-                        Text(
-                            text = "v$currentVersion",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("M Kumar")
+                        if (homeUi.currentVersion.isNotBlank()) {
+                            Text(
+                                text = "v${homeUi.currentVersion}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 actions = {
-                    IconButton(onClick = { context.restartActivity() }) {
+
+                    // Manual refresh (still supported)
+                    IconButton(onClick = vm::checkVersion) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
-                    if (!isLatestVersion) {
+
+                    // 🔄 Update available
+                    if (!homeUi.isLatest) {
                         Box {
                             IconButton(
+                                enabled = !homeUi.isDownloading,
                                 onClick = {
-                                    isDownloading = true
-                                    val downloadUrl = getAppDownloadUrl(latestVersion)
-                                    val destFilePath = "${getExternalStorageDir()}/Download/MKumar.apk"
-                                    val inputData = workDataOf(
-                                        DownloadWorker.DOWNLOAD_URL_KEY to downloadUrl,
-                                        DownloadWorker.DEST_FILE_PATH_KEY to destFilePath,
-                                        DownloadWorker.DOWNLOAD_TYPE_KEY to DownloadWorker.DOWNLOAD_TYPE_APK
-                                    )
-                                    val downloadRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
-                                        .setInputData(inputData)
-                                        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-                                        .build()
-                                    workManager.enqueue(downloadRequest)
-                                    workManager.getWorkInfoByIdLiveData(downloadRequest.id).observeForever { info ->
-                                        if (info?.state == WorkInfo.State.SUCCEEDED) {
-                                            isDownloading = false
-                                            if (context.packageManager.canRequestPackageInstalls()) {
-                                                installApk(context, destFilePath)
+                                    val downloadUrl =
+                                        getAppDownloadUrl(homeUi.latestVersion)
+                                    val destPath =
+                                        "${getExternalStorageDir()}/Download/MKumar.apk"
+
+                                    val request =
+                                        OneTimeWorkRequestBuilder<DownloadWorker>()
+                                            .setInputData(
+                                                workDataOf(
+                                                    DownloadWorker.DOWNLOAD_URL_KEY to downloadUrl,
+                                                    DownloadWorker.DEST_FILE_PATH_KEY to destPath,
+                                                    DownloadWorker.DOWNLOAD_TYPE_KEY to
+                                                            DownloadWorker.DOWNLOAD_TYPE_APK
+                                                )
+                                            )
+                                            .setConstraints(
+                                                Constraints.Builder()
+                                                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                                                    .build()
+                                            )
+                                            .build()
+
+                                    vm.setDownloading(true)
+                                    workManager.enqueue(request)
+
+                                    workManager.getWorkInfoByIdLiveData(request.id)
+                                        .observeForever { info ->
+                                            when (info?.state) {
+                                                WorkInfo.State.SUCCEEDED -> {
+                                                    vm.setDownloading(false)
+                                                    if (context.packageManager
+                                                            .canRequestPackageInstalls()
+                                                    ) {
+                                                        installApk(context, destPath)
+                                                    }
+                                                }
+
+                                                WorkInfo.State.FAILED -> {
+                                                    vm.setDownloading(false)
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Download failed",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                }
+
+                                                else -> Unit
                                             }
-                                        } else if (info?.state == WorkInfo.State.FAILED) {
-                                            isDownloading = false
-                                            Toast.makeText(context, "Failed to download update", Toast.LENGTH_LONG).show()
                                         }
-                                    }
-                                },
-                                enabled = !isDownloading
+                                }
                             ) {
-                                if (isDownloading) {
+                                if (homeUi.isDownloading) {
                                     CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
+                                        modifier = Modifier.size(22.dp),
                                         strokeWidth = 2.dp
                                     )
                                 } else {
-                                    Icon(
-                                        Icons.Default.SystemUpdate,
-                                        contentDescription = "Update",
-                                        modifier = Modifier.size(24.dp)
-                                    )
+                                    Icon(Icons.Default.SystemUpdate, "Update")
                                 }
                             }
 
                             Badge(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .offset(x = 4.dp, y = (-4).dp)   // fine-tuned overlap, not shifting the icon
+                                    .offset(x = 4.dp, y = (-4).dp)
                             ) {
-                                Text(
-                                    text = latestVersion,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    maxLines = 1
-                                )
+                                Text(homeUi.latestVersion)
                             }
                         }
                     }
-                    IconButton(onClick = {
-                        navController.navigateWithState(route = Screens.Settings.name)
-                    }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+
+                    IconButton(
+                        onClick = {
+                            navController.navigateWithState(Screens.Settings.name)
+                        }
+                    ) {
+                        Icon(Icons.Default.Settings, "Settings")
                     }
                 }
             )
@@ -233,23 +254,31 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
         floatingActionButton = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.onGloballyPositioned { coords ->
-                    fabBlockHeight = with(density) { coords.size.height.toDp() }
-                }) {
+                modifier = Modifier.onGloballyPositioned {
+                    fabBlockHeight = with(density) { it.size.height.toDp() }
+                }
+            ) {
                 StandardFab(
                     text = "",
-                    icon = { Icon(Icons.Default.PersonSearch, contentDescription = "Search", modifier = Modifier.size(24.dp)) },
+                    icon = {
+                        Icon(
+                            Icons.Default.PersonSearch,
+                            contentDescription = "Search",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         navController.navigate(Screen.Search.route)
-                    },
+                    }
                 )
             }
         }
-    ) { paddingValues ->
+    ) { padding ->
+
         Column(
             modifier = Modifier
-                .padding(paddingValues)
+                .padding(padding)
                 .padding(horizontal = 12.dp)
         ) {
 
@@ -257,48 +286,50 @@ fun HomeScreen(navController: NavHostController, vm: CustomerViewModel) {
                 title = "Recent Orders",
                 sortField = vm.orderSortBy.collectAsStateWithLifecycle().value,
                 sortOrderAsc = vm.orderSortAsc.collectAsStateWithLifecycle().value,
-                onSortFieldChange = { vm.setOrderSortBy(it) },
-                onSortOrderChange = { vm.setOrderSortAsc(it) }
+                onSortFieldChange = vm::setOrderSortBy,
+                onSortOrderChange = vm::setOrderSortAsc
             ) {
                 RecentOrdersList(
-                    orders = vm.recentOrders.collectAsStateWithLifecycle().value,
+                    orders = recentOrders,
+                    invoicePrefix = vm.getInvoicePrefix(),
                     onOrderClick = { orderId, customerId ->
-                        navController.navigate(Routes.orderEditor(customerId, orderId))
+                        navController.navigate(
+                            Routes.orderEditor(customerId, orderId)
+                        )
                     },
-                    onInvoiceClick = { orderId, invoiceNumber ->
-                        vm.viewInvoice(orderId, invoiceNumber.toString())
+                    onInvoiceClick = { orderId, invoice ->
+                        vm.viewInvoice(orderId, invoice.toString())
                     },
-                    onShareClick = { orderId, invoiceNumber ->
-                        vm.shareInvoice(orderId, invoiceNumber.toString())
+                    onShareClick = { orderId, invoice ->
+                        vm.shareInvoice(orderId, invoice.toString())
                     },
-                    onDeleteClick = { orderId ->
-                        setPendingDeleteOrderId(orderId)
-                    },
-                    onOpenCustomer = { customerId ->
-                        navController.navigate(Routes.customerDetail(customerId))
+                    onDeleteClick = { pendingDeleteOrderId = it },
+                    onOpenCustomer = {
+                        navController.navigate(Routes.customerDetail(it))
                     }
                 )
             }
         }
     }
 
-    if (pendingDeleteOrderId != null) {
+    pendingDeleteOrderId?.let { orderId ->
         ConfirmActionDialog(
             title = "Delete Order",
-            message = "This action cannot be undone. Delete this order?",
+            message = "This action cannot be undone.",
             confirmLabel = "Delete",
             dismissLabel = "Cancel",
             highlightConfirmAsDestructive = true,
             onConfirm = {
-                vm.deleteOrder(pendingDeleteOrderId)
-                setPendingDeleteOrderId(null)
+                vm.deleteOrder(orderId)
+                pendingDeleteOrderId = null
             },
-            onDismiss = { setPendingDeleteOrderId(null) }
+            onDismiss = { pendingDeleteOrderId = null }
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/* -------------------------------------------------------------------------- */
+
 @Composable
 fun DashboardSection(
     title: String,
@@ -345,46 +376,6 @@ fun CustomerList(
                 onEdit = onEdit,
                 onDelete = onDelete
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview(
-    name = "Nord 3 Portrait",
-    showSystemUi = true,
-    device = "spec:width=1240px,height=2772px,dpi=450"
-)
-@PreviewFontScale()
-@Composable
-fun HomeScreenPreview() {
-    MaterialTheme {
-        val navController = rememberNavController()
-
-        Scaffold(
-            topBar = {
-                TopAppBar(title = { Text("M Kumar") })
-            },
-            bottomBar = { Material3BottomNavigationBar(navController) },
-            contentWindowInsets = WindowInsets(0.dp)
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                CustomerList(
-                    customers = listOf(
-                        UiCustomerMini(id = "1", name = "John Doe", phone = "9876543210"),
-                        UiCustomerMini(id = "2", name = "Jane Smith", phone = "8765432109"),
-                        UiCustomerMini(id = "3", name = "Bob Wilson", phone = "7654321098")
-                    ),
-                    onClick = {},
-                    onDelete = {},
-                    onEdit = {},
-                    extraBottomPadding = 0.dp
-                )
-            }
         }
     }
 }

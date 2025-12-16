@@ -1,20 +1,23 @@
 package com.mkumar.sync.worker
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.db.dao.OutboxDao
 import com.mkumar.data.db.entities.OutboxEntity
 import com.mkumar.sync.remote.CloudRemote
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import javax.inject.Inject
 
-class SyncOutboxWorker @Inject constructor(
-    appContext: Context,
-    params: WorkerParameters,
+@HiltWorker
+class SyncOutboxWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted params: WorkerParameters,
     private val outboxDao: OutboxDao,
     private val cloud: CloudRemote,
     private val json: Json

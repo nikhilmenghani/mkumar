@@ -7,7 +7,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
-import com.mkumar.App.Companion.globalClass
+import com.mkumar.data.PreferencesManager
 import java.io.ByteArrayOutputStream
 import java.text.NumberFormat
 import java.util.Currency
@@ -15,9 +15,17 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.max
 
-class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
+class InvoicePdfBuilderImpl @Inject constructor(
+    private val preferencesManager: PreferencesManager
+) : InvoicePdfBuilder {
 
     override fun build(data: InvoiceData): ByteArray {
+
+        val renderCtx = InvoiceRenderContext(
+            productHighlightIntensity =
+                preferencesManager.invoicePrefs.productHighlightIntensity
+        )
+
         val doc = PdfDocument()
         val out = ByteArrayOutputStream()
 
@@ -33,13 +41,13 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
         // Page 1
         pager.startPage()
-        HeaderSection.draw(pager, data, typo, rules)
+        HeaderSection.draw(pager, data, typo, rules, renderCtx)
 
         // Items header
         ItemsSection.drawHeader(pager, typo, rules)
 
         // Items rows (auto page-break; re-draws headers on new pages)
-        ItemsSection.drawRows(pager, data, money, typo, rules)
+        ItemsSection.drawRows(pager, data, money, typo, rules, renderCtx)
 
         // Totals
         TotalsSection.draw(pager, data, money, typo)
@@ -64,6 +72,10 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         "No guarantee on frames or frame color.",
         "No scratch guarantee on lenses.",
         "Subject to Ahmedabad jurisdiction only."
+    )
+
+    data class InvoiceRenderContext(
+        val productHighlightIntensity: Int
     )
 
 
@@ -409,7 +421,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
         )
 
         @SuppressLint("UseKtx")
-        fun draw(pager: Pager, data: InvoiceData, typo: Typography, rules: Rules) {
+        fun draw(pager: Pager, data: InvoiceData, typo: Typography, rules: Rules, ctx: InvoiceRenderContext) {
 
             val c = pager.canvas
             val centerX = pager.contentLeft + pager.contentWidth / 2f
@@ -527,7 +539,8 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             ProductsChipsSection.drawChips(
                 pager,
                 advertisedProducts,   // bind from outer list
-                typo
+                typo,
+                ctx
             )
 
             pager.lineAcross(rules.faintLine)
@@ -692,7 +705,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
             TableDrawer(pager, spec, typo.tableHeader, typo.tableText, rules).header()
         }
 
-        fun drawRows(pager: Pager, data: InvoiceData, money: NumberFormat, typo: Typography, rules: Rules) {
+        fun drawRows(pager: Pager, data: InvoiceData, money: NumberFormat, typo: Typography, rules: Rules, ctx: InvoiceRenderContext) {
             val table = TableDrawer(pager, spec, typo.tableHeader, typo.tableText, rules)
             val singleRowHeight = 18f
             val twoLineRowHeight = 28f
@@ -705,7 +718,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
                 // Page break handling (we know the row height)
                 pager.ensure(rowHeight + 8f) {
-                    HeaderSection.draw(pager, data, typo, rules)
+                    HeaderSection.draw(pager, data, typo, rules, ctx)
                     drawHeader(pager, typo, rules)
                 }
 
@@ -897,7 +910,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
 
     private object ProductsChipsSection {
 
-        fun drawChips(pager: Pager, items: List<String>, typo: Typography) {
+        fun drawChips(pager: Pager, items: List<String>, typo: Typography, ctx: InvoiceRenderContext) {
             if (items.isEmpty()) return
 
             val c = pager.canvas
@@ -944,7 +957,7 @@ class InvoicePdfBuilderImpl @Inject constructor() : InvoicePdfBuilder {
                 // Draw row of chips
                 row.forEachIndexed { i, label ->
                     val isLastProduct = (rowIndex == rows.lastIndex && i == row.lastIndex)
-                    val intensity = globalClass.preferencesManager.invoicePrefs.productHighlightIntensity
+                    val intensity = ctx.productHighlightIntensity
                     val bgPaint = if (isLastProduct) {
                         Paint().apply {
                             color = Color.rgb(135-intensity, 135-intensity, 135-intensity)
