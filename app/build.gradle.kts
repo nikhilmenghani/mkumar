@@ -101,7 +101,7 @@ dependencies {
     // ---------- WorkManager ----------
     implementation(libs.androidx.work.runtime.ktx)
 
-    // ---------- Hilt (CORRECT & MINIMAL) ----------
+    // ---------- Hilt ----------
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
 

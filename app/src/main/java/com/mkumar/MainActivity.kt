@@ -15,6 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.mkumar.data.PreferencesManager
 import com.mkumar.permission.Permissions
 import com.mkumar.ui.navigation.ScreenNavigator
+import com.mkumar.ui.screens.PermissionsScreen
 import com.mkumar.ui.theme.LocalPreferencesManager
 import com.mkumar.ui.theme.MKumarTheme
 import com.mkumar.ui.theme.NikTheme
@@ -33,19 +34,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        if (Build.VERSION.RELEASE.toInt() <= 13 || Permissions.hasAllRequiredPermissions(this)) {
-            setContent {
-                CompositionLocalProvider(
-                    LocalPreferencesManager provides preferencesManager
-                ) {
-                    NikTheme {
+        setContent {
+            CompositionLocalProvider(
+                LocalPreferencesManager provides preferencesManager
+            ) {
+                NikTheme {
+                    if (Build.VERSION.RELEASE.toInt() <= 13 || Permissions.hasAllRequiredPermissions(this)) {
                         ScreenNavigator(customerViewModel)
+                    } else {
+                        PermissionsScreen(
+                            onAllPermissionsGranted = ::onAllPermissionsGranted
+                        )
                     }
                 }
             }
-        } else {
-            startActivity(Intent(this, PermissionsActivity::class.java))
+        }
+    }
+
+    private fun onAllPermissionsGranted() {
+        if (Permissions.hasAllRequiredPermissions(this)) {
+            val intent = Intent(this, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
             finish()
         }
     }
