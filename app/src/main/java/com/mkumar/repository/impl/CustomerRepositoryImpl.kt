@@ -91,15 +91,17 @@ class CustomerRepositoryImpl @Inject constructor(
     override fun getRecentOrders(
         limit: Int,
         sortBy: String,
-        ascending: Boolean
+        ascending: Boolean,
+        paymentDueOnly: Boolean
     ): Flow<List<OrderWithCustomerInfo>> {
-        return getRecentOrdersWithCustomer(limit, sortBy, ascending)
+        return getRecentOrdersWithCustomer(limit, sortBy, ascending, paymentDueOnly)
     }
 
     fun getRecentOrdersWithCustomer(
         limit: Int,
         sortBy: String,
-        ascending: Boolean
+        ascending: Boolean,
+        paymentDueOnly: Boolean
     ): Flow<List<OrderWithCustomerInfo>> {
         val order = if (ascending) "ASC" else "DESC"
         val sortColumn = when (sortBy) {
@@ -114,6 +116,7 @@ class CustomerRepositoryImpl @Inject constructor(
             o.id, 
             o.invoiceSeq AS invoiceNumber, 
             o.createdAt, 
+            o.updatedAt,
             o.totalAmount, 
             o.adjustedAmount, 
             o.remainingBalance, 
@@ -122,11 +125,12 @@ class CustomerRepositoryImpl @Inject constructor(
             c.phone AS customerPhone
         FROM orders o
         JOIN customers c ON c.id = o.customerId
+        WHERE (? = 0 OR o.remainingBalance > 0)
         ORDER BY $sortColumn $order
         LIMIT ?
         """.trimIndent()
 
-        val query = SimpleSQLiteQuery(sql, arrayOf(limit))
+        val query = SimpleSQLiteQuery(sql, arrayOf(if (paymentDueOnly) 1 else 0, limit))
         return orderDao.getRecentOrdersWithCustomerRaw(query)
     }
 
@@ -240,8 +244,12 @@ class CustomerRepositoryImpl @Inject constructor(
         return minis.orderByIds(finalIds) { it.id }
     }
 
-    override suspend fun searchOrdersAdvanced(invoice: String?): List<OrderWithCustomerInfo> {
+    override suspend fun searchOrdersAdvanced(
+        invoice: String?,
+        paymentDueOnly: Boolean
+    ): List<OrderWithCustomerInfo> {
         val orders = orderDao.searchOrdersByInvoice(invoice.toString())
+            .filter { !paymentDueOnly || it.remainingBalance > 0 }
         if (orders.isEmpty()) return emptyList()
 
         val customerIds = orders.map { it.customerId }.distinct()
@@ -254,6 +262,7 @@ class CustomerRepositoryImpl @Inject constructor(
                     id = order.id,
                     invoiceNumber = order.invoiceSeq ?: 0L,
                     createdAt = order.createdAt,
+                    updatedAt = order.updatedAt,
                     totalAmount = order.totalAmount,
                     adjustedAmount = order.adjustedAmount,
                     remainingBalance = order.remainingBalance,

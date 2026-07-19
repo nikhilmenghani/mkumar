@@ -42,7 +42,7 @@ interface OrderDao {
     fun getRecentOrdersWithCustomerRaw(query: SimpleSQLiteQuery): Flow<List<OrderWithCustomerInfo>>
 
     @Query("""
-    SELECT o.id, o.invoiceSeq AS invoiceNumber, o.createdAt, o.totalAmount, o.adjustedAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
+    SELECT o.id, o.invoiceSeq AS invoiceNumber, o.createdAt, o.updatedAt, o.totalAmount, o.adjustedAmount, o.remainingBalance, o.customerId, c.name AS customerName, c.phone AS customerPhone
     FROM orders o
     JOIN customers c ON c.id = o.customerId
     ORDER BY o.receivedAt DESC

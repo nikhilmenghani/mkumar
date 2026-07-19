@@ -81,6 +81,7 @@ import com.mkumar.model.UiCustomerMini
 import com.mkumar.ui.components.bottomsheets.CustomerEditorBottomSheet
 import com.mkumar.ui.components.bottomsheets.CustomerEditorFocus
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
+import com.mkumar.ui.components.sort.SortBar
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.RecentCustomerCard
 import com.mkumar.ui.screens.RecentCustomersList
@@ -101,6 +102,9 @@ fun SearchScreen(
     openCustomer: (String) -> Unit = { id -> navController.navigate("CustomerDetail/$id") }
 ) {
     val ui by vm.ui.collectAsState()
+    val ordersList by vm.ordersList.collectAsState()
+    val orderSortBy by vm.orderSortBy.collectAsState()
+    val orderSortAsc by vm.orderSortAsc.collectAsState()
     var showAdvancedOptions by remember { mutableStateOf(false) }
 
     // -------------------------------
@@ -229,7 +233,11 @@ fun SearchScreen(
 
         if (ui.searchType == SearchType.ORDERS) {
             SearchOrderResultsSection(
-                orderResults = ui.orderResults,
+                orderResults = if (ui.query.isBlank()) {
+                    ordersList
+                } else {
+                    ui.orderResults.sortedForDisplay(orderSortBy, orderSortAsc)
+                },
                 invoicePrefix = vm.getInvoicePrefix(),
                 isSearching = ui.isSearching,
                 query = ui.query,
@@ -248,7 +256,13 @@ fun SearchScreen(
                 },
                 onOpenCustomer = { customerId ->
                     navController.navigate(Routes.customerDetail(customerId))
-                }
+                },
+                sortField = orderSortBy,
+                sortOrderAsc = orderSortAsc,
+                onSortFieldChange = vm::setOrderSortBy,
+                onSortOrderChange = vm::setOrderSortAsc,
+                paymentDueOnly = ui.remainingOnly,
+                onPaymentDueOnlyChange = vm::updateRemainingOnly
             )
         } else {
             SearchCustomerResultsSection(
@@ -680,31 +694,31 @@ fun SearchOrderResultsSection(
     onInvoiceClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onShareClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onDeleteClick: (orderId: String) -> Unit,
-    onOpenCustomer: (customerId: String) -> Unit
+    onOpenCustomer: (customerId: String) -> Unit,
+    sortField: String,
+    sortOrderAsc: Boolean,
+    onSortFieldChange: (String) -> Unit,
+    onSortOrderChange: (Boolean) -> Unit,
+    paymentDueOnly: Boolean,
+    onPaymentDueOnlyChange: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
         // Header ----------------------------------------------
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Orders (${orderResults.size})",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+        SortBar(
+            title = "Orders (${orderResults.size})",
+            sortField = sortField,
+            sortOrderAsc = sortOrderAsc,
+            onSortFieldChange = onSortFieldChange,
+            onSortOrderChange = onSortOrderChange,
+            paymentDueOnly = paymentDueOnly,
+            onPaymentDueOnlyChange = onPaymentDueOnlyChange
+        )
 
-            Spacer(Modifier.weight(1f))
-
-            if (query.isNotBlank() && orderResults.isNotEmpty()) {
-                TextButton(onClick = onClear) {
-                    Text("Clear")
-                }
+        if (query.isNotBlank() && orderResults.isNotEmpty()) {
+            TextButton(onClick = onClear, modifier = Modifier.align(Alignment.End)) {
+                Text("Clear")
             }
         }
 
@@ -925,6 +939,18 @@ private fun NoResultsAddCustomer(
             }
         }
     }
+}
+
+private fun List<OrderWithCustomerInfo>.sortedForDisplay(
+    field: String,
+    ascending: Boolean
+): List<OrderWithCustomerInfo> {
+    val comparator = when (field) {
+        "Name" -> compareBy<OrderWithCustomerInfo> { it.customerName.lowercase() }
+        "UpdatedAt" -> compareBy { it.updatedAt }
+        else -> compareBy { it.invoiceNumber }
+    }
+    return sortedWith(if (ascending) comparator else comparator.reversed())
 }
 
 // ================================================================

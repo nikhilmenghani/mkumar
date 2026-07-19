@@ -17,6 +17,7 @@ import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,9 +28,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -72,6 +76,35 @@ class SearchViewModel @Inject constructor(
 
     private val _ui = MutableStateFlow(UiState())
     val ui: StateFlow<UiState> = _ui.asStateFlow()
+    private val _orderSortBy = MutableStateFlow("Invoice")
+    private val _orderSortAsc = MutableStateFlow(false)
+
+    val orderSortBy: StateFlow<String> = _orderSortBy.asStateFlow()
+    val orderSortAsc: StateFlow<Boolean> = _orderSortAsc.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val ordersList = combine(
+        _orderSortBy,
+        _orderSortAsc,
+        _ui.map { it.remainingOnly }
+    ) { sortBy, ascending, dueOnly -> Triple(sortBy, ascending, dueOnly) }
+        .flatMapLatest { (sortBy, ascending, dueOnly) ->
+            repo.getRecentOrders(
+                limit = Int.MAX_VALUE,
+                sortBy = sortBy,
+                ascending = ascending,
+                paymentDueOnly = dueOnly
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun setOrderSortBy(value: String) {
+        _orderSortBy.value = value
+    }
+
+    fun setOrderSortAsc(value: Boolean) {
+        _orderSortAsc.value = value
+    }
 
     fun updateQuery(value: String) {
         _ui.update { it.copy(query = value) }
@@ -146,7 +179,7 @@ class SearchViewModel @Inject constructor(
             .onEach { (q, invoice, remaining, mode, type) ->
 
                 // No text → show recent customers only
-                if (q.isBlank() && !remaining) {
+                if (q.isBlank() && (!remaining || type == SearchType.ORDERS)) {
                     _ui.update {
                         it.copy(
                             results = emptyList(),
@@ -176,6 +209,7 @@ class SearchViewModel @Inject constructor(
                             val results = runCatching {
                                 repo.searchOrdersAdvanced(
                                     invoice = q.takeIf { it.isNotBlank() },
+                                    paymentDueOnly = remaining
                                 )
                             }.getOrDefault(emptyList())
                             _ui.update { it.copy(orderResults = results, isSearching = false) }

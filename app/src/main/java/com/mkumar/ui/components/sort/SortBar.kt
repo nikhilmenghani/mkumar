@@ -46,6 +46,8 @@ fun SortBar(
     sortOrderAsc: Boolean,
     onSortFieldChange: (String) -> Unit,
     onSortOrderChange: (Boolean) -> Unit,
+    paymentDueOnly: Boolean = false,
+    onPaymentDueOnlyChange: (Boolean) -> Unit = {},
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -83,7 +85,7 @@ fun SortBar(
                 val orderSymbol = if (sortOrderAsc) "↑" else "↓"
 
                 Text(
-                    text = "Sort: $sortField $orderSymbol",
+                    text = "Sort: $sortField $orderSymbol${if (paymentDueOnly) " • Due" else ""}",
                     style = MaterialTheme.typography.titleMedium,   // UPGRADED
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -174,6 +176,21 @@ fun SortBar(
                         }
                     )
                 }
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                Text(
+                    text = "Filter",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 10.dp)
+                )
+
+                FilterChip(
+                    selected = paymentDueOnly,
+                    onClick = { onPaymentDueOnlyChange(!paymentDueOnly) },
+                    label = { Text("Payment due only") }
+                )
             }
         }
 

@@ -4,6 +4,7 @@ data class OrderWithCustomerInfo(
     val id: String,
     val invoiceNumber: Long,
     val createdAt: Long,
+    val updatedAt: Long,
     val totalAmount: Int,
     val adjustedAmount: Int,
     val remainingBalance: Int,

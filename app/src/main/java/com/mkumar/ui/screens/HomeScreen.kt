@@ -285,7 +285,9 @@ fun HomeScreen(
                 sortField = vm.orderSortBy.collectAsStateWithLifecycle().value,
                 sortOrderAsc = vm.orderSortAsc.collectAsStateWithLifecycle().value,
                 onSortFieldChange = vm::setOrderSortBy,
-                onSortOrderChange = vm::setOrderSortAsc
+                onSortOrderChange = vm::setOrderSortAsc,
+                paymentDueOnly = vm.paymentDueOnly.collectAsStateWithLifecycle().value,
+                onPaymentDueOnlyChange = vm::setPaymentDueOnly
             ) {
                 RecentOrdersList(
                     orders = recentOrders,
@@ -336,6 +338,8 @@ fun DashboardSection(
     sortOrderAsc: Boolean,
     onSortFieldChange: (String) -> Unit,
     onSortOrderChange: (Boolean) -> Unit,
+    paymentDueOnly: Boolean,
+    onPaymentDueOnlyChange: (Boolean) -> Unit,
     content: @Composable () -> Unit
 ) {
     SortBar(
@@ -344,7 +348,9 @@ fun DashboardSection(
         sortField = sortField,
         sortOrderAsc = sortOrderAsc,
         onSortFieldChange = onSortFieldChange,
-        onSortOrderChange = onSortOrderChange
+        onSortOrderChange = onSortOrderChange,
+        paymentDueOnly = paymentDueOnly,
+        onPaymentDueOnlyChange = onPaymentDueOnlyChange
     )
     content()
 }

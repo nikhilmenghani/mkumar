@@ -41,9 +41,11 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
 
     private val _orderSortBy = MutableStateFlow("Invoice")
     private val _orderSortAsc = MutableStateFlow(false)
+    private val _paymentDueOnly = MutableStateFlow(false)
 
     val orderSortBy: StateFlow<String> = _orderSortBy.asStateFlow()
     val orderSortAsc: StateFlow<Boolean> = _orderSortAsc.asStateFlow()
+    val paymentDueOnly: StateFlow<Boolean> = _paymentDueOnly.asStateFlow()
 
     fun setOrderSortBy(sortBy: String) {
         _orderSortBy.value = sortBy
@@ -51,6 +53,10 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
 
     fun setOrderSortAsc(asc: Boolean) {
         _orderSortAsc.value = asc
+    }
+
+    fun setPaymentDueOnly(enabled: Boolean) {
+        _paymentDueOnly.value = enabled
     }
 
     /* -------------------- HOME UI -------------------- */
@@ -106,14 +112,16 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
     @OptIn(ExperimentalCoroutinesApi::class)
     val recentOrders = combine(
         _orderSortBy,
-        _orderSortAsc
-    ) { sortBy, asc ->
-        sortBy to asc
-    }.flatMapLatest { (sortBy, asc) ->
+        _orderSortAsc,
+        _paymentDueOnly
+    ) { sortBy, asc, dueOnly ->
+        Triple(sortBy, asc, dueOnly)
+    }.flatMapLatest { (sortBy, asc, dueOnly) ->
         repository.getRecentOrders(
             limit = 10,
             sortBy = sortBy,
-            ascending = asc
+            ascending = asc,
+            paymentDueOnly = dueOnly
         )
     }.stateIn(
         scope = viewModelScope,
