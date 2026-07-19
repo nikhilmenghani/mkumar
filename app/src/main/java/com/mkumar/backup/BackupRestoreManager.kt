@@ -18,20 +18,21 @@ class BackupRestoreManager @Inject constructor(
     private val snapshotter: BackupSnapshotter,
     private val database: AppDatabase
 ) {
-    suspend fun findBackup(): RemoteBackup? = provider.discoverBackup()
+    suspend fun findBackups(): List<RestoreOption> {
+        val remote = provider.discoverBackup() ?: return emptyList()
+        return remote.entries.map { RestoreOption(remote, it) }
+    }
 
-    suspend fun restoreLatest(): RestoreResult = withContext(Dispatchers.IO) {
+    suspend fun restore(option: RestoreOption): RestoreResult = withContext(Dispatchers.IO) {
         var download: File? = null
         var safety: DatabaseSnapshot? = null
         var databaseClosed = false
         val target = context.getDatabasePath("mkumar.db")
         try {
-            val remote = provider.discoverBackup()
-                ?: return@withContext RestoreResult.Failure("No M Kumar backup was found for this token")
             download = File(context.cacheDir, "mkumar-restore-${System.currentTimeMillis()}.db")
-            provider.download(remote, download)
-            val schema = snapshotter.validate(download, remote.manifest.sha256)
-            require(schema == remote.manifest.databaseSchemaVersion) {
+            provider.download(option.remote, option.entry, download)
+            val schema = snapshotter.validate(download, option.entry.sha256)
+            require(schema == option.entry.databaseSchemaVersion) {
                 "Backup schema does not match its manifest"
             }
             require(schema == 1) {
@@ -52,7 +53,7 @@ class BackupRestoreManager @Inject constructor(
                 StandardCopyOption.ATOMIC_MOVE
             )
             download = null
-            RestoreResult.Success(remote.manifest)
+            RestoreResult.Success(option.entry)
         } catch (t: Throwable) {
             if (databaseClosed && safety?.file?.isFile == true) {
                 runCatching {

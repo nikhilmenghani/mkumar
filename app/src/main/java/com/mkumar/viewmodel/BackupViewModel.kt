@@ -1,10 +1,18 @@
 package com.mkumar.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.mkumar.backup.BackupRestoreManager
 import com.mkumar.backup.BackupScheduler
 import com.mkumar.backup.RestoreResult
+import com.mkumar.backup.RestoreOption
+import com.mkumar.backup.worker.DatabaseBackupWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,39 +22,87 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BackupViewModel @Inject constructor(
+    @ApplicationContext context: Context,
     private val scheduler: BackupScheduler,
     private val restoreManager: BackupRestoreManager
 ) : ViewModel() {
+    private val workManager = WorkManager.getInstance(context)
+    private var manualBackupLiveData: LiveData<WorkInfo?>? = null
+    private var manualBackupObserver: Observer<WorkInfo?>? = null
     private val _state = MutableStateFlow<BackupUiState>(BackupUiState.Idle)
     val state: StateFlow<BackupUiState> = _state.asStateFlow()
 
     fun backupNow() {
-        scheduler.enqueueManual()
-        _state.value = BackupUiState.Message("Backup queued. It will run when network and battery constraints allow.")
+        val workId = scheduler.enqueueManual()
+        _state.value = BackupUiState.Message("Backup queued. Waiting for network and battery constraints.")
+        stopObservingManualBackup()
+        val liveData = workManager.getWorkInfoByIdLiveData(workId)
+        val observer = Observer<WorkInfo?> { info ->
+            if (info != null) {
+                _state.value = when (info.state) {
+                    WorkInfo.State.BLOCKED -> BackupUiState.Message("Backup queued behind another task.")
+                    WorkInfo.State.ENQUEUED -> {
+                        if (info.runAttemptCount > 0) BackupUiState.Message("Backup retry scheduled.")
+                        else BackupUiState.Message("Backup queued. Waiting for network and battery constraints.")
+                    }
+                    WorkInfo.State.RUNNING -> BackupUiState.Working(
+                        message = info.progress.getString(DatabaseBackupWorker.PROGRESS_STAGE_KEY)
+                            ?: "Backing up database…",
+                        percent = info.progress.getInt(DatabaseBackupWorker.PROGRESS_PERCENT_KEY, 0),
+                        isBackup = true
+                    )
+                    WorkInfo.State.SUCCEEDED -> BackupUiState.Message("Backup completed successfully.")
+                    WorkInfo.State.FAILED -> BackupUiState.Error(
+                        info.outputData.getString(DatabaseBackupWorker.ERROR_MESSAGE_KEY)
+                            ?: "Backup failed. Please retry."
+                    )
+                    WorkInfo.State.CANCELLED -> BackupUiState.Error("Backup was cancelled.")
+                }
+                if (info.state.isFinished) stopObservingManualBackup()
+            }
+        }
+        manualBackupLiveData = liveData
+        manualBackupObserver = observer
+        liveData.observeForever(observer)
     }
 
     fun reschedule() = scheduler.schedulePeriodic()
 
+    private fun stopObservingManualBackup() {
+        val liveData = manualBackupLiveData
+        val observer = manualBackupObserver
+        if (liveData != null && observer != null) liveData.removeObserver(observer)
+        manualBackupLiveData = null
+        manualBackupObserver = null
+    }
+
+    override fun onCleared() {
+        stopObservingManualBackup()
+        super.onCleared()
+    }
+
     fun findBackup() {
         viewModelScope.launch {
             _state.value = BackupUiState.Working("Looking for a backup…")
-            _state.value = runCatching { restoreManager.findBackup() }
+            _state.value = runCatching { restoreManager.findBackups() }
                 .fold(
-                    onSuccess = { backup ->
-                        if (backup == null) BackupUiState.Error("No M Kumar backup was found")
-                        else BackupUiState.Message(
-                            "Found ${backup.manifest.createdAtUtc} in ${backup.owner}/${backup.repository}"
-                        )
+                    onSuccess = { backups ->
+                        if (backups.isEmpty()) BackupUiState.Error("No M Kumar backup was found")
+                        else BackupUiState.BackupsFound(backups)
                     },
                     onFailure = { BackupUiState.Error(it.message ?: "Backup discovery failed") }
                 )
         }
     }
 
-    fun restoreLatest(onDatabaseReplaced: () -> Unit) {
+    fun dismissBackups() {
+        if (_state.value is BackupUiState.BackupsFound) _state.value = BackupUiState.Idle
+    }
+
+    fun restore(option: RestoreOption, onDatabaseReplaced: () -> Unit) {
         viewModelScope.launch {
             _state.value = BackupUiState.Working("Downloading and validating backup…")
-            when (val result = restoreManager.restoreLatest()) {
+            when (val result = restoreManager.restore(option)) {
                 is RestoreResult.Success -> {
                     _state.value = BackupUiState.Message("Restore completed. Restarting…")
                     onDatabaseReplaced()
@@ -62,7 +118,12 @@ class BackupViewModel @Inject constructor(
 
 sealed interface BackupUiState {
     data object Idle : BackupUiState
-    data class Working(val message: String) : BackupUiState
+    data class Working(
+        val message: String,
+        val percent: Int? = null,
+        val isBackup: Boolean = false
+    ) : BackupUiState
     data class Message(val message: String) : BackupUiState
     data class Error(val message: String) : BackupUiState
+    data class BackupsFound(val backups: List<RestoreOption>) : BackupUiState
 }

@@ -6,6 +6,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,22 +18,31 @@ class BackupCoordinator @Inject constructor(
     private val provider: BackupProvider,
     private val preferences: PreferencesManager
 ) {
-    suspend fun backup(trigger: BackupTrigger): BackupResult = withContext(Dispatchers.IO) {
+    suspend fun backup(
+        trigger: BackupTrigger,
+        onProgress: suspend (stage: String, percent: Int) -> Unit = { _, _ -> }
+    ): BackupResult = withContext(Dispatchers.IO) {
         var snapshot: DatabaseSnapshot? = null
         try {
+            onProgress("Preparing database snapshot", 10)
             snapshot = snapshotter.createSnapshot()
+            onProgress("Validating database snapshot", 35)
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            val manifest = BackupManifest(
+            val createdAt = Instant.now()
+            val entry = BackupEntry(
                 databaseSchemaVersion = snapshot.schemaVersion,
                 appVersionCode = packageInfo.longVersionCode,
-                createdAtUtc = Instant.now().toString(),
-                backupPath = "backups/latest.db",
+                createdAtUtc = createdAt.toString(),
+                backupPath = "backups/snapshots/${SNAPSHOT_NAME_FORMAT.format(createdAt)}.db",
                 sizeBytes = snapshot.file.length(),
                 sha256 = snapshot.sha256,
                 trigger = trigger.name
             )
+            val manifest = BackupManifest(backups = listOf(entry))
+            onProgress("Uploading backup to GitHub", 55)
             provider.upload(snapshot.file, manifest)
-            preferences.backupPrefs.lastSuccessfulBackupAt = manifest.createdAtUtc
+            onProgress("Finalizing backup", 90)
+            preferences.backupPrefs.lastSuccessfulBackupAt = entry.createdAtUtc
             preferences.backupPrefs.lastBackupError = ""
             BackupResult.Success(manifest)
         } catch (t: Throwable) {
@@ -41,5 +52,10 @@ class BackupCoordinator @Inject constructor(
         } finally {
             snapshot?.file?.delete()
         }
+    }
+
+    companion object {
+        private val SNAPSHOT_NAME_FORMAT =
+            DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssSSS'Z'").withZone(ZoneOffset.UTC)
     }
 }

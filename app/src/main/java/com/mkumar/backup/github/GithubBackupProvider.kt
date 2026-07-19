@@ -2,6 +2,7 @@ package com.mkumar.backup.github
 
 import android.util.Base64
 import com.mkumar.backup.BackupManifest
+import com.mkumar.backup.BackupEntry
 import com.mkumar.backup.BackupProvider
 import com.mkumar.backup.RemoteBackup
 import com.mkumar.data.PreferencesManager
@@ -32,6 +33,7 @@ class GithubBackupProvider @Inject constructor(
         private const val API = "https://api.github.com"
         private const val MANIFEST_PATH = ".mkumar-backup/manifest.json"
         private const val MAX_CONTENTS_API_BYTES = 100L * 1024L * 1024L
+        private const val MAX_BACKUPS = 3
     }
 
     override suspend fun discoverBackup(): RemoteBackup? {
@@ -58,15 +60,27 @@ class GithubBackupProvider @Inject constructor(
             "The database is too large for GitHub's 100 MB Contents API limit"
         }
         val repository = resolveUploadRepository()
-        putFile(repository, manifest.backupPath, snapshot.readBytes())
-        putFile(repository, MANIFEST_PATH, json.encodeToString(manifest).toByteArray())
-        return RemoteBackup(repository.owner, repository.name, repository.defaultBranch, manifest)
+        val newEntry = manifest.availableBackups().firstOrNull()
+            ?: error("Backup manifest does not contain a snapshot")
+        val previous = readRemoteBackup(repository.owner, repository.name, repository.defaultBranch)
+        val previousEntries = previous?.manifest?.availableBackups().orEmpty()
+        val retained = (listOf(newEntry) + previousEntries.filter { it.backupPath != newEntry.backupPath })
+            .sortedByDescending { it.createdAtUtc }
+            .take(MAX_BACKUPS)
+        val updatedManifest = BackupManifest(backups = retained)
+
+        putFile(repository, newEntry.backupPath, snapshot.readBytes())
+        putFile(repository, MANIFEST_PATH, json.encodeToString(updatedManifest).toByteArray())
+
+        previousEntries.filter { old -> retained.none { it.backupPath == old.backupPath } }
+            .forEach { old -> deleteFile(repository, old.backupPath) }
+        return RemoteBackup(repository.owner, repository.name, repository.defaultBranch, updatedManifest)
     }
 
-    override suspend fun download(backup: RemoteBackup, destination: File) {
+    override suspend fun download(backup: RemoteBackup, entry: BackupEntry, destination: File) {
         withContext(Dispatchers.IO) {
             val request = requestBuilder(
-                "$API/repos/${backup.owner}/${backup.repository}/contents/${backup.manifest.backupPath}?ref=${backup.branch}"
+                "$API/repos/${backup.owner}/${backup.repository}/contents/${entry.backupPath}?ref=${backup.branch}"
             )
                 .header("Accept", "application/vnd.github.raw+json")
                 .get()
@@ -165,6 +179,21 @@ class GithubBackupProvider @Inject constructor(
         }
     }
 
+    private suspend fun deleteFile(repository: RepositoryInfo, path: String) {
+        val sha = getExistingSha(repository, path) ?: return
+        val body = buildJsonObject {
+            put("message", "Prune old M Kumar database backup")
+            put("sha", sha)
+            put("branch", repository.defaultBranch)
+        }
+        val request = requestBuilder("$API/repos/${repository.owner}/${repository.name}/contents/$path")
+            .delete(body.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
+            .build()
+        network.executeRequest(request).use { response ->
+            check(response.isSuccessful) { githubError(response.code, response.message) }
+        }
+    }
+
     private suspend fun getJson(url: String) = network.executeRequest(requestBuilder(url).get().build()).use { response ->
         check(response.isSuccessful) { githubError(response.code, response.message) }
         json.parseToJsonElement(response.body?.string().orEmpty())
@@ -194,4 +223,5 @@ class GithubBackupProvider @Inject constructor(
         val name: String,
         val defaultBranch: String
     )
+
 }

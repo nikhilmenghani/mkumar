@@ -114,15 +114,15 @@ object DashboardPrefs {
 }
 
 object BackupPrefs {
-    var enabled by dataStoreMutableState(
-        keyName = "backupEnabled",
-        defaultValue = true,
+    var backupOnOrderCompleted by dataStoreMutableState(
+        keyName = "backupOnOrderCompletedV2",
+        defaultValue = false,
         getPreferencesKey = { booleanPreferencesKey(it) }
     )
-    var backupOnOrderCompleted by dataStoreMutableState(
-        keyName = "backupOnOrderCompleted",
-        defaultValue = true,
-        getPreferencesKey = { booleanPreferencesKey(it) }
+    var intervalHours by dataStoreMutableState(
+        keyName = "backupIntervalHours",
+        defaultValue = 12,
+        getPreferencesKey = { intPreferencesKey(it) }
     )
     var wifiOnly by dataStoreMutableState(
         keyName = "backupWifiOnly",
