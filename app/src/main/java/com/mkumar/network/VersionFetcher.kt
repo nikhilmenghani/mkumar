@@ -2,6 +2,7 @@ package com.mkumar.network
 
 import android.content.Context
 import com.mkumar.common.constant.AppConstants.latestVersionUrl
+import com.mkumar.common.version.SemanticVersion
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -32,11 +33,23 @@ class VersionFetcher @Inject constructor(
                 val body = response.body?.string() ?: return null
                 val release = if (isDebug) {
                     json.parseToJsonElement(body).jsonArray
-                        .firstOrNull { item ->
+                        .mapNotNull { item ->
                             val obj = item.jsonObject
-                            obj["prerelease"]?.jsonPrimitive?.content == "true" &&
-                                obj["tag_name"]?.jsonPrimitive?.content?.startsWith(DEV_TAG_PREFIX) == true
-                        }?.jsonObject
+                            val tag = obj["tag_name"]?.jsonPrimitive?.content.orEmpty()
+                            if (obj["prerelease"]?.jsonPrimitive?.content != "true" ||
+                                !tag.startsWith(DEV_TAG_PREFIX) ||
+                                SemanticVersion.parse(tag) == null
+                            ) null else obj
+                        }
+                        .maxWithOrNull { left, right ->
+                            val leftVersion = SemanticVersion.parse(
+                                left.getValue("tag_name").jsonPrimitive.content
+                            )!!
+                            val rightVersion = SemanticVersion.parse(
+                                right.getValue("tag_name").jsonPrimitive.content
+                            )!!
+                            leftVersion.compareTo(rightVersion)
+                        }
                 } else {
                     json.parseToJsonElement(body).jsonObject
                 } ?: return null

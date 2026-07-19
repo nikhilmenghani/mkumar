@@ -3,6 +3,7 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.common.constant.CustomerDetailsConstants
+import com.mkumar.common.version.isVersionNewer
 import com.mkumar.data.PreferencesManager
 import com.mkumar.domain.invoice.InvoiceManager
 import com.mkumar.model.CustomerDetailsEffect
@@ -84,15 +85,12 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
                 state.copy(
                     latestVersion = latest,
                     latestDownloadUrl = release?.downloadUrl.orEmpty(),
-                    isLatest = versionsMatch(latest, state.currentVersion) || (latest == "Unknown"),
+                    isLatest = latest == "Unknown" || !isVersionNewer(latest, state.currentVersion),
                     isChecking = false
                 )
             }
         }
     }
-
-    private fun versionsMatch(remote: String, installed: String): Boolean =
-        remote.removeSuffix("-debug") == installed.removeSuffix("-debug")
 
     fun setDownloading(downloading: Boolean) {
         _homeUi.update { it.copy(isDownloading = downloading) }
