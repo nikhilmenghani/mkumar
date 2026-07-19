@@ -64,11 +64,9 @@ fun OrderHeaderCardPro(
         LocalDate.now(zone)
     }
 
-    // 2) For initial picker value
-    var selectedDate by remember { mutableStateOf(currentLocalDate) }
-
-    // 3) Display text
-    val displayedDate = selectedDate.format(
+    // Display directly from editor state so the loaded or newly selected value
+    // cannot be replaced by a stale remembered date.
+    val displayedDate = currentLocalDate.format(
         DateTimeFormatter.ofPattern(DateFormat.DEFAULT_DATE_ONLY.pattern)
     )
 
@@ -84,11 +82,9 @@ fun OrderHeaderCardPro(
     // ───────────────────────────
     if (showPicker) {
         MKDatePickerDialog(
-            initialDate = selectedDate,    // CORRECT: LocalDate
+            initialDate = currentLocalDate,
             onDismiss = { showPicker = false },
-            onConfirm = { pickedLocalDate ->   // returns LocalDate
-                selectedDate = pickedLocalDate
-
+            onConfirm = { pickedLocalDate ->
                 // Convert local date → local midnight → UTC millis
                 val pickedUtc = pickedLocalDate
                     .atStartOfDay(zone)

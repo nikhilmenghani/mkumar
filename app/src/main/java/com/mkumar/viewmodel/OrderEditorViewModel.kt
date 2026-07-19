@@ -284,6 +284,12 @@ class OrderEditorViewModel @Inject constructor(
     private fun updateOccurredAt(long: Long) {
         val d = _ui.value.draft
         recalc(d.copy(receivedAt = long))
+        viewModelScope.launch {
+            runCatching { orderRepo.updateReceivedAt(d.orderId, long) }
+                .onFailure {
+                    _effects.emit(OrderEditorEffect.ShowMessage("Could not update received date."))
+                }
+        }
     }
 
     private fun recalc(draft: OrderEditorUi.Draft) {

@@ -104,6 +104,10 @@ class OrderRepositoryImpl @Inject constructor(
     override suspend fun getOrder(orderId: String): OrderEntity? =
         orderDao.getById(orderId)
 
+    override suspend fun updateReceivedAt(orderId: String, receivedAt: Long) {
+        orderDao.updateReceivedAt(orderId, receivedAt, nowUtcMillis())
+    }
+
     // ---------------------------------------------------------------------
     // CREATE ORDER
     // ---------------------------------------------------------------------

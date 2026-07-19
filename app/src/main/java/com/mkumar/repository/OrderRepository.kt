@@ -11,6 +11,7 @@ interface OrderRepository {
     fun observeOrdersForCustomer(customerId: String): Flow<List<OrderEntity>>
     fun observeOrder(orderId: String): Flow<OrderEntity?>
     suspend fun getOrder(orderId: String): OrderEntity?
+    suspend fun updateReceivedAt(orderId: String, receivedAt: Long)
     suspend fun createOrderWithItems(order: OrderEntity): OrderEntity
     // NEW: search within customer detail page
     suspend fun searchOrders(
