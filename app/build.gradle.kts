@@ -27,12 +27,26 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        val devKeystorePath = System.getenv("DEV_KEYSTORE_PATH")
+        if (!devKeystorePath.isNullOrBlank()) {
+            create("ciDev") {
+                storeFile = file(devKeystorePath)
+                storePassword = System.getenv("DEV_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("DEV_KEY_ALIAS")
+                keyPassword = System.getenv("DEV_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             isDebuggable = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("ciDev")
+                ?: signingConfigs.getByName("debug")
         }
         release {
             isMinifyEnabled = false

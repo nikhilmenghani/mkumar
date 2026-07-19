@@ -54,7 +54,6 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.mkumar.MainActivity
-import com.mkumar.common.constant.AppConstants.getAppDownloadUrl
 import com.mkumar.common.constant.AppConstants.getExternalStorageDir
 import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
@@ -170,8 +169,7 @@ fun HomeScreen(
                             IconButton(
                                 enabled = !homeUi.isDownloading,
                                 onClick = {
-                                    val downloadUrl =
-                                        getAppDownloadUrl(homeUi.latestVersion)
+                                    val downloadUrl = homeUi.latestDownloadUrl
                                     val destPath =
                                         "${getExternalStorageDir()}/Download/MKumar.apk"
 

@@ -3,6 +3,7 @@ package com.mkumar.viewmodel
 data class HomeUiState(
     val currentVersion: String = "",
     val latestVersion: String = "",
+    val latestDownloadUrl: String = "",
     val isLatest: Boolean = true,
 
     // version check

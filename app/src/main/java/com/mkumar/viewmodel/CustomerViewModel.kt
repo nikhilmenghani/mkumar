@@ -77,17 +77,22 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
         viewModelScope.launch {
             _homeUi.update { it.copy(isChecking = true) }
 
-            val latest = versionFetcher.fetchLatestVersion()
+            val release = versionFetcher.fetchLatestRelease()
+            val latest = release?.version ?: "Unknown"
 
             _homeUi.update { state ->
                 state.copy(
                     latestVersion = latest,
-                    isLatest = (latest == state.currentVersion) || (latest == "Unknown"),
+                    latestDownloadUrl = release?.downloadUrl.orEmpty(),
+                    isLatest = versionsMatch(latest, state.currentVersion) || (latest == "Unknown"),
                     isChecking = false
                 )
             }
         }
     }
+
+    private fun versionsMatch(remote: String, installed: String): Boolean =
+        remote.removeSuffix("-debug") == installed.removeSuffix("-debug")
 
     fun setDownloading(downloading: Boolean) {
         _homeUi.update { it.copy(isDownloading = downloading) }
