@@ -69,11 +69,21 @@ class GithubBackupProvider @Inject constructor(
             .take(MAX_BACKUPS)
         val updatedManifest = BackupManifest(backups = retained)
 
-        putFile(repository, newEntry.backupPath, snapshot.readBytes())
-        putFile(repository, MANIFEST_PATH, json.encodeToString(updatedManifest).toByteArray())
+        putFile(
+            repository = repository,
+            path = newEntry.backupPath,
+            bytes = snapshot.readBytes(),
+            commitMessage = "Backup database (${newEntry.trigger.lowercase()}) at ${newEntry.createdAtUtc}"
+        )
+        putFile(
+            repository = repository,
+            path = MANIFEST_PATH,
+            bytes = json.encodeToString(updatedManifest).toByteArray(),
+            commitMessage = "Update backup catalog (${retained.size} snapshot${if (retained.size == 1) "" else "s"})"
+        )
 
         previousEntries.filter { old -> retained.none { it.backupPath == old.backupPath } }
-            .forEach { old -> deleteFile(repository, old.backupPath) }
+            .forEach { old -> deleteFile(repository, old) }
         return RemoteBackup(repository.owner, repository.name, repository.defaultBranch, updatedManifest)
     }
 
@@ -151,10 +161,15 @@ class GithubBackupProvider @Inject constructor(
         }
     }
 
-    private suspend fun putFile(repository: RepositoryInfo, path: String, bytes: ByteArray) {
+    private suspend fun putFile(
+        repository: RepositoryInfo,
+        path: String,
+        bytes: ByteArray,
+        commitMessage: String
+    ) {
         val existingSha = getExistingSha(repository, path)
         val body = buildJsonObject {
-            put("message", "M Kumar database backup")
+            put("message", commitMessage)
             put("content", Base64.encodeToString(bytes, Base64.NO_WRAP))
             put("branch", repository.defaultBranch)
             existingSha?.let { put("sha", it) }
@@ -179,14 +194,14 @@ class GithubBackupProvider @Inject constructor(
         }
     }
 
-    private suspend fun deleteFile(repository: RepositoryInfo, path: String) {
-        val sha = getExistingSha(repository, path) ?: return
+    private suspend fun deleteFile(repository: RepositoryInfo, entry: BackupEntry) {
+        val sha = getExistingSha(repository, entry.backupPath) ?: return
         val body = buildJsonObject {
-            put("message", "Prune old M Kumar database backup")
+            put("message", "Prune database backup from ${entry.createdAtUtc}")
             put("sha", sha)
             put("branch", repository.defaultBranch)
         }
-        val request = requestBuilder("$API/repos/${repository.owner}/${repository.name}/contents/$path")
+        val request = requestBuilder("$API/repos/${repository.owner}/${repository.name}/contents/${entry.backupPath}")
             .delete(body.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
             .build()
         network.executeRequest(request).use { response ->
