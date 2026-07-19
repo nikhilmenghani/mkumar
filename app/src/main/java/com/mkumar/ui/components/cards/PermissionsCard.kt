@@ -26,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.theme.NikThemePreview
@@ -41,8 +40,17 @@ fun PermissionsCard(
     permissionsText: String = "Request Permission"
 ) {
     // Background and icon color based on permission status
-    val backgroundColor = if (isPermissionGranted) Color(0xFFB9F6CA) else Color(0xFFF8D7DA)
-    val iconColor = if (isPermissionGranted) Color(0xFF388E3C) else Color(0xFFC62828)
+    val backgroundColor = if (isPermissionGranted) {
+        MaterialTheme.colorScheme.tertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.errorContainer
+    }
+    val contentColor = if (isPermissionGranted) {
+        MaterialTheme.colorScheme.onTertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.onErrorContainer
+    }
+    val iconColor = contentColor
     val buttonText = if (isPermissionGranted) "Permission Granted" else permissionsText
 
     Card(
@@ -73,13 +81,13 @@ fun PermissionsCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black
+                    color = contentColor
                 )
             }
 
             // Divider
             HorizontalDivider(
-                color = Color.Gray,
+                color = contentColor.copy(alpha = 0.28f),
                 thickness = 1.dp,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
@@ -88,7 +96,7 @@ fun PermissionsCard(
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Black,
+                color = contentColor,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -98,8 +106,16 @@ fun PermissionsCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isPermissionGranted) Color(0xFFB9F6CA) else Color(0xFFF36170),
-                    contentColor = Color.Black
+                    containerColor = if (isPermissionGranted) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                    contentColor = if (isPermissionGranted) {
+                        MaterialTheme.colorScheme.onTertiary
+                    } else {
+                        MaterialTheme.colorScheme.onError
+                    }
                 )
             ) {
                 Text(text = buttonText)
@@ -116,7 +132,16 @@ fun PermissionsCard2(
     onRequestPermission: () -> Unit
 ) {
     // Background and icon color based on permission status
-    val backgroundColor = if (isPermissionGranted) Color(0xFFB9F6CA) else Color(0xFFF8D7DA)
+    val backgroundColor = if (isPermissionGranted) {
+        MaterialTheme.colorScheme.tertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.errorContainer
+    }
+    val contentColor = if (isPermissionGranted) {
+        MaterialTheme.colorScheme.onTertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.onErrorContainer
+    }
     val permissionIcon = if (isPermissionGranted) Icons.Default.CheckCircle else Icons.Default.Refresh
 
     Card(
@@ -143,13 +168,13 @@ fun PermissionsCard2(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.Black
+                        color = contentColor
                     )
                 }
 
                 // Divider
                 HorizontalDivider(
-                    color = Color.Gray,
+                    color = contentColor.copy(alpha = 0.28f),
                     thickness = 0.5.dp,
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
@@ -158,7 +183,7 @@ fun PermissionsCard2(
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black,
+                    color = contentColor,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
             }
@@ -171,7 +196,7 @@ fun PermissionsCard2(
                 Icon(
                     imageVector = permissionIcon,
                     contentDescription = "Check Root Access",
-                    tint = Color.Black
+                    tint = contentColor
                 )
             }
         }

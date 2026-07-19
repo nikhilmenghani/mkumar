@@ -47,6 +47,7 @@ import com.mkumar.viewmodel.BackupUiState
 import com.mkumar.viewmodel.BackupViewModel
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.backup.RestoreOption
+import com.mkumar.backup.defaultBackupDeviceName
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -72,6 +73,12 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     val invoicePrefs = prefs.invoicePrefs
     val dashboardPrefs = prefs.dashboardPrefs
     val backupPrefs = prefs.backupPrefs
+
+    LaunchedEffect(backupPrefs.deviceName) {
+        if (backupPrefs.deviceName.isBlank()) {
+            backupPrefs.deviceName = defaultBackupDeviceName()
+        }
+    }
 
     LaunchedEffect(backupPrefs.enabled) {
         if (!backupPrefs.enabled) {
@@ -273,13 +280,13 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         )
         PreferenceItem(
             label = "Backup device name",
-            supportingText = backupPrefs.deviceName.ifBlank { "Uses this device's manufacturer and model" },
+            supportingText = backupPrefs.deviceName,
             icon = Icons.Rounded.VpnKey,
             enabled = backupPrefs.enabled,
             onClick = {
                 textDialog.show(
                     title = "Backup device name",
-                    description = "Choose a recognizable name such as Shop phone or Personal S26.",
+                    description = "Device name",
                     text = backupPrefs.deviceName,
                     onConfirm = { backupPrefs.deviceName = it.trim() }
                 )

@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.nowUtcMillis
@@ -33,7 +32,7 @@ fun CustomerHeader(
     val fmt = DateTimeFormatter.ofPattern("MMM d, yyyy")
     Box(
         modifier = modifier
-            .border(1.dp, Color.Gray, shape = MaterialTheme.shapes.medium)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape = MaterialTheme.shapes.medium)
             .padding(0.dp)
     ) {
         ElevatedCard(
@@ -77,7 +76,11 @@ fun CustomerHeader(
                         Text(
                             "₹${header.totalRemaining}",
                             style = MaterialTheme.typography.titleMedium,
-                            color = if (header.totalRemaining > 0) Color.Red else MaterialTheme.colorScheme.secondary
+                            color = if (header.totalRemaining > 0) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.tertiary
+                            }
                         )
                     }
                 }

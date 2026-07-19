@@ -295,14 +295,22 @@ fun ProductsHeader(
                         AmountBadge(
                             label = "Paid",
                             amount = animatedPaid,
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                         )
                         AmountBadge(
                             label = "Due",
                             amount = animatedDue,
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            containerColor = if (animatedDue > 0) {
+                                MaterialTheme.colorScheme.errorContainer
+                            } else {
+                                MaterialTheme.colorScheme.tertiaryContainer
+                            },
+                            contentColor = if (animatedDue > 0) {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            } else {
+                                MaterialTheme.colorScheme.onTertiaryContainer
+                            }
                         )
                     }
                 }
@@ -460,6 +468,7 @@ fun CompactPaymentRow(
                 Text(
                     text = "₹$amount",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.tertiary,
                     maxLines = 1
                 )
             }

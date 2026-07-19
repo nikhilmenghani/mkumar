@@ -138,8 +138,8 @@ fun OrderAccordionItem(
                     OutlinedBadge(text = "Unit: ₹${selectedProduct.unitPrice}")
                     HighlightedBadge(
                         text = "${discountPercent}% off",
-                        backgroundColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                 }
 

@@ -1,7 +1,6 @@
 package com.mkumar.backup
 
 import android.content.Context
-import android.os.Build
 import com.mkumar.data.PreferencesManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +33,7 @@ class BackupCoordinator @Inject constructor(
                 UUID.randomUUID().toString().also { preferences.backupPrefs.deviceId = it }
             }
             val deviceName = preferences.backupPrefs.deviceName.ifBlank {
-                "${Build.MANUFACTURER} ${Build.MODEL}".trim().also {
+                defaultBackupDeviceName().also {
                     preferences.backupPrefs.deviceName = it
                 }
             }
