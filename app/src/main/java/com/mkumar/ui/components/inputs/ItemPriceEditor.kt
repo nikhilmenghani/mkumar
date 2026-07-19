@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mkumar.ui.components.headers.FractionedSectionHeader
@@ -79,7 +80,17 @@ fun ItemPriceEditor(
                 label = "Discount %",
                 placeholder = "e.g. 10",
                 mode = FieldMode.Percent0to100,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .onFocusChanged { focusState ->
+                        // Zero is the default value, not meaningful user input. Clear it
+                        // when editing starts so the first typed digit replaces it.
+                        if (focusState.isFocused && discountPct == "0") {
+                            discountPct = ""
+                            onDiscountChange("")
+                            recalculateTotal()
+                        }
+                    },
                 onValueChange = { txt ->
                     val clamped =
                         txt.filter { it.isDigit() }.take(3).toIntOrNull()?.coerceIn(0, 100)
