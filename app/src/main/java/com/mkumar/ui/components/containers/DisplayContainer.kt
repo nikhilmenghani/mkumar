@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
 import com.mkumar.App.Companion.globalClass
 import com.mkumar.R
@@ -71,6 +72,15 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     val invoicePrefs = prefs.invoicePrefs
     val dashboardPrefs = prefs.dashboardPrefs
     val backupPrefs = prefs.backupPrefs
+
+    LaunchedEffect(backupPrefs.enabled) {
+        if (!backupPrefs.enabled) {
+            confirmRestore = false
+            confirmDelete = false
+            showQueue = false
+            backupViewModel.dismissBackups()
+        }
+    }
 
     val foundBackups = (backupState as? BackupUiState.BackupsFound)?.backups.orEmpty()
     if (showQueue) {
@@ -113,7 +123,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 foundBackups.forEach { option ->
                     PreferenceItem(
                         label = formatUtcAsLocal(option.entry.createdAtUtc),
-                        supportingText = "${option.entry.trigger.toDisplayTrigger()} • ${formatFileSize(option.entry.sizeBytes)}",
+                        supportingText = "${option.entry.deviceDisplayName()} • ${option.entry.trigger.toDisplayTrigger()} • ${formatFileSize(option.entry.sizeBytes)}",
                         icon = Icons.Rounded.Restore,
                         trailingContent = {
                             IconButton(onClick = {
@@ -207,6 +217,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             label = "Github Token",
             supportingText = if (githubPrefs.token.isBlank()) "Not configured" else "Configured",
             icon = Icons.Rounded.VpnKey,
+            enabled = backupPrefs.enabled,
             onClick = {
                 textDialog.show(
                     title = "Github Token",
@@ -224,6 +235,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             label = "Github Owner",
             supportingText = githubPrefs.githubOwner,
             icon = Icons.Rounded.VpnKey,
+            enabled = backupPrefs.enabled,
             onClick = {
                 textDialog.show(
                     title = "Github Owner",
@@ -238,6 +250,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             label = "Github Repository",
             supportingText = githubPrefs.githubRepo,
             icon = Icons.Rounded.VpnKey,
+            enabled = backupPrefs.enabled,
             onClick = {
                 textDialog.show(
                     title = "Github Repository",
@@ -252,9 +265,31 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     Container(title = "Database Backup") {
         val backupInProgress = (backupState as? BackupUiState.Working)?.isBackup == true
         PreferenceItem(
+            label = "Enable database backups",
+            supportingText = if (backupPrefs.enabled) "Backup functionality is enabled" else "Backups are off",
+            icon = Icons.Rounded.Backup,
+            switchState = backupPrefs.enabled,
+            onSwitchChange = backupViewModel::setBackupEnabled
+        )
+        PreferenceItem(
+            label = "Backup device name",
+            supportingText = backupPrefs.deviceName.ifBlank { "Uses this device's manufacturer and model" },
+            icon = Icons.Rounded.VpnKey,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                textDialog.show(
+                    title = "Backup device name",
+                    description = "Choose a recognizable name such as Shop phone or Personal S26.",
+                    text = backupPrefs.deviceName,
+                    onConfirm = { backupPrefs.deviceName = it.trim() }
+                )
+            }
+        )
+        PreferenceItem(
             label = "Backup interval",
             supportingText = backupIntervalLabel(backupPrefs.intervalHours),
             icon = Icons.Rounded.Backup,
+            enabled = backupPrefs.enabled,
             onClick = {
                 val intervals = listOf(0, 6, 12, 24)
                 dialog.show(
@@ -270,14 +305,10 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             }
         )
         PreferenceItem(
-            label = "Completed-order backups",
-            supportingText = "Disabled for now",
-            icon = Icons.Rounded.CloudSync
-        )
-        PreferenceItem(
             label = "Retained backups",
             supportingText = "Keep the latest ${backupPrefs.retentionCount}",
             icon = Icons.Rounded.Backup,
+            enabled = backupPrefs.enabled,
             onClick = {
                 val counts = listOf(3, 6, 10, 20, 30)
                 dialog.show(
@@ -293,6 +324,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             label = "Backups shown",
             supportingText = displayCountLabel(backupPrefs.displayCount),
             icon = Icons.AutoMirrored.Rounded.ListAlt,
+            enabled = backupPrefs.enabled,
             onClick = {
                 val counts = listOf(3, 6, 10, 20, 0)
                 dialog.show(
@@ -306,11 +338,16 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         )
         PreferenceItem(
             label = "Back up now",
-            supportingText = backupPrefs.lastSuccessfulBackupAt
-                .takeIf { it.isNotBlank() }
-                ?.let(::formatUtcAsLocal)
-                ?: "No successful backup yet",
+            supportingText = if (!backupPrefs.enabled) {
+                "Enable database backups first"
+            } else {
+                backupPrefs.lastSuccessfulBackupAt
+                    .takeIf { it.isNotBlank() }
+                    ?.let(::formatUtcAsLocal)
+                    ?: "No successful backup yet"
+            },
             icon = Icons.Rounded.Backup,
+            enabled = backupPrefs.enabled,
             onClick = { if (!backupInProgress) backupViewModel.backupNow() },
             trailingContent = if (backupInProgress) {
                 {
@@ -325,6 +362,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             label = "Find backup",
             supportingText = "Show ${displayCountLabel(backupPrefs.displayCount).lowercase()}",
             icon = Icons.Rounded.CloudSync,
+            enabled = backupPrefs.enabled,
             onClick = backupViewModel::findBackup
         )
         PreferenceItem(
@@ -332,6 +370,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             supportingText = if (backupQueue.isEmpty()) "No queued or running work"
                 else "${backupQueue.size} queued or running",
             icon = Icons.AutoMirrored.Rounded.ListAlt,
+            enabled = backupPrefs.enabled,
             onClick = { showQueue = true }
         )
         val status = when (val state = backupState) {
@@ -457,6 +496,12 @@ private fun formatUtcAsLocal(timestamp: String): String = runCatching {
 private fun String.toDisplayTrigger(): String = lowercase()
     .replace('_', ' ')
     .replaceFirstChar { it.uppercase() }
+
+private fun com.mkumar.backup.BackupEntry.deviceDisplayName(): String {
+    val name = deviceName.ifBlank { "Unknown device" }
+    val shortId = deviceId.take(8)
+    return if (shortId.isBlank()) name else "$name • $shortId"
+}
 
 private fun formatFileSize(bytes: Long): String = when {
     bytes >= 1024 * 1024 -> "%.1f MB".format(bytes / (1024.0 * 1024.0))

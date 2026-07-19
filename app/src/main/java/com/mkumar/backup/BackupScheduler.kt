@@ -37,13 +37,14 @@ class BackupScheduler @Inject constructor(
     fun schedulePeriodic() {
         clearObsoleteFtsValidationError()
         val intervalHours = preferences.backupPrefs.intervalHours
-        if (intervalHours <= 0 || preferences.githubPrefs.token.isBlank()) {
+        if (!preferences.backupPrefs.enabled || intervalHours <= 0 || preferences.githubPrefs.token.isBlank()) {
             WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK)
             return
         }
         val request = PeriodicWorkRequestBuilder<DatabaseBackupWorker>(intervalHours.toLong(), TimeUnit.HOURS)
             .setConstraints(constraints())
             .setInputData(input(BackupTrigger.SCHEDULED))
+            .setInitialDelay(intervalHours.toLong(), TimeUnit.HOURS)
             .addTag(BACKUP_WORK_TAG)
             .addTag(SCHEDULED_WORK_TAG)
             .build()
@@ -54,10 +55,18 @@ class BackupScheduler @Inject constructor(
         )
     }
 
-    fun enqueueManual(): UUID = enqueue(MANUAL_WORK, BackupTrigger.MANUAL, 0)
+    fun enqueueManual(): UUID {
+        check(preferences.backupPrefs.enabled) { "Database backups are disabled" }
+        return enqueue(MANUAL_WORK, BackupTrigger.MANUAL, 0)
+    }
+
+    fun cancelAllBackupWork() {
+        WorkManager.getInstance(context).cancelAllWorkByTag(BACKUP_WORK_TAG)
+    }
 
     fun enqueueOrderCompleted() {
-        if (ORDER_COMPLETED_BACKUP_ENABLED &&
+        if (preferences.backupPrefs.enabled &&
+            ORDER_COMPLETED_BACKUP_ENABLED &&
             preferences.backupPrefs.backupOnOrderCompleted &&
             preferences.githubPrefs.token.isNotBlank()
         ) {

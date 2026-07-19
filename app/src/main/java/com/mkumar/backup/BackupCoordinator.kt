@@ -1,6 +1,7 @@
 package com.mkumar.backup
 
 import android.content.Context
+import android.os.Build
 import com.mkumar.data.PreferencesManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -8,6 +9,7 @@ import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,14 +31,24 @@ class BackupCoordinator @Inject constructor(
             onProgress("Validating database snapshot", 35)
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             val createdAt = Instant.now()
+            val deviceId = preferences.backupPrefs.deviceId.ifBlank {
+                UUID.randomUUID().toString().also { preferences.backupPrefs.deviceId = it }
+            }
+            val deviceName = preferences.backupPrefs.deviceName.ifBlank {
+                "${Build.MANUFACTURER} ${Build.MODEL}".trim().also {
+                    preferences.backupPrefs.deviceName = it
+                }
+            }
             val entry = BackupEntry(
                 databaseSchemaVersion = snapshot.schemaVersion,
                 appVersionCode = packageInfo.longVersionCode,
                 createdAtUtc = createdAt.toString(),
-                backupPath = "backups/snapshots/${SNAPSHOT_NAME_FORMAT.format(createdAt)}.db",
+                backupPath = "backups/snapshots/$deviceId/${SNAPSHOT_NAME_FORMAT.format(createdAt)}.db",
                 sizeBytes = snapshot.file.length(),
                 sha256 = snapshot.sha256,
-                trigger = trigger.name
+                trigger = trigger.name,
+                deviceId = deviceId,
+                deviceName = deviceName
             )
             val manifest = BackupManifest(backups = listOf(entry))
             onProgress("Uploading backup to GitHub", 55)

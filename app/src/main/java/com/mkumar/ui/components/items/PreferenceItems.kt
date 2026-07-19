@@ -279,12 +279,16 @@ fun PreferenceItem(
     label: String,
     supportingText: String,
     icon: ImageVector,
+    enabled: Boolean = true,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
     trailingContent: @Composable (() -> Unit)? = null
 ) {
     PreferenceItem(
-        modifier = modifier.combinedClickable(
+        modifier = modifier
+            .alpha(if (enabled) 1f else 0.5f)
+            .combinedClickable(
+            enabled = enabled,
             onClick = onClick,
             onLongClick = onLongClick
         ),

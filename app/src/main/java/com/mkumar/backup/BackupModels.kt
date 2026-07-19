@@ -46,7 +46,9 @@ data class BackupEntry(
     val backupPath: String,
     val sizeBytes: Long,
     val sha256: String,
-    val trigger: String
+    val trigger: String,
+    val deviceId: String = "",
+    val deviceName: String = "Unknown device"
 )
 
 data class DatabaseSnapshot(

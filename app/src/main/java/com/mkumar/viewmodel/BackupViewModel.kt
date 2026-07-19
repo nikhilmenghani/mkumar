@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import javax.inject.Inject
 
 @HiltViewModel
@@ -32,7 +34,11 @@ class BackupViewModel @Inject constructor(
     private var manualBackupLiveData: LiveData<WorkInfo?>? = null
     private var manualBackupObserver: Observer<WorkInfo?>? = null
     private val queueLiveData = workManager.getWorkInfosByTagLiveData(BackupScheduler.BACKUP_WORK_TAG)
-    private val queueObserver = Observer<List<WorkInfo>> { work -> updateQueue(work.orEmpty()) }
+    private var latestQueueWork: List<WorkInfo> = emptyList()
+    private val queueObserver = Observer<List<WorkInfo>> { work ->
+        latestQueueWork = work.orEmpty()
+        updateQueue(latestQueueWork)
+    }
     private val _state = MutableStateFlow<BackupUiState>(BackupUiState.Idle)
     val state: StateFlow<BackupUiState> = _state.asStateFlow()
     private val _queue = MutableStateFlow<List<BackupQueueItem>>(emptyList())
@@ -40,9 +46,19 @@ class BackupViewModel @Inject constructor(
 
     init {
         queueLiveData.observeForever(queueObserver)
+        viewModelScope.launch {
+            while (isActive) {
+                delay(30_000)
+                updateQueue(latestQueueWork)
+            }
+        }
     }
 
     fun backupNow() {
+        if (!preferences.backupPrefs.enabled) {
+            _state.value = BackupUiState.Error("Enable database backups before starting a manual backup.")
+            return
+        }
         val workId = scheduler.enqueueManual()
         _state.value = BackupUiState.Message("Backup queued. Waiting for network and battery constraints.")
         stopObservingManualBackup()
@@ -78,6 +94,16 @@ class BackupViewModel @Inject constructor(
 
     fun reschedule() = scheduler.schedulePeriodic()
 
+    fun setBackupEnabled(enabled: Boolean) {
+        preferences.backupPrefs.enabled = enabled
+        if (enabled) {
+            scheduler.schedulePeriodic()
+        } else {
+            scheduler.cancelAllBackupWork()
+            _state.value = BackupUiState.Idle
+        }
+    }
+
     private fun stopObservingManualBackup() {
         val liveData = manualBackupLiveData
         val observer = manualBackupObserver
@@ -93,6 +119,7 @@ class BackupViewModel @Inject constructor(
     }
 
     fun findBackup() {
+        if (!requireBackupsEnabled()) return
         viewModelScope.launch {
             _state.value = BackupUiState.Working("Looking for a backup…")
             _state.value = runCatching { restoreManager.findBackups() }
@@ -108,6 +135,7 @@ class BackupViewModel @Inject constructor(
     }
 
     fun deleteBackup(option: RestoreOption) {
+        if (!requireBackupsEnabled()) return
         viewModelScope.launch {
             _state.value = BackupUiState.Working("Deleting backup…")
             _state.value = runCatching { restoreManager.delete(option).visibleBackups() }
@@ -127,8 +155,15 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun updateQueue(work: List<WorkInfo>) {
+        val now = System.currentTimeMillis()
         _queue.value = work
             .filterNot { it.state.isFinished }
+            .filter { info ->
+                val isScheduled = BackupScheduler.SCHEDULED_WORK_TAG in info.tags
+                !isScheduled || info.state == WorkInfo.State.RUNNING ||
+                    info.state == WorkInfo.State.BLOCKED ||
+                    (info.nextScheduleTimeMillis > 0 && info.nextScheduleTimeMillis <= now)
+            }
             .sortedBy { if (it.state == WorkInfo.State.RUNNING) 0 else 1 }
             .map { info ->
                 BackupQueueItem(
@@ -151,6 +186,7 @@ class BackupViewModel @Inject constructor(
     }
 
     fun restore(option: RestoreOption, onDatabaseReplaced: () -> Unit) {
+        if (!requireBackupsEnabled()) return
         viewModelScope.launch {
             _state.value = BackupUiState.Working("Downloading and validating backup…")
             when (val result = restoreManager.restore(option)) {
@@ -164,6 +200,12 @@ class BackupViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun requireBackupsEnabled(): Boolean {
+        if (preferences.backupPrefs.enabled) return true
+        _state.value = BackupUiState.Error("Enable database backups to use this feature.")
+        return false
     }
 }
 

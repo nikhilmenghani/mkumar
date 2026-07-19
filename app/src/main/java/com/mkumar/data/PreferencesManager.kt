@@ -114,25 +114,40 @@ object DashboardPrefs {
 }
 
 object BackupPrefs {
+    var enabled by dataStoreMutableState(
+        keyName = "backupFeatureEnabledV2",
+        defaultValue = false,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
     var backupOnOrderCompleted by dataStoreMutableState(
         keyName = "backupOnOrderCompletedV2",
         defaultValue = false,
         getPreferencesKey = { booleanPreferencesKey(it) }
     )
     var intervalHours by dataStoreMutableState(
-        keyName = "backupIntervalHours",
-        defaultValue = 12,
+        keyName = "backupIntervalHoursV2",
+        defaultValue = 0,
         getPreferencesKey = { intPreferencesKey(it) }
     )
     var retentionCount by dataStoreMutableState(
-        keyName = "backupRetentionCount",
-        defaultValue = 20,
+        keyName = "backupRetentionCountV2",
+        defaultValue = 10,
         getPreferencesKey = { intPreferencesKey(it) }
     )
     var displayCount by dataStoreMutableState(
         keyName = "backupDisplayCount",
         defaultValue = 6,
         getPreferencesKey = { intPreferencesKey(it) }
+    )
+    var deviceId by dataStoreMutableState(
+        keyName = "backupDeviceId",
+        defaultValue = "",
+        getPreferencesKey = { stringPreferencesKey(it) }
+    )
+    var deviceName by dataStoreMutableState(
+        keyName = "backupDeviceName",
+        defaultValue = "",
+        getPreferencesKey = { stringPreferencesKey(it) }
     )
     var lastSuccessfulBackupAt by dataStoreMutableState(
         keyName = "lastSuccessfulBackupAt",
