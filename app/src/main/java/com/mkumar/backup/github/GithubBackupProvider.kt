@@ -53,7 +53,11 @@ class GithubBackupProvider @Inject constructor(
         }
 
         for (repo in accessibleRepositories()) {
-            readRemoteBackup(repo.owner, repo.name, repo.defaultBranch)?.let { backup ->
+            // A token can see archived, disabled, or policy-blocked repositories. One
+            // unrelated repository must not abort discovery of the actual backup repo.
+            runCatching {
+                readRemoteBackup(repo.owner, repo.name, repo.defaultBranch)
+            }.getOrNull()?.let { backup ->
                 preferences.githubPrefs.githubOwner = backup.owner
                 preferences.githubPrefs.githubRepo = backup.repository
                 return backup
@@ -271,6 +275,7 @@ class GithubBackupProvider @Inject constructor(
         404 -> "The GitHub repository or backup file was not found"
         409 -> "GitHub reported a conflicting backup update; please retry"
         422 -> "GitHub rejected the backup request"
+        451 -> "GitHub has blocked access to this repository. Choose another backup repository."
         else -> "GitHub request failed ($code): $message"
     }
 

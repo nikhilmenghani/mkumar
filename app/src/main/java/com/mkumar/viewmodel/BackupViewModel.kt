@@ -126,7 +126,11 @@ class BackupViewModel @Inject constructor(
                 .fold(
                     onSuccess = { backups ->
                         val visible = backups.visibleBackups()
-                        if (visible.isEmpty()) BackupUiState.Error("No M Kumar backup was found")
+                        if (visible.isEmpty()) {
+                            BackupUiState.Message(
+                                "No backup found for this app. Use Back up now to create the first backup."
+                            )
+                        }
                         else BackupUiState.BackupsFound(visible)
                     },
                     onFailure = { BackupUiState.Error(it.message ?: "Backup discovery failed") }
