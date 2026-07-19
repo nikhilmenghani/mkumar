@@ -78,8 +78,8 @@ import com.mkumar.model.SearchBy
 import com.mkumar.model.SearchMode
 import com.mkumar.model.SearchType
 import com.mkumar.model.UiCustomerMini
-import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
-import com.mkumar.ui.components.cards.CustomerInfoCard
+import com.mkumar.ui.components.bottomsheets.CustomerEditorBottomSheet
+import com.mkumar.ui.components.bottomsheets.CustomerEditorFocus
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.RecentCustomerCard
@@ -109,6 +109,7 @@ fun SearchScreen(
     var showCustomerSheet by remember { mutableStateOf(false) }
     var addName by remember { mutableStateOf("") }
     var addPhone by remember { mutableStateOf("") }
+    var customerSheetFocus by remember { mutableStateOf(CustomerEditorFocus.NAME) }
 
     val canSubmit by derivedStateOf {
         addName.isNotBlank() && addPhone.length == 10
@@ -260,6 +261,13 @@ fun SearchScreen(
                 onAddCustomer = { prefillName, prefillPhone ->
                     addName = prefillName ?: ""
                     addPhone = prefillPhone ?: ""
+                    customerSheetFocus = if (prefillPhone != null) {
+                        CustomerEditorFocus.NAME
+                    } else {
+                        CustomerEditorFocus.PHONE
+                    }
+                    sheetMode = CustomerSheetMode.Add
+                    editingCustomerId = null
                     showCustomerSheet = true
                 },
                 openCustomer = openCustomer,
@@ -267,6 +275,7 @@ fun SearchScreen(
                     editingCustomerId = customer.id
                     addName = customer.name
                     addPhone = customer.phone
+                    customerSheetFocus = CustomerEditorFocus.NAME
                     sheetMode = CustomerSheetMode.Edit
                     showCustomerSheet = true
                 },
@@ -315,40 +324,16 @@ fun SearchScreen(
     // ADD CUSTOMER BOTTOM SHEET
     // ===========================================================
     if (showCustomerSheet) {
-        ShortBottomSheet(
-            title = if (sheetMode == CustomerSheetMode.Add) "Add Customer" else "Edit Customer",
-            showTitle = false,
-            sheetContent = {
-                CustomerInfoCard(
-                    title = if (sheetMode == CustomerSheetMode.Add) "Add Customer Information" else "Edit Customer Information",
-                    name = addName,
-                    phone = addPhone,
-                    onNameChange = { addName = it },
-                    onPhoneChange = { addPhone = it },
-
-                    onSubmit = {
-                        if (!canSubmit) {
-                            // optional feedback:
-                            // scope.launch { snackbarHostState.showSnackbar("Enter at least 9 digits") }
-                            return@CustomerInfoCard
-                        }
-                        if (sheetMode == CustomerSheetMode.Add) {
-                            val customerId = vm.createOrUpdateCustomerCard(addName.trim(), addPhone.trim())
-                            navController.navigate(Routes.customerDetail(customerId))
-                        } else {
-                            editingCustomerId?.let { vm.updateCustomer(it, addName.trim(), addPhone.trim()) }
-                        }
-                        showCustomerSheet = false
-                    }
-                )
-            },
+        CustomerEditorBottomSheet(
+            isEditing = sheetMode == CustomerSheetMode.Edit,
+            name = addName,
+            phone = addPhone,
+            initialFocus = customerSheetFocus,
+            canSubmit = canSubmit,
+            onNameChange = { addName = it },
+            onPhoneChange = { addPhone = it },
             onDismiss = { showCustomerSheet = false },
-
-            showDismiss = true,
-            showDone = canSubmit,
-
-            onDoneClick = {
-                if (!canSubmit) return@ShortBottomSheet
+            onSubmit = {
                 if (sheetMode == CustomerSheetMode.Add) {
                     val customerId = vm.createOrUpdateCustomerCard(addName.trim(), addPhone.trim())
                     navController.navigate(Routes.customerDetail(customerId))
