@@ -12,7 +12,6 @@ import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderFts
 import com.mkumar.data.db.entities.OrderItemEntity
 import com.mkumar.repository.ProductRepository
-import com.mkumar.repository.helpers.OrderSyncHelper
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,8 +23,7 @@ class ProductRepositoryImpl @Inject constructor(
     private val orderDao: OrderDao,
     private val customerDao: CustomerDao,
     private val customerFtsDao: CustomerFtsDao,
-    private val orderFtsDao: OrderFtsDao,
-    private val orderSyncHelper: OrderSyncHelper
+    private val orderFtsDao: OrderFtsDao
 ) : ProductRepository {
 
     override suspend fun upsert(item: OrderItemEntity) {
@@ -36,7 +34,7 @@ class ProductRepositoryImpl @Inject constructor(
             val updatedItem = item.copy(updatedAt = now)
             orderItemDao.upsert(updatedItem)
 
-            // 2) Recompute order aggregates + sync
+            // 2) Recompute order aggregates
             recomputeOrderAggregates(updatedItem.orderId, now)
         }
     }
@@ -108,8 +106,6 @@ class ProductRepositoryImpl @Inject constructor(
         // 3) Update FTS index
         reindexOrderFts(updatedOrder, items)
 
-        // 4) ENQUEUE ORDER_UPSERT for sync
-        orderSyncHelper.enqueueOrderUpsert(updatedOrder, items)
     }
 
     private suspend fun updateCustomerSummary(customerId: String) {

@@ -4,10 +4,10 @@ import android.app.Application
 import android.content.Context
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.WorkManager
 import com.mkumar.data.SingleChoice
 import com.mkumar.data.SingleSlider
 import com.mkumar.data.SingleText
-import com.mkumar.sync.SyncScheduler
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -31,9 +31,14 @@ class App : Application(), Configuration.Provider {
         super.onCreate()
         appContext = this
 
-        // Optional periodic pull
-        // TODO: Uncomment this line if you want to enable periodic pull sync (Cloud → Local) at app startup.
-//        SyncScheduler.schedulePeriodicPull(this)
+        // Cancel incomplete legacy sync work that may survive an app upgrade. The old
+        // pull worker treated records missing from GitHub as local deletions.
+        WorkManager.getInstance(this).apply {
+            cancelUniqueWork("mkumar_push_sync")
+            cancelUniqueWork("mkumar_pull_sync")
+            cancelAllWorkByTag("com.mkumar.sync.worker.PullFromCloudWorker")
+            cancelAllWorkByTag("com.mkumar.sync.worker.SyncOutboxWorker")
+        }
     }
 
     // ✅ REQUIRED for WorkManager + Hilt (property-based API)

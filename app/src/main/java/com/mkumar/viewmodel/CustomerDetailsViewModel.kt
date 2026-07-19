@@ -59,7 +59,6 @@ class CustomerDetailsViewModel @Inject constructor(
                 .filterNotNull()
                 .map { rel ->
                     // If you have an OrderItemDao, plug it here:
-                    // itemsOf = { id -> orderItemDao.getItemsForOrderSync(id).map { it.toUi() } }
                     rel.toUi(pricing = pricing, invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix)
                 }
                 .onEach { mapped ->

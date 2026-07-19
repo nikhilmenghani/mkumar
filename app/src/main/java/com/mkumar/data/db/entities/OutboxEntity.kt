@@ -7,10 +7,8 @@ import com.mkumar.common.extension.nowUtcMillis
 import java.util.UUID
 
 /**
- * Outbox entry for sync (write-path) operations to cloud (GitHub/GitLab).
- *
- * Each row is one logical operation, e.g. "CUSTOMER_UPSERT", with a self-contained JSON payload.
- * Sync workers will pick QUEUED rows, send them to cloud, and then mark them DONE / ERROR.
+ * Reserved outbox schema for a possible future sync implementation.
+ * No current application code writes or processes these rows.
  */
 @Entity(
     tableName = "outbox",

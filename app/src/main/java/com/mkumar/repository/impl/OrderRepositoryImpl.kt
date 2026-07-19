@@ -9,17 +9,13 @@ import com.mkumar.data.db.dao.CustomerFtsDao
 import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.OrderFtsDao
 import com.mkumar.data.db.dao.OrderItemDao
-import com.mkumar.data.db.entities.OrderDeleteDto
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderFts
-import com.mkumar.data.db.entities.toSyncDto
 import com.mkumar.data.services.InvoiceNumberService
 import com.mkumar.model.OrderStatus
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.OrderRepository
-import com.mkumar.repository.SyncRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.json.Json
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,8 +29,6 @@ class OrderRepositoryImpl @Inject constructor(
     private val customerFtsDao: CustomerFtsDao,
     private val orderFtsDao: OrderFtsDao,
     private val invoiceNumberService: InvoiceNumberService,
-    private val syncRepository: SyncRepository,
-    private val json: Json,
     private val backupScheduler: BackupScheduler
 ) : OrderRepository {
 
@@ -60,8 +54,6 @@ class OrderRepositoryImpl @Inject constructor(
             // Update customer summary
             updateCustomerSummary(enriched.customerId)
 
-            // Enqueue SYNC
-            enqueueOrderUpsert(enriched)
         }
         if (previousStatus != OrderStatus.COMPLETED.value && order.orderStatus == OrderStatus.COMPLETED.value) {
             backupScheduler.enqueueOrderCompleted()
@@ -75,36 +67,13 @@ class OrderRepositoryImpl @Inject constructor(
 
         val order = orderDao.getById(orderId) ?: return@withTransaction
 
-        // --- 1) Capture timestamp for "latest write wins"
-        val deletedAt = nowUtcMillis()
-
-        // --- 2) Local DB delete
+        // Local DB delete
         orderDao.deleteById(orderId)
         orderItemDao.deleteItemsForOrder(orderId)
         orderFtsDao.deleteByOrderId(orderId)
 
         updateCustomerSummary(order.customerId)
 
-        // --- 3) Sync: DELETE overrides any pending UPSERT
-        syncRepository.cancelUpsertsFor("ORDER_UPSERT", orderId)
-
-        // --- 4) Construct DELETE DTO payload
-        val dto = OrderDeleteDto(
-            id = order.id,
-            customerId = order.customerId,
-            deletedAt = deletedAt
-        )
-        val payload = json.encodeToString(dto)
-
-        // --- 5) Enqueue DELETE operation
-        syncRepository.enqueueOperation(
-            type = "ORDER_DELETE",
-            payloadJson = payload,
-            entityId = order.id,
-            cloudPath = "customers/${order.customerId}/orders/${order.id}.json",
-            priority = 10,
-            opUpdatedAt = deletedAt
-        )
     }
 
     override suspend fun createDraftOrder(customerId: String): String {
@@ -157,7 +126,6 @@ class OrderRepositoryImpl @Inject constructor(
         reindexOrderFts(stamped)
         updateCustomerSummary(stamped.customerId)
 
-        enqueueOrderUpsert(stamped)
         stamped
     }
 
@@ -239,21 +207,4 @@ class OrderRepositoryImpl @Inject constructor(
         )
     }
 
-    // ---------------------------------------------------------------------
-    // SYNC HELPERS
-    // ---------------------------------------------------------------------
-    private suspend fun enqueueOrderUpsert(order: OrderEntity) {
-        val items = orderItemDao.getItemsForOrder(order.id)
-        val dto = order.toSyncDto(items)
-        val payload = json.encodeToString(dto)
-
-        syncRepository.enqueueOperation(
-            type = "ORDER_UPSERT",
-            payloadJson = payload,
-            entityId = order.id,
-            cloudPath = "customers/${order.customerId}/orders/${order.id}.json",
-            priority = 5,
-            opUpdatedAt = order.updatedAt
-        )
-    }
 }

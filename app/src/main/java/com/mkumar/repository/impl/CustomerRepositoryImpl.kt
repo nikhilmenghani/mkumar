@@ -13,20 +13,17 @@ import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.OrderFtsDao
 import com.mkumar.data.db.entities.CustomerEntity
 import com.mkumar.data.db.entities.CustomerFts
-import com.mkumar.data.db.entities.toSyncDto
 import com.mkumar.data.db.relations.CustomerWithOrders
 import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.model.SearchMode
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.repository.CustomerRepository
-import com.mkumar.repository.SyncRepository
 import com.mkumar.repository.orderByIds
 import com.mkumar.viewmodel.toUiModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,9 +32,7 @@ class CustomerRepositoryImpl @Inject constructor(
     private val customerDao: CustomerDao,
     private val orderDao: OrderDao,
     private val customerFtsDao: CustomerFtsDao,
-    private val orderFtsDao: OrderFtsDao,
-    private val syncRepository: SyncRepository,
-    private val json: Json
+    private val orderFtsDao: OrderFtsDao
 ) : CustomerRepository {
 
     // ---------------------------------------------------------------------
@@ -48,29 +43,13 @@ class CustomerRepositoryImpl @Inject constructor(
 
         customerDao.upsert(updated)
 
-        val dto = updated.toSyncDto()
-        val payload = json.encodeToString(dto)
-
-        syncRepository.enqueueOperation(
-            type = "CUSTOMER_UPSERT",
-            payloadJson = payload,
-            entityId = updated.id,
-            cloudPath = "customers/${updated.id}/profile.json",
-            priority = 5,
-            opUpdatedAt = updated.updatedAt
-        )
-
         reindexCustomerForSearch(updated)
     }
 
     // ---------------------------------------------------------------------
-    // DELETE (NEW — Correct outbox behaviour here)
+    // DELETE (explicit user action only)
     // ---------------------------------------------------------------------
     override suspend fun deleteById(customerId: String) {
-
-        // Capture timestamp BEFORE delete (latest write wins)
-        val local = customerDao.getById(customerId)
-        val opUpdated = local?.updatedAt ?: nowUtcMillis()
 
         // Local delete
         customerDao.deleteById(customerId)
@@ -83,15 +62,6 @@ class CustomerRepositoryImpl @Inject constructor(
             orderFtsDao.deleteByOrderId(oid)
         }
 
-        // Enqueue cloud delete (outbox handles DELETE > UPSERT override)
-        syncRepository.enqueueOperation(
-            type = "CUSTOMER_DELETE",
-            payloadJson = "{}",  // minimal payload
-            entityId = customerId,
-            cloudPath = "customers/$customerId/profile.json",
-            priority = 10,
-            opUpdatedAt = opUpdated
-        )
     }
 
     // ---------------------------------------------------------------------
