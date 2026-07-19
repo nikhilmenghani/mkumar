@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.security.MessageDigest
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,10 +28,21 @@ class RoomBackupSnapshotter @Inject constructor(
         val output = File(context.cacheDir, "mkumar-backup-${System.currentTimeMillis()}.db")
         if (output.exists() && !output.delete()) error("Could not clear old backup snapshot")
 
+        // Flush all committed WAL pages before taking the point-in-time copy. VACUUM INTO
+        // already produces a consistent database, but the explicit checkpoint makes the
+        // capture boundary unambiguous across Android SQLite versions.
+        database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").use { cursor ->
+            require(cursor.moveToFirst() && cursor.getInt(0) == 0) {
+                "Could not checkpoint the database before backup"
+            }
+        }
+
+        // This is the time represented by the snapshot, rather than the later upload time.
+        val capturedAt = Instant.now()
         val escapedPath = output.absolutePath.replace("'", "''")
         database.openHelper.writableDatabase.execSQL("VACUUM INTO '$escapedPath'")
         val version = validate(output)
-        DatabaseSnapshot(output, version, sha256(output))
+        DatabaseSnapshot(output, version, sha256(output), capturedAt)
     }
 
     override suspend fun validate(file: File, expectedSha256: String?): Int =

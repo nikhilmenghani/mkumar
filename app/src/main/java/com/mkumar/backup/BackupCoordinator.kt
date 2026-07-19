@@ -6,7 +6,6 @@ import com.mkumar.data.PreferencesManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -30,7 +29,7 @@ class BackupCoordinator @Inject constructor(
             snapshot = snapshotter.createSnapshot()
             onProgress("Validating database snapshot", 35)
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            val createdAt = Instant.now()
+            val createdAt = snapshot.capturedAtUtc
             val deviceId = preferences.backupPrefs.deviceId.ifBlank {
                 UUID.randomUUID().toString().also { preferences.backupPrefs.deviceId = it }
             }

@@ -54,7 +54,8 @@ data class BackupEntry(
 data class DatabaseSnapshot(
     val file: java.io.File,
     val schemaVersion: Int,
-    val sha256: String
+    val sha256: String,
+    val capturedAtUtc: java.time.Instant
 )
 
 data class RemoteBackup(
