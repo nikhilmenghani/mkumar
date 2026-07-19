@@ -16,6 +16,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MKumar"
         >
+        <activity
+            android:name=".RestartActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:process=":restarter"
+            android:theme="@style/Theme.MKumar" />
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"

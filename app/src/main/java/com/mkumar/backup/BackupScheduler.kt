@@ -30,6 +30,7 @@ class BackupScheduler @Inject constructor(
     }
 
     fun schedulePeriodic() {
+        clearObsoleteFtsValidationError()
         val intervalHours = preferences.backupPrefs.intervalHours
         if (intervalHours <= 0 || preferences.githubPrefs.token.isBlank()) {
             WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK)
@@ -81,5 +82,14 @@ class BackupScheduler @Inject constructor(
     private fun input(trigger: BackupTrigger) = Data.Builder()
         .putString(DatabaseBackupWorker.TRIGGER_KEY, trigger.name)
         .build()
+
+    private fun clearObsoleteFtsValidationError() {
+        val error = preferences.backupPrefs.lastBackupError
+        if (error.contains("unable to validate the inverted index for FTS4", ignoreCase = true) &&
+            error.contains("readonly database", ignoreCase = true)
+        ) {
+            preferences.backupPrefs.lastBackupError = ""
+        }
+    }
 
 }

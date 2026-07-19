@@ -3,10 +3,9 @@ package com.mkumar
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.Process
-import android.app.AlarmManager
-import android.app.PendingIntent
-import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -75,19 +74,16 @@ class MainActivity : ComponentActivity() {
     }
 
     fun restartApplicationAfterRestore() {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        val intent = Intent(this, RestartActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_NEW_DOCUMENT or
+                Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
         }
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            991,
-            intent,
-            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val alarmManager = getSystemService(AlarmManager::class.java)
-        alarmManager.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 500, pendingIntent)
-        finishAffinity()
-        Process.killProcess(Process.myPid())
+        startActivity(intent)
+        Handler(Looper.getMainLooper()).postDelayed({
+            finishAffinity()
+            Process.killProcess(Process.myPid())
+        }, 200)
     }
 }
 

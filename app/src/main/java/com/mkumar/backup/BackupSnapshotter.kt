@@ -52,12 +52,32 @@ class RoomBackupSnapshotter @Inject constructor(
                     android.database.sqlite.SQLiteDatabase.OPEN_READWRITE
                 )
                 sqlite.use { db ->
-                    val integrity = db.rawQuery("PRAGMA integrity_check", null).use { cursor ->
-                        if (cursor.moveToFirst()) cursor.getString(0) else "failed"
+                    // Newer SQLite builds invoke virtual-table xIntegrity hooks for both
+                    // integrity_check and quick_check. Check every physical table (including
+                    // FTS shadow tables) individually so the read-only pragma path does not
+                    // invoke the FTS wrapper itself.
+                    checkPhysicalTable(db, "sqlite_schema")
+                    val physicalTables = db.rawQuery(
+                        "SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+                        null
+                    ).use { cursor ->
+                        buildList {
+                            while (cursor.moveToNext()) {
+                                val name = cursor.getString(0)
+                                val sql = if (cursor.isNull(1)) "" else cursor.getString(1)
+                                if (!sql.trimStart().startsWith("CREATE VIRTUAL TABLE", ignoreCase = true)) {
+                                    add(name)
+                                }
+                            }
+                        }
                     }
-                    require(integrity.equals("ok", ignoreCase = true)) {
-                        "SQLite integrity check failed: $integrity"
-                    }
+                    physicalTables.forEach { checkPhysicalTable(db, it) }
+
+                    // Validate FTS inverted indexes explicitly through write-classified SQL.
+                    // These special INSERT commands only perform validation; they do not add rows.
+                    db.execSQL("INSERT INTO customer_fts(customer_fts) VALUES('integrity-check')")
+                    db.execSQL("INSERT INTO order_fts(order_fts) VALUES('integrity-check')")
+
                     db.rawQuery("PRAGMA user_version", null).use { cursor ->
                         if (cursor.moveToFirst()) cursor.getInt(0) else 0
                     }
@@ -80,5 +100,18 @@ class RoomBackupSnapshotter @Inject constructor(
             }
         }
         return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    private fun checkPhysicalTable(
+        database: android.database.sqlite.SQLiteDatabase,
+        tableName: String
+    ) {
+        val quotedName = tableName.replace("'", "''")
+        val result = database.rawQuery("PRAGMA integrity_check('$quotedName')", null).use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else "failed"
+        }
+        require(result.equals("ok", ignoreCase = true)) {
+            "SQLite integrity check failed for $tableName: $result"
+        }
     }
 }

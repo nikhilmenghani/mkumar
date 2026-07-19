@@ -2,6 +2,7 @@ package com.mkumar.backup
 
 import android.content.Context
 import com.mkumar.data.db.AppDatabase
+import com.mkumar.data.PreferencesManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,7 +17,8 @@ class BackupRestoreManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val provider: BackupProvider,
     private val snapshotter: BackupSnapshotter,
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    private val preferences: PreferencesManager
 ) {
     suspend fun findBackups(): List<RestoreOption> {
         val remote = provider.discoverBackup() ?: return emptyList()
@@ -53,6 +55,7 @@ class BackupRestoreManager @Inject constructor(
                 StandardCopyOption.ATOMIC_MOVE
             )
             download = null
+            preferences.backupPrefs.lastBackupError = ""
             RestoreResult.Success(option.entry)
         } catch (t: Throwable) {
             if (databaseClosed && safety?.file?.isFile == true) {
