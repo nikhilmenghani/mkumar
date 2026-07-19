@@ -42,21 +42,30 @@ class RoomBackupSnapshotter @Inject constructor(
                 }
             }
 
-            val sqlite = android.database.sqlite.SQLiteDatabase.openDatabase(
-                file.absolutePath,
-                null,
-                android.database.sqlite.SQLiteDatabase.OPEN_READONLY
-            )
-            sqlite.use { db ->
-                val integrity = db.rawQuery("PRAGMA integrity_check", null).use { cursor ->
-                    if (cursor.moveToFirst()) cursor.getString(0) else "failed"
+            try {
+                // Some newer Android SQLite builds validate FTS3/FTS4 indexes through a
+                // write-like virtual-table command. The file is a disposable snapshot (or
+                // restore download), not the live Room database, so allow that validation.
+                val sqlite = android.database.sqlite.SQLiteDatabase.openDatabase(
+                    file.absolutePath,
+                    null,
+                    android.database.sqlite.SQLiteDatabase.OPEN_READWRITE
+                )
+                sqlite.use { db ->
+                    val integrity = db.rawQuery("PRAGMA integrity_check", null).use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getString(0) else "failed"
+                    }
+                    require(integrity.equals("ok", ignoreCase = true)) {
+                        "SQLite integrity check failed: $integrity"
+                    }
+                    db.rawQuery("PRAGMA user_version", null).use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                    }
                 }
-                require(integrity.equals("ok", ignoreCase = true)) {
-                    "SQLite integrity check failed: $integrity"
-                }
-                db.rawQuery("PRAGMA user_version", null).use { cursor ->
-                    if (cursor.moveToFirst()) cursor.getInt(0) else 0
-                }
+            } finally {
+                File(file.path + "-wal").delete()
+                File(file.path + "-shm").delete()
+                File(file.path + "-journal").delete()
             }
         }
 
