@@ -2,6 +2,7 @@ package com.mkumar.backup
 
 import android.content.Context
 import androidx.work.Constraints
+import androidx.work.BackoffPolicy
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -27,6 +28,10 @@ class BackupScheduler @Inject constructor(
         private const val EVENT_WORK = "mkumar_database_backup_event"
         private const val MANUAL_WORK = "mkumar_database_backup_manual"
         private const val ORDER_COMPLETED_BACKUP_ENABLED = false
+        const val BACKUP_WORK_TAG = "mkumar_database_backup"
+        const val MANUAL_WORK_TAG = "mkumar_database_backup_manual_tag"
+        const val SCHEDULED_WORK_TAG = "mkumar_database_backup_scheduled_tag"
+        const val EVENT_WORK_TAG = "mkumar_database_backup_event_tag"
     }
 
     fun schedulePeriodic() {
@@ -39,6 +44,8 @@ class BackupScheduler @Inject constructor(
         val request = PeriodicWorkRequestBuilder<DatabaseBackupWorker>(intervalHours.toLong(), TimeUnit.HOURS)
             .setConstraints(constraints())
             .setInputData(input(BackupTrigger.SCHEDULED))
+            .addTag(BACKUP_WORK_TAG)
+            .addTag(SCHEDULED_WORK_TAG)
             .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             PERIODIC_WORK,
@@ -63,6 +70,15 @@ class BackupScheduler @Inject constructor(
             .setConstraints(constraints())
             .setInputData(input(trigger))
             .setInitialDelay(delaySeconds, TimeUnit.SECONDS)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .addTag(BACKUP_WORK_TAG)
+            .addTag(
+                when (trigger) {
+                    BackupTrigger.MANUAL -> MANUAL_WORK_TAG
+                    BackupTrigger.SCHEDULED -> SCHEDULED_WORK_TAG
+                    BackupTrigger.ORDER_COMPLETED -> EVENT_WORK_TAG
+                }
+            )
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
             name,
@@ -73,10 +89,7 @@ class BackupScheduler @Inject constructor(
     }
 
     private fun constraints() = Constraints.Builder()
-        .setRequiredNetworkType(
-            if (preferences.backupPrefs.wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED
-        )
-        .setRequiresBatteryNotLow(true)
+        .setRequiredNetworkType(NetworkType.CONNECTED)
         .build()
 
     private fun input(trigger: BackupTrigger) = Data.Builder()

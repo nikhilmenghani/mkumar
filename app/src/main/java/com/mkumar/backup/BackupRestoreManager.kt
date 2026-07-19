@@ -25,6 +25,11 @@ class BackupRestoreManager @Inject constructor(
         return remote.entries.map { RestoreOption(remote, it) }
     }
 
+    suspend fun delete(option: RestoreOption): List<RestoreOption> {
+        val updated = provider.delete(option.remote, option.entry)
+        return updated.entries.map { RestoreOption(updated, it) }
+    }
+
     suspend fun restore(option: RestoreOption): RestoreResult = withContext(Dispatchers.IO) {
         var download: File? = null
         var safety: DatabaseSnapshot? = null

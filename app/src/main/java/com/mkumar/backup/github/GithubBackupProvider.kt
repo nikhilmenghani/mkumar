@@ -33,7 +33,7 @@ class GithubBackupProvider @Inject constructor(
         private const val API = "https://api.github.com"
         private const val MANIFEST_PATH = ".mkumar-backup/manifest.json"
         private const val MAX_CONTENTS_API_BYTES = 100L * 1024L * 1024L
-        private const val MAX_BACKUPS = 3
+        private const val MAX_BACKUPS = 100
     }
 
     override suspend fun discoverBackup(): RemoteBackup? {
@@ -66,7 +66,7 @@ class GithubBackupProvider @Inject constructor(
         val previousEntries = previous?.manifest?.availableBackups().orEmpty()
         val retained = (listOf(newEntry) + previousEntries.filter { it.backupPath != newEntry.backupPath })
             .sortedByDescending { it.createdAtUtc }
-            .take(MAX_BACKUPS)
+            .take(preferences.backupPrefs.retentionCount.coerceIn(3, MAX_BACKUPS))
         val updatedManifest = BackupManifest(backups = retained)
 
         putFile(
@@ -101,6 +101,21 @@ class GithubBackupProvider @Inject constructor(
                 destination.outputStream().use { body.byteStream().copyTo(it) }
             }
         }
+    }
+
+    override suspend fun delete(backup: RemoteBackup, entry: BackupEntry): RemoteBackup {
+        val repository = RepositoryInfo(backup.owner, backup.repository, backup.branch)
+        val retained = backup.manifest.availableBackups()
+            .filterNot { it.backupPath == entry.backupPath }
+        val updatedManifest = BackupManifest(backups = retained)
+        putFile(
+            repository = repository,
+            path = MANIFEST_PATH,
+            bytes = json.encodeToString(updatedManifest).toByteArray(),
+            commitMessage = "Remove backup from catalog (${entry.createdAtUtc})"
+        )
+        deleteFile(repository, entry)
+        return RemoteBackup(backup.owner, backup.repository, backup.branch, updatedManifest)
     }
 
     private suspend fun resolveUploadRepository(): RepositoryInfo {

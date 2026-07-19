@@ -11,11 +11,14 @@ import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Restore
-import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.automirrored.rounded.ListAlt
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -53,8 +56,12 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     val prefs = LocalPreferencesManager.current
     val context = LocalContext.current
     val backupState by backupViewModel.state.collectAsState()
+    val backupQueue by backupViewModel.queue.collectAsState()
     var confirmRestore by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    var showQueue by remember { mutableStateOf(false) }
     var selectedBackup by remember { mutableStateOf<RestoreOption?>(null) }
+    var backupToDelete by remember { mutableStateOf<RestoreOption?>(null) }
 
     val dialog = globalClass.singleChoiceDialog
     val textDialog = globalClass.singleTextDialog
@@ -66,7 +73,36 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     val backupPrefs = prefs.backupPrefs
 
     val foundBackups = (backupState as? BackupUiState.BackupsFound)?.backups.orEmpty()
-    if (foundBackups.isNotEmpty()) {
+    if (showQueue) {
+        ModalBottomSheet(onDismissRequest = { showQueue = false }) {
+            Column(Modifier.padding(bottom = 24.dp)) {
+                Text(
+                    text = "Backup queue",
+                    style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                )
+                if (backupQueue.isEmpty()) {
+                    Text("No backup work is queued or running.", Modifier.padding(24.dp))
+                } else {
+                    backupQueue.forEach { item ->
+                        val detail = buildString {
+                            append(item.stage ?: item.state)
+                            if (item.progress > 0) append(" • ${item.progress}%")
+                            if (item.attempt > 0) append(" • retry ${item.attempt}")
+                        }
+                        PreferenceItem(
+                            label = item.label,
+                            supportingText = detail,
+                            icon = Icons.Rounded.CloudSync,
+                            trailingContent = if (item.state.equals("Running", true)) {
+                                { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) }
+                            } else null
+                        )
+                    }
+                }
+            }
+        }
+    } else if (foundBackups.isNotEmpty()) {
         ModalBottomSheet(onDismissRequest = backupViewModel::dismissBackups) {
             Column(Modifier.padding(bottom = 24.dp)) {
                 Text(
@@ -79,6 +115,15 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                         label = formatUtcAsLocal(option.entry.createdAtUtc),
                         supportingText = "${option.entry.trigger.toDisplayTrigger()} • ${formatFileSize(option.entry.sizeBytes)}",
                         icon = Icons.Rounded.Restore,
+                        trailingContent = {
+                            IconButton(onClick = {
+                                backupToDelete = option
+                                backupViewModel.dismissBackups()
+                                confirmDelete = true
+                            }) {
+                                Icon(Icons.Rounded.Delete, contentDescription = "Delete backup")
+                            }
+                        },
                         onClick = {
                             selectedBackup = option
                             backupViewModel.dismissBackups()
@@ -88,6 +133,20 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 }
             }
         }
+    }
+
+    if (confirmDelete && backupToDelete != null) {
+        ConfirmActionDialog(
+            title = "Delete backup?",
+            message = "Delete the backup from ${formatUtcAsLocal(backupToDelete!!.entry.createdAtUtc)}? The next older retained backup will become visible.",
+            confirmLabel = "Delete",
+            highlightConfirmAsDestructive = true,
+            onDismiss = { confirmDelete = false },
+            onConfirm = {
+                confirmDelete = false
+                backupToDelete?.let(backupViewModel::deleteBackup)
+            }
+        )
     }
 
     if (confirmRestore && selectedBackup != null) {
@@ -216,13 +275,33 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             icon = Icons.Rounded.CloudSync
         )
         PreferenceItem(
-            label = "Wi-Fi only",
-            supportingText = "Use an unmetered connection for automatic backups",
-            icon = Icons.Rounded.Wifi,
-            switchState = backupPrefs.wifiOnly,
-            onSwitchChange = {
-                backupPrefs.wifiOnly = it
-                backupViewModel.reschedule()
+            label = "Retained backups",
+            supportingText = "Keep the latest ${backupPrefs.retentionCount}",
+            icon = Icons.Rounded.Backup,
+            onClick = {
+                val counts = listOf(3, 6, 10, 20, 30)
+                dialog.show(
+                    title = "Retained backups",
+                    description = "Older snapshots are pruned after the next successful backup.",
+                    choices = counts.map { "Latest $it" },
+                    selectedChoice = counts.indexOf(backupPrefs.retentionCount).coerceAtLeast(0),
+                    onSelect = { backupPrefs.retentionCount = counts[it] }
+                )
+            }
+        )
+        PreferenceItem(
+            label = "Backups shown",
+            supportingText = displayCountLabel(backupPrefs.displayCount),
+            icon = Icons.AutoMirrored.Rounded.ListAlt,
+            onClick = {
+                val counts = listOf(3, 6, 10, 20, 0)
+                dialog.show(
+                    title = "Backups shown",
+                    description = "Choose how many retained restore points appear in the list.",
+                    choices = counts.map(::displayCountLabel),
+                    selectedChoice = counts.indexOf(backupPrefs.displayCount).coerceAtLeast(0),
+                    onSelect = { backupPrefs.displayCount = counts[it] }
+                )
             }
         )
         PreferenceItem(
@@ -244,9 +323,16 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         )
         PreferenceItem(
             label = "Find backup",
-            supportingText = "Discover the repository using its backup manifest",
+            supportingText = "Show ${displayCountLabel(backupPrefs.displayCount).lowercase()}",
             icon = Icons.Rounded.CloudSync,
             onClick = backupViewModel::findBackup
+        )
+        PreferenceItem(
+            label = "Backup queue",
+            supportingText = if (backupQueue.isEmpty()) "No queued or running work"
+                else "${backupQueue.size} queued or running",
+            icon = Icons.AutoMirrored.Rounded.ListAlt,
+            onClick = { showQueue = true }
         )
         val status = when (val state = backupState) {
             BackupUiState.Idle -> backupPrefs.lastBackupError
@@ -360,6 +446,9 @@ private fun backupIntervalLabel(hours: Int): String = when (hours) {
     24 -> "Every 24 hours"
     else -> "Every $hours hours"
 }
+
+private fun displayCountLabel(count: Int): String =
+    if (count <= 0) "All retained backups" else "Latest $count backups"
 
 private fun formatUtcAsLocal(timestamp: String): String = runCatching {
     LOCAL_BACKUP_TIME_FORMAT.format(Instant.parse(timestamp).atZone(ZoneId.systemDefault()))

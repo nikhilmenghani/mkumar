@@ -6,4 +6,5 @@ interface BackupProvider {
     suspend fun discoverBackup(): RemoteBackup?
     suspend fun upload(snapshot: File, manifest: BackupManifest): RemoteBackup
     suspend fun download(backup: RemoteBackup, entry: BackupEntry, destination: File)
+    suspend fun delete(backup: RemoteBackup, entry: BackupEntry): RemoteBackup
 }

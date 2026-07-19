@@ -61,7 +61,7 @@ data class RemoteBackup(
     val branch: String,
     val manifest: BackupManifest
 ) {
-    val entries: List<BackupEntry> get() = manifest.availableBackups().take(3)
+    val entries: List<BackupEntry> get() = manifest.availableBackups()
 }
 
 data class RestoreOption(

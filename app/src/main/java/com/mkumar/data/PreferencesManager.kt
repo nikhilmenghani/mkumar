@@ -124,10 +124,15 @@ object BackupPrefs {
         defaultValue = 12,
         getPreferencesKey = { intPreferencesKey(it) }
     )
-    var wifiOnly by dataStoreMutableState(
-        keyName = "backupWifiOnly",
-        defaultValue = false,
-        getPreferencesKey = { booleanPreferencesKey(it) }
+    var retentionCount by dataStoreMutableState(
+        keyName = "backupRetentionCount",
+        defaultValue = 20,
+        getPreferencesKey = { intPreferencesKey(it) }
+    )
+    var displayCount by dataStoreMutableState(
+        keyName = "backupDisplayCount",
+        defaultValue = 6,
+        getPreferencesKey = { intPreferencesKey(it) }
     )
     var lastSuccessfulBackupAt by dataStoreMutableState(
         keyName = "lastSuccessfulBackupAt",

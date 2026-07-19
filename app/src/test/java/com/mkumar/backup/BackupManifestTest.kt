@@ -5,13 +5,13 @@ import org.junit.Test
 
 class BackupManifestTest {
     @Test
-    fun availableBackups_sortsNewestFirstAndRemoteCapsAtThree() {
+    fun availableBackups_sortsNewestFirstAndKeepsCatalogHistory() {
         val entries = (1..4).map { day -> entry("2026-07-0${day}T12:00:00Z") }
         val remote = RemoteBackup("owner", "repo", "main", BackupManifest(backups = entries))
 
-        assertEquals(3, remote.entries.size)
+        assertEquals(4, remote.entries.size)
         assertEquals("2026-07-04T12:00:00Z", remote.entries.first().createdAtUtc)
-        assertEquals("2026-07-02T12:00:00Z", remote.entries.last().createdAtUtc)
+        assertEquals("2026-07-01T12:00:00Z", remote.entries.last().createdAtUtc)
     }
 
     @Test

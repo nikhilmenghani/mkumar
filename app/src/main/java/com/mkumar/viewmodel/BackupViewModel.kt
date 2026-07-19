@@ -12,6 +12,7 @@ import com.mkumar.backup.BackupScheduler
 import com.mkumar.backup.RestoreResult
 import com.mkumar.backup.RestoreOption
 import com.mkumar.backup.worker.DatabaseBackupWorker
+import com.mkumar.data.PreferencesManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,13 +25,22 @@ import javax.inject.Inject
 class BackupViewModel @Inject constructor(
     @ApplicationContext context: Context,
     private val scheduler: BackupScheduler,
-    private val restoreManager: BackupRestoreManager
+    private val restoreManager: BackupRestoreManager,
+    private val preferences: PreferencesManager
 ) : ViewModel() {
     private val workManager = WorkManager.getInstance(context)
     private var manualBackupLiveData: LiveData<WorkInfo?>? = null
     private var manualBackupObserver: Observer<WorkInfo?>? = null
+    private val queueLiveData = workManager.getWorkInfosByTagLiveData(BackupScheduler.BACKUP_WORK_TAG)
+    private val queueObserver = Observer<List<WorkInfo>> { work -> updateQueue(work.orEmpty()) }
     private val _state = MutableStateFlow<BackupUiState>(BackupUiState.Idle)
     val state: StateFlow<BackupUiState> = _state.asStateFlow()
+    private val _queue = MutableStateFlow<List<BackupQueueItem>>(emptyList())
+    val queue: StateFlow<List<BackupQueueItem>> = _queue.asStateFlow()
+
+    init {
+        queueLiveData.observeForever(queueObserver)
+    }
 
     fun backupNow() {
         val workId = scheduler.enqueueManual()
@@ -78,6 +88,7 @@ class BackupViewModel @Inject constructor(
 
     override fun onCleared() {
         stopObservingManualBackup()
+        queueLiveData.removeObserver(queueObserver)
         super.onCleared()
     }
 
@@ -87,12 +98,52 @@ class BackupViewModel @Inject constructor(
             _state.value = runCatching { restoreManager.findBackups() }
                 .fold(
                     onSuccess = { backups ->
-                        if (backups.isEmpty()) BackupUiState.Error("No M Kumar backup was found")
-                        else BackupUiState.BackupsFound(backups)
+                        val visible = backups.visibleBackups()
+                        if (visible.isEmpty()) BackupUiState.Error("No M Kumar backup was found")
+                        else BackupUiState.BackupsFound(visible)
                     },
                     onFailure = { BackupUiState.Error(it.message ?: "Backup discovery failed") }
                 )
         }
+    }
+
+    fun deleteBackup(option: RestoreOption) {
+        viewModelScope.launch {
+            _state.value = BackupUiState.Working("Deleting backup…")
+            _state.value = runCatching { restoreManager.delete(option).visibleBackups() }
+                .fold(
+                    onSuccess = { remaining ->
+                        if (remaining.isEmpty()) BackupUiState.Error("No backups remain")
+                        else BackupUiState.BackupsFound(remaining)
+                    },
+                    onFailure = { BackupUiState.Error(it.message ?: "Could not delete backup") }
+                )
+        }
+    }
+
+    private fun List<RestoreOption>.visibleBackups(): List<RestoreOption> {
+        val count = preferences.backupPrefs.displayCount
+        return if (count <= 0) this else take(count)
+    }
+
+    private fun updateQueue(work: List<WorkInfo>) {
+        _queue.value = work
+            .filterNot { it.state.isFinished }
+            .sortedBy { if (it.state == WorkInfo.State.RUNNING) 0 else 1 }
+            .map { info ->
+                BackupQueueItem(
+                    id = info.id.toString(),
+                    label = when {
+                        BackupScheduler.MANUAL_WORK_TAG in info.tags -> "Manual backup"
+                        BackupScheduler.EVENT_WORK_TAG in info.tags -> "Event backup"
+                        else -> "Scheduled backup"
+                    },
+                    state = info.state.name.lowercase().replaceFirstChar { it.uppercase() },
+                    attempt = info.runAttemptCount,
+                    progress = info.progress.getInt(DatabaseBackupWorker.PROGRESS_PERCENT_KEY, 0),
+                    stage = info.progress.getString(DatabaseBackupWorker.PROGRESS_STAGE_KEY)
+                )
+            }
     }
 
     fun dismissBackups() {
@@ -115,6 +166,15 @@ class BackupViewModel @Inject constructor(
         }
     }
 }
+
+data class BackupQueueItem(
+    val id: String,
+    val label: String,
+    val state: String,
+    val attempt: Int,
+    val progress: Int,
+    val stage: String?
+)
 
 sealed interface BackupUiState {
     data object Idle : BackupUiState
