@@ -52,23 +52,34 @@ jobs:
           sed -i "s/versionName = \".*\"/versionName = \"${DEV_VERSION}\"/" app/build.gradle.kts
           sed -i "s/versionCode = .*/versionCode = ${VERSION_CODE}/" app/build.gradle.kts
 
-      - name: Configure persistent development signing key
+      - name: Configure release signing key for development APK
         shell: bash
         env:
-          DEV_KEYSTORE_BASE64: ${{ secrets.DEV_KEYSTORE }}
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.KEYSTORE }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
-          if [[ -z "$DEV_KEYSTORE_BASE64" ]]; then
-            echo "The DEV_KEYSTORE GitHub secret is required. CI debug APKs need a persistent signing key for upgrades."
+          if [[ -z "$RELEASE_KEYSTORE_BASE64" || -z "$RELEASE_KEYSTORE_PASSWORD" ]]; then
+            echo "The existing KEYSTORE and KEYSTORE_PASSWORD GitHub secrets are required."
             exit 1
           fi
-          echo "$DEV_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mkumar-dev.keystore"
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mkumar-release.keystore"
+
+          KEY_ALIAS=$(keytool -list -v \
+            -keystore "$RUNNER_TEMP/mkumar-release.keystore" \
+            -storepass "$RELEASE_KEYSTORE_PASSWORD" | \
+            sed -n 's/^Alias name: //p' | head -n 1)
+
+          if [[ -z "$KEY_ALIAS" ]]; then
+            echo "Could not determine the signing-key alias from KEYSTORE."
+            exit 1
+          fi
+          echo "DEV_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
 
       - name: Build signed debug APK
         env:
-          DEV_KEYSTORE_PATH: ${{ runner.temp }}/mkumar-dev.keystore
-          DEV_KEYSTORE_PASSWORD: ${{ secrets.DEV_KEYSTORE_PASSWORD }}
-          DEV_KEY_ALIAS: ${{ secrets.DEV_KEY_ALIAS }}
-          DEV_KEY_PASSWORD: ${{ secrets.DEV_KEY_PASSWORD }}
+          DEV_KEYSTORE_PATH: ${{ runner.temp }}/mkumar-release.keystore
+          DEV_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          DEV_KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           chmod +x ./gradlew
           ./gradlew assembleDebug
