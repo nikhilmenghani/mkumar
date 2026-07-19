@@ -48,6 +48,7 @@ fun SortBar(
     onSortOrderChange: (Boolean) -> Unit,
     paymentDueOnly: Boolean = false,
     onPaymentDueOnlyChange: (Boolean) -> Unit = {},
+    sortFields: List<String> = listOf("Invoice", "UpdatedAt", "Name"),
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -123,13 +124,11 @@ fun SortBar(
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
 
-                val fields = listOf("Invoice", "UpdatedAt", "Name")
-
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    fields.forEach { field ->
+                    sortFields.forEach { field ->
                         FilterChip(
                             selected = sortField == field,
                             onClick = {

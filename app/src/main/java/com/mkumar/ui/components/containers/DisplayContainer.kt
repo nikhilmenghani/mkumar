@@ -6,7 +6,6 @@ import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.Nightlight
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Tune
-import androidx.compose.material.icons.rounded.ViewColumn
 import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material.icons.rounded.CloudSync
@@ -37,7 +36,6 @@ import androidx.compose.ui.res.stringResource
 import com.mkumar.App.Companion.globalClass
 import com.mkumar.R
 import com.mkumar.common.extension.DateFormat
-import com.mkumar.data.DashboardAlignment
 import com.mkumar.data.ThemePreference
 import com.mkumar.data.emptyString
 import com.mkumar.ui.components.items.PreferenceItem
@@ -71,7 +69,6 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     val displayPrefs = prefs.displayPrefs
     val githubPrefs = prefs.githubPrefs
     val invoicePrefs = prefs.invoicePrefs
-    val dashboardPrefs = prefs.dashboardPrefs
     val backupPrefs = prefs.backupPrefs
 
     LaunchedEffect(backupPrefs.deviceName) {
@@ -89,8 +86,12 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         }
     }
 
+    LaunchedEffect(backupQueue.isEmpty()) {
+        if (backupQueue.isEmpty()) showQueue = false
+    }
+
     val foundBackups = (backupState as? BackupUiState.BackupsFound)?.backups.orEmpty()
-    if (showQueue) {
+    if (showQueue && backupQueue.isNotEmpty()) {
         ModalBottomSheet(onDismissRequest = { showQueue = false }) {
             Column(Modifier.padding(bottom = 24.dp)) {
                 Text(
@@ -372,14 +373,15 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             enabled = backupPrefs.enabled,
             onClick = backupViewModel::findBackup
         )
-        PreferenceItem(
-            label = "Backup queue",
-            supportingText = if (backupQueue.isEmpty()) "No queued or running work"
-                else "${backupQueue.size} queued or running",
-            icon = Icons.AutoMirrored.Rounded.ListAlt,
-            enabled = backupPrefs.enabled,
-            onClick = { showQueue = true }
-        )
+        if (backupQueue.isNotEmpty()) {
+            PreferenceItem(
+                label = "Backup queue",
+                supportingText = "${backupQueue.size} queued or running",
+                icon = Icons.AutoMirrored.Rounded.ListAlt,
+                enabled = backupPrefs.enabled,
+                onClick = { showQueue = true }
+            )
+        }
         val status = when (val state = backupState) {
             BackupUiState.Idle -> backupPrefs.lastBackupError
             is BackupUiState.Working -> state.percent
@@ -463,26 +465,6 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         )
     }
 
-    Container(title = "Dashboard") {
-        PreferenceItem(
-            label = "Dashboard Items Alignment",
-            supportingText = when (dashboardPrefs.dashboardAlignment) {
-                DashboardAlignment.VERTICAL.ordinal -> "Vertical"
-                DashboardAlignment.HORIZONTAL.ordinal -> "Horizontal"
-                else -> "Vertical"
-            },
-            icon = Icons.Rounded.ViewColumn,
-            onClick = {
-                dialog.show(
-                    title = "Dashboard Items Alignment",
-                    description = "Select dashboard items alignment",
-                    choices = DashboardAlignment.entries.map { it.toString() },
-                    selectedChoice = dashboardPrefs.dashboardAlignment,
-                    onSelect = { dashboardPrefs.dashboardAlignment = it }
-                )
-            }
-        )
-    }
 }
 
 private fun backupIntervalLabel(hours: Int): String = when (hours) {

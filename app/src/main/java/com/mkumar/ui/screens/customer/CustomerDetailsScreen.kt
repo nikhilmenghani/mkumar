@@ -28,6 +28,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -39,7 +41,9 @@ import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.CustomerDetailsIntent
 import com.mkumar.model.CustomerHeaderUi
 import com.mkumar.model.OrderRowAction
+import com.mkumar.model.OrderRowUi
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
+import com.mkumar.ui.components.sort.SortBar
 import com.mkumar.ui.navigation.Routes
 import com.mkumar.ui.screens.customer.components.CustomerHeader
 import com.mkumar.ui.screens.customer.components.OrderList
@@ -57,6 +61,9 @@ fun CustomerDetailsScreen(
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var orderSortField by rememberSaveable { mutableStateOf("Invoice") }
+    var orderSortAscending by rememberSaveable { mutableStateOf(false) }
+    var paymentDueOnly by rememberSaveable { mutableStateOf(false) }
 
     // Snackbar + one-off effects
     val snackbarHostState = remember { SnackbarHostState() }
@@ -169,29 +176,66 @@ fun CustomerDetailsScreen(
                 }
             } else {
                 // Reuse existing list UI by adapting to OrderRowUi
-                val rows = remember(ui.orders) {
-                    ui.orders.map { o ->
-                        o.toOrderRowUi()
+                val rows = remember(
+                    ui.orders,
+                    orderSortField,
+                    orderSortAscending,
+                    paymentDueOnly
+                ) {
+                    val comparator = when (orderSortField) {
+                        "UpdatedAt" -> compareBy<OrderRowUi> { it.lastUpdatedAt }
+                        else -> compareBy<OrderRowUi> {
+                            it.invoiceNumber.takeLastWhile(Char::isDigit).toLongOrNull()
+                                ?: Long.MIN_VALUE
+                        }.thenBy { it.invoiceNumber }
                     }
+                    ui.orders
+                        .map { it.toOrderRowUi() }
+                        .filter { !paymentDueOnly || it.remainingBalance > 0 }
+                        .sortedWith(
+                            if (orderSortAscending) comparator else comparator.reversed()
+                        )
                 }
-                OrderList(
-                    orders = rows,
-                    onAction = { action ->
-                        when (action) {
-                            is OrderRowAction.Open -> {
-                                val cid = ui.customer?.id.orEmpty()
-                                navController.navigate(Routes.orderEditor(customerId = cid, orderId = action.orderId))
-                            }
-
-                            is OrderRowAction.Delete -> {
-                                setPendingDeleteOrderId(action.orderId)
-                            }
-                            is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId, action.invoiceNumber))
-                            is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId, action.invoiceNumber))
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
+                SortBar(
+                    title = "Orders (${rows.size})",
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    sortField = orderSortField,
+                    sortOrderAsc = orderSortAscending,
+                    onSortFieldChange = { orderSortField = it },
+                    onSortOrderChange = { orderSortAscending = it },
+                    paymentDueOnly = paymentDueOnly,
+                    onPaymentDueOnlyChange = { paymentDueOnly = it },
+                    sortFields = listOf("Invoice", "UpdatedAt")
                 )
+
+                if (rows.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            "No orders with payment due.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    OrderList(
+                        orders = rows,
+                        onAction = { action ->
+                            when (action) {
+                                is OrderRowAction.Open -> {
+                                    val cid = ui.customer?.id.orEmpty()
+                                    navController.navigate(Routes.orderEditor(customerId = cid, orderId = action.orderId))
+                                }
+
+                                is OrderRowAction.Delete -> {
+                                    setPendingDeleteOrderId(action.orderId)
+                                }
+                                is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId, action.invoiceNumber))
+                                is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId, action.invoiceNumber))
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
                 if (pendingDeleteOrderId != null) {
                     ConfirmActionDialog(
