@@ -1,6 +1,8 @@
 package com.mkumar.repository.impl
 
+import androidx.room.withTransaction
 import com.mkumar.common.extension.nowUtcMillis
+import com.mkumar.data.db.AppDatabase
 import com.mkumar.data.db.dao.CustomerDao
 import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.OrderFtsDao
@@ -16,6 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class PaymentRepositoryImpl @Inject constructor(
+    private val db: AppDatabase,
     private val dao: PaymentDao,
     private val orderDao: OrderDao,
     private val orderItemDao: OrderItemDao,
@@ -28,32 +31,33 @@ class PaymentRepositoryImpl @Inject constructor(
 
     override suspend fun addPayment(orderId: String, amount: Int, paymentAt: Long) {
         withContext(Dispatchers.IO) {
+            db.withTransaction {
+                require(amount > 0) { "Payment amount must be greater than zero" }
 
-            // 1) Insert local
-            val payment = PaymentEntity(
-                id = java.util.UUID.randomUUID().toString(),
-                orderId = orderId,
-                amountPaid = amount,
-                paymentAt = paymentAt
-            )
-            dao.insertPayment(payment)
+                val payment = PaymentEntity(
+                    id = java.util.UUID.randomUUID().toString(),
+                    orderId = orderId,
+                    amountPaid = amount,
+                    paymentAt = paymentAt
+                )
+                dao.insertPayment(payment)
 
-            // 2) Update the Order (paidTotal + remainingBalance)
-            recomputeOrderTotals(orderId)
+                recomputeOrderTotals(orderId)
+            }
 
         }
     }
 
     override suspend fun deletePaymentById(id: String) {
         withContext(Dispatchers.IO) {
+            db.withTransaction {
 
-            val existing = dao.getPaymentById(id) ?: return@withContext
+                val existing = dao.getPaymentById(id) ?: return@withTransaction
 
-            // 1) Local delete
-            dao.deletePaymentById(id)
+                dao.deletePaymentById(id)
 
-            // 2) Update Order totals
-            recomputeOrderTotals(existing.orderId)
+                recomputeOrderTotals(existing.orderId)
+            }
 
         }
     }
@@ -68,11 +72,18 @@ class PaymentRepositoryImpl @Inject constructor(
         val payments = dao.getPaymentsList(orderId)
         val items = orderItemDao.getItemsForOrder(orderId)
 
+        val totalAmount = items.sumOf { item ->
+            val subtotal = item.unitPrice.coerceAtLeast(0) * item.quantity.coerceAtLeast(0)
+            val discount = subtotal * item.discountPercentage.coerceIn(0, 100) / 100
+            (subtotal - discount).coerceAtLeast(0)
+        }
         val paidTotal = payments.sumOf { it.amountPaid }
-        val remaining = order.totalAmount - paidTotal
+        val payableTotal = order.adjustedAmount.takeIf { it > 0 } ?: totalAmount
+        val remaining = payableTotal - paidTotal
 
         val updatedOrder = order.copy(
             paidTotal = paidTotal,
+            totalAmount = totalAmount,
             remainingBalance = remaining,
             updatedAt = nowUtcMillis()
         )

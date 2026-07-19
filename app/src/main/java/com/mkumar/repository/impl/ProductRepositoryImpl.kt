@@ -8,6 +8,7 @@ import com.mkumar.data.db.dao.CustomerFtsDao
 import com.mkumar.data.db.dao.OrderDao
 import com.mkumar.data.db.dao.OrderFtsDao
 import com.mkumar.data.db.dao.OrderItemDao
+import com.mkumar.data.db.dao.PaymentDao
 import com.mkumar.data.db.entities.OrderEntity
 import com.mkumar.data.db.entities.OrderFts
 import com.mkumar.data.db.entities.OrderItemEntity
@@ -21,6 +22,7 @@ class ProductRepositoryImpl @Inject constructor(
     private val db: AppDatabase,
     private val orderItemDao: OrderItemDao,
     private val orderDao: OrderDao,
+    private val paymentDao: PaymentDao,
     private val customerDao: CustomerDao,
     private val customerFtsDao: CustomerFtsDao,
     private val orderFtsDao: OrderFtsDao
@@ -31,7 +33,12 @@ class ProductRepositoryImpl @Inject constructor(
             val now = nowUtcMillis()
 
             // 1) Update the OrderItem
-            val updatedItem = item.copy(updatedAt = now)
+            val lineSubtotal = item.unitPrice.coerceAtLeast(0) * item.quantity.coerceAtLeast(0)
+            val lineDiscount = lineSubtotal * item.discountPercentage.coerceIn(0, 100) / 100
+            val updatedItem = item.copy(
+                finalTotal = (lineSubtotal - lineDiscount).coerceAtLeast(0),
+                updatedAt = now
+            )
             orderItemDao.upsert(updatedItem)
 
             // 2) Recompute order aggregates
@@ -90,18 +97,28 @@ class ProductRepositoryImpl @Inject constructor(
 
         val categories = items.map { it.productTypeLabel }.filter { it.isNotBlank() }
         val owners = items.map { it.productOwnerName }.filter { it.isNotBlank() }
+        val totalAmount = items.sumOf { item ->
+            val subtotal = item.unitPrice.coerceAtLeast(0) * item.quantity.coerceAtLeast(0)
+            val discount = subtotal * item.discountPercentage.coerceIn(0, 100) / 100
+            (subtotal - discount).coerceAtLeast(0)
+        }
+        val paidTotal = paymentDao.getPaymentsList(orderId).sumOf { it.amountPaid }
+        val payableTotal = order.adjustedAmount.takeIf { it > 0 } ?: totalAmount
 
         // 1) Update OrderEntity in Room
         val updatedOrder = order.copy(
             productCategories = categories,
             owners = owners,
+            totalAmount = totalAmount,
+            paidTotal = paidTotal,
+            remainingBalance = payableTotal - paidTotal,
             updatedAt = now
         )
 
         orderDao.upsert(updatedOrder)
 
         // 2) Update customer summary
-        updateCustomerSummary(order.customerId)
+        updateCustomerSummary(updatedOrder.customerId)
 
         // 3) Update FTS index
         reindexOrderFts(updatedOrder, items)

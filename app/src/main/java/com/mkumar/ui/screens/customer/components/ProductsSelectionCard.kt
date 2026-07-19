@@ -171,33 +171,33 @@ fun ProductsSectionCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
 
-                    Text(
-                        "Payment Entries",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-
-                    if (payments.isEmpty()) {
+                    val payableTotal = if (hasAdjusted) adjustedAmount else totalAmount
+                    if (payableTotal > 0 || payments.isNotEmpty()) {
                         Text(
-                            "No payments yet.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            "Payment Entries",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
-                    } else {
-                        payments.forEach {
-                            CompactPaymentRow(
-                                amount = it.amountPaid,
-                                date = it.paymentAt.toInstant(),
-                                onDelete = {
-                                    pendingDeleteId = it.id
-                                }
+                        if (payments.isEmpty()) {
+                            Text(
+                                "No payments yet.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        } else {
+                            payments.forEach {
+                                CompactPaymentRow(
+                                    amount = it.amountPaid,
+                                    date = it.paymentAt.toInstant(),
+                                    onDelete = { pendingDeleteId = it.id }
+                                )
+                            }
                         }
-                    }
 
-                    AddPaymentRow(
-                        isOpen = addPaymentOpen,
-                        onToggle = { addPaymentOpen = !addPaymentOpen },
-                        onAdd = onAddPayment
-                    )
+                        AddPaymentRow(
+                            isOpen = addPaymentOpen,
+                            onToggle = { addPaymentOpen = !addPaymentOpen },
+                            onAdd = onAddPayment
+                        )
+                    }
 
                     AdjustTotalRow(
                         isOpen = adjustOpen,

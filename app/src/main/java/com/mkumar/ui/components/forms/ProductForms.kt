@@ -19,11 +19,8 @@ import com.mkumar.ui.components.headers.FractionedSectionHeader
 import com.mkumar.ui.components.inputs.FieldMode
 import com.mkumar.ui.components.inputs.ItemPriceEditor
 import com.mkumar.ui.components.inputs.OLTextField
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-@OptIn(FlowPreview::class)
 @Composable
 fun FrameForm(
     initialData: ProductFormData.FrameData? = null,
@@ -35,10 +32,8 @@ fun FrameForm(
         )
     }
 
-    // Throttle expensive upstream updates
     LaunchedEffect(Unit) {
         snapshotFlow { frame }
-            .debounce(200)
             .distinctUntilChanged()
             .collect { onChange(it) }
     }
@@ -75,7 +70,6 @@ fun FrameForm(
     }
 }
 
-@OptIn(FlowPreview::class)
 @Composable
 fun GlassForm(
     initialData: ProductFormData.GlassData? = null,
@@ -89,7 +83,6 @@ fun GlassForm(
 
     LaunchedEffect(Unit) {
         snapshotFlow { form }
-            .debounce(200)
             .distinctUntilChanged()
             .collect { onChange(it) }
     }
@@ -211,7 +204,6 @@ fun GlassForm(
     }
 }
 
-@OptIn(FlowPreview::class)
 @Composable
 fun ContactLensForm(
     initialData: ProductFormData.LensData? = null,
@@ -221,7 +213,6 @@ fun ContactLensForm(
 
     LaunchedEffect(Unit) {
         snapshotFlow { form }
-            .debounce(200)
             .distinctUntilChanged()
             .collect { onChange(it) }
     }
@@ -345,7 +336,6 @@ fun ContactLensForm(
     }
 }
 
-@OptIn(FlowPreview::class)
 @Composable
 fun GeneralProductForm(
     initialData: ProductFormData.GeneralProductData? = null,
@@ -359,7 +349,6 @@ fun GeneralProductForm(
 
     LaunchedEffect(Unit) {
         snapshotFlow { form }
-            .debounce(200)
             .distinctUntilChanged()
             .collect { onChange(it) }
     }
