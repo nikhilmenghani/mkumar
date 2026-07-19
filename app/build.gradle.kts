@@ -37,6 +37,16 @@ android {
                 keyPassword = System.getenv("DEV_KEY_PASSWORD")
             }
         }
+
+        val releaseKeystorePath = System.getenv("RELEASE_KEYSTORE_PATH")
+        if (!releaseKeystorePath.isNullOrBlank()) {
+            create("ciRelease") {
+                storeFile = file(releaseKeystorePath)
+                storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -50,6 +60,7 @@ android {
         }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("ciRelease")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
