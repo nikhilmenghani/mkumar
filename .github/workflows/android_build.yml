@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'release.txt'
-      - '**/*.yml'
     tags-ignore:
       - '**'
 
@@ -67,13 +66,35 @@ jobs:
       - name: Set Executable Permission for Gradlew
         run: chmod +x ./gradlew
 
-      - name: Decode Keystore
-        run: echo "${{ secrets.KEYSTORE }}" | base64 -d > my-release-key.keystore
+      - name: Configure release signing key
+        shell: bash
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.KEYSTORE }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [[ -z "$RELEASE_KEYSTORE_BASE64" || -z "$RELEASE_KEYSTORE_PASSWORD" ]]; then
+            echo "The KEYSTORE and KEYSTORE_PASSWORD GitHub secrets are required."
+            exit 1
+          fi
+
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mkumar-release.keystore"
+          KEY_ALIAS=$(keytool -list -v \
+            -keystore "$RUNNER_TEMP/mkumar-release.keystore" \
+            -storepass "$RELEASE_KEYSTORE_PASSWORD" | \
+            sed -n 's/^Alias name: //p' | head -n 1)
+
+          if [[ -z "$KEY_ALIAS" ]]; then
+            echo "Could not determine the signing-key alias from KEYSTORE."
+            exit 1
+          fi
+
+          echo "RELEASE_KEYSTORE_PATH=$RUNNER_TEMP/mkumar-release.keystore" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
 
       - name: Build and Sign APK
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: ./gradlew assembleRelease
 
       - name: List APK directory
