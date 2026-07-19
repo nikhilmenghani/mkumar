@@ -1,5 +1,6 @@
 package com.mkumar.backup.github
 
+import android.content.Context
 import android.util.Base64
 import com.mkumar.backup.BackupManifest
 import com.mkumar.backup.BackupEntry
@@ -7,6 +8,7 @@ import com.mkumar.backup.BackupProvider
 import com.mkumar.backup.RemoteBackup
 import com.mkumar.data.PreferencesManager
 import com.mkumar.network.NetworkClient
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -24,6 +26,7 @@ import javax.inject.Singleton
 
 @Singleton
 class GithubBackupProvider @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferences: PreferencesManager,
     private val network: NetworkClient,
     private val json: Json
@@ -31,10 +34,14 @@ class GithubBackupProvider @Inject constructor(
 
     companion object {
         private const val API = "https://api.github.com"
-        private const val MANIFEST_PATH = ".mkumar-backup/manifest.json"
+        private const val RELEASE_APPLICATION_ID = "com.mkumar"
+        private const val LEGACY_MANIFEST_PATH = ".mkumar-backup/manifest.json"
         private const val MAX_CONTENTS_API_BYTES = 100L * 1024L * 1024L
         private const val MAX_BACKUPS = 100
     }
+
+    private val applicationId: String get() = context.packageName
+    private val manifestPath: String get() = ".mkumar-backup/$applicationId/manifest.json"
 
     override suspend fun discoverBackup(): RemoteBackup? {
         requireToken()
@@ -67,7 +74,7 @@ class GithubBackupProvider @Inject constructor(
         val retained = (listOf(newEntry) + previousEntries.filter { it.backupPath != newEntry.backupPath })
             .sortedByDescending { it.createdAtUtc }
             .take(preferences.backupPrefs.retentionCount.coerceIn(3, MAX_BACKUPS))
-        val updatedManifest = BackupManifest(backups = retained)
+        val updatedManifest = BackupManifest(applicationId = applicationId, backups = retained)
 
         putFile(
             repository = repository,
@@ -77,7 +84,7 @@ class GithubBackupProvider @Inject constructor(
         )
         putFile(
             repository = repository,
-            path = MANIFEST_PATH,
+            path = manifestPath,
             bytes = json.encodeToString(updatedManifest).toByteArray(),
             commitMessage = "Update backup catalog (${retained.size} snapshot${if (retained.size == 1) "" else "s"})"
         )
@@ -107,10 +114,10 @@ class GithubBackupProvider @Inject constructor(
         val repository = RepositoryInfo(backup.owner, backup.repository, backup.branch)
         val retained = backup.manifest.availableBackups()
             .filterNot { it.backupPath == entry.backupPath }
-        val updatedManifest = BackupManifest(backups = retained)
+        val updatedManifest = BackupManifest(applicationId = applicationId, backups = retained)
         putFile(
             repository = repository,
-            path = MANIFEST_PATH,
+            path = manifestPath,
             bytes = json.encodeToString(updatedManifest).toByteArray(),
             commitMessage = "Remove backup from catalog (${entry.createdAtUtc})"
         )
@@ -162,7 +169,27 @@ class GithubBackupProvider @Inject constructor(
     ): RemoteBackup? {
         val branch = knownBranch ?: runCatching { repositoryInfo(owner, repo).defaultBranch }.getOrNull()
             ?: return null
-        val url = "$API/repos/$owner/$repo/contents/$MANIFEST_PATH?ref=$branch"
+        readManifest(owner, repo, branch, manifestPath)?.let { manifest ->
+            return RemoteBackup(owner, repo, branch, manifest)
+        }
+
+        // The original implementation stored the production catalog at a shared path.
+        // Only the release application may import it; debug must never see production data.
+        if (applicationId == RELEASE_APPLICATION_ID) {
+            readManifest(owner, repo, branch, LEGACY_MANIFEST_PATH)?.let { manifest ->
+                return RemoteBackup(owner, repo, branch, manifest)
+            }
+        }
+        return null
+    }
+
+    private suspend fun readManifest(
+        owner: String,
+        repo: String,
+        branch: String,
+        path: String
+    ): BackupManifest? {
+        val url = "$API/repos/$owner/$repo/contents/$path?ref=$branch"
         val request = requestBuilder(url).get().build()
         return network.executeRequest(request).use { response ->
             if (response.code == 404) return@use null
@@ -171,8 +198,7 @@ class GithubBackupProvider @Inject constructor(
             val encoded = objectJson["content"]?.jsonPrimitive?.content ?: return@use null
             val bytes = Base64.decode(encoded, Base64.DEFAULT)
             val manifest = json.decodeFromString<BackupManifest>(bytes.decodeToString())
-            if (manifest.applicationId != "com.mkumar") return@use null
-            RemoteBackup(owner, repo, branch, manifest)
+            manifest.takeIf { it.applicationId == applicationId }
         }
     }
 

@@ -41,14 +41,17 @@ class BackupCoordinator @Inject constructor(
                 databaseSchemaVersion = snapshot.schemaVersion,
                 appVersionCode = packageInfo.longVersionCode,
                 createdAtUtc = createdAt.toString(),
-                backupPath = "backups/snapshots/$deviceId/${SNAPSHOT_NAME_FORMAT.format(createdAt)}.db",
+                backupPath = "backups/${context.packageName}/snapshots/$deviceId/${SNAPSHOT_NAME_FORMAT.format(createdAt)}.db",
                 sizeBytes = snapshot.file.length(),
                 sha256 = snapshot.sha256,
                 trigger = trigger.name,
                 deviceId = deviceId,
                 deviceName = deviceName
             )
-            val manifest = BackupManifest(backups = listOf(entry))
+            val manifest = BackupManifest(
+                applicationId = context.packageName,
+                backups = listOf(entry)
+            )
             onProgress("Uploading backup to GitHub", 55)
             provider.upload(snapshot.file, manifest)
             onProgress("Finalizing backup", 90)
