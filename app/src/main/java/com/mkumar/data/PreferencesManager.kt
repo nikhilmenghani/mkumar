@@ -19,6 +19,7 @@ class PreferencesManager @Inject constructor() {
     val githubPrefs = GithubPrefs
     val invoicePrefs = InvoicePrefs
     val dashboardPrefs = DashboardPrefs
+    val backupPrefs = BackupPrefs
 }
 
 enum class ThemePreference {
@@ -109,5 +110,33 @@ object DashboardPrefs {
         keyName = "dashboardAlignment",
         defaultValue = DashboardAlignment.VERTICAL.ordinal,
         getPreferencesKey = { intPreferencesKey(it) }
+    )
+}
+
+object BackupPrefs {
+    var enabled by dataStoreMutableState(
+        keyName = "backupEnabled",
+        defaultValue = true,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+    var backupOnOrderCompleted by dataStoreMutableState(
+        keyName = "backupOnOrderCompleted",
+        defaultValue = true,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+    var wifiOnly by dataStoreMutableState(
+        keyName = "backupWifiOnly",
+        defaultValue = false,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+    var lastSuccessfulBackupAt by dataStoreMutableState(
+        keyName = "lastSuccessfulBackupAt",
+        defaultValue = "",
+        getPreferencesKey = { stringPreferencesKey(it) }
+    )
+    var lastBackupError by dataStoreMutableState(
+        keyName = "lastBackupError",
+        defaultValue = "",
+        getPreferencesKey = { stringPreferencesKey(it) }
     )
 }

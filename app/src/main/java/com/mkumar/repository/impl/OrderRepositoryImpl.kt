@@ -2,6 +2,7 @@ package com.mkumar.repository.impl
 
 import androidx.room.withTransaction
 import com.mkumar.common.extension.nowUtcMillis
+import com.mkumar.backup.BackupScheduler
 import com.mkumar.data.db.AppDatabase
 import com.mkumar.data.db.dao.CustomerDao
 import com.mkumar.data.db.dao.CustomerFtsDao
@@ -33,31 +34,38 @@ class OrderRepositoryImpl @Inject constructor(
     private val orderFtsDao: OrderFtsDao,
     private val invoiceNumberService: InvoiceNumberService,
     private val syncRepository: SyncRepository,
-    private val json: Json
+    private val json: Json,
+    private val backupScheduler: BackupScheduler
 ) : OrderRepository {
 
     // ---------------------------------------------------------------------
     // UPSERT
     // ---------------------------------------------------------------------
-    override suspend fun upsert(order: OrderEntity) = db.withTransaction {
-        val now = nowUtcMillis()
+    override suspend fun upsert(order: OrderEntity) {
+        val previousStatus = orderDao.getById(order.id)?.orderStatus
+        db.withTransaction {
+            val now = nowUtcMillis()
 
-        val enriched = order.copy(
-            productCategories = orderItemDao.getCategoriesForOrder(order.id),
-            owners = orderItemDao.getOwnersForOrder(order.id),
-            updatedAt = now
-        )
+            val enriched = order.copy(
+                productCategories = orderItemDao.getCategoriesForOrder(order.id),
+                owners = orderItemDao.getOwnersForOrder(order.id),
+                updatedAt = now
+            )
 
-        orderDao.upsert(enriched)
+            orderDao.upsert(enriched)
 
-        // Reindex FTS
-        reindexOrderFts(enriched)
+            // Reindex FTS
+            reindexOrderFts(enriched)
 
-        // Update customer summary
-        updateCustomerSummary(enriched.customerId)
+            // Update customer summary
+            updateCustomerSummary(enriched.customerId)
 
-        // Enqueue SYNC
-        enqueueOrderUpsert(enriched)
+            // Enqueue SYNC
+            enqueueOrderUpsert(enriched)
+        }
+        if (previousStatus != OrderStatus.COMPLETED.value && order.orderStatus == OrderStatus.COMPLETED.value) {
+            backupScheduler.enqueueOrderCompleted()
+        }
     }
 
     // ---------------------------------------------------------------------

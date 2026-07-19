@@ -1,0 +1,50 @@
+package com.mkumar.backup
+
+import kotlinx.serialization.Serializable
+
+enum class BackupTrigger {
+    SCHEDULED,
+    MANUAL,
+    ORDER_COMPLETED
+}
+
+@Serializable
+data class BackupManifest(
+    val formatVersion: Int = 1,
+    val applicationId: String = "com.mkumar",
+    val databaseName: String = "mkumar.db",
+    val databaseSchemaVersion: Int,
+    val appVersionCode: Long,
+    val createdAtUtc: String,
+    val backupPath: String,
+    val sizeBytes: Long,
+    val sha256: String,
+    val trigger: String
+)
+
+data class DatabaseSnapshot(
+    val file: java.io.File,
+    val schemaVersion: Int,
+    val sha256: String
+)
+
+data class RemoteBackup(
+    val owner: String,
+    val repository: String,
+    val branch: String,
+    val manifest: BackupManifest
+)
+
+sealed interface BackupResult {
+    data class Success(val manifest: BackupManifest) : BackupResult
+    data class Failure(val message: String, val cause: Throwable? = null) : BackupResult
+}
+
+sealed interface RestoreResult {
+    data class Success(val manifest: BackupManifest) : RestoreResult
+    data class Failure(
+        val message: String,
+        val cause: Throwable? = null,
+        val restartRequired: Boolean = false
+    ) : RestoreResult
+}

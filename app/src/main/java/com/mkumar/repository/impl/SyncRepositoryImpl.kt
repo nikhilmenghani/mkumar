@@ -72,7 +72,8 @@ class SyncRepositoryImpl @Inject constructor(
         )
 
         outboxDao.insert(entity)
-        SyncScheduler.enqueuePushSync(context)
+        // TODO: Consider whether we want to enqueue a push sync here or let the SyncScheduler handle it based on the WorkManager constraints.
+//        SyncScheduler.enqueuePushSync(context)
         return entity.id
     }
 

@@ -32,7 +32,8 @@ class App : Application(), Configuration.Provider {
         appContext = this
 
         // Optional periodic pull
-        SyncScheduler.schedulePeriodicPull(this)
+        // TODO: Uncomment this line if you want to enable periodic pull sync (Cloud → Local) at app startup.
+//        SyncScheduler.schedulePeriodicPull(this)
     }
 
     // ✅ REQUIRED for WorkManager + Hilt (property-based API)
