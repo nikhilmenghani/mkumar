@@ -65,6 +65,23 @@ sealed interface FieldMode {
     ) : FieldMode {
         override val keyboardType = KeyboardType.Decimal
         override val defaultIme = ImeAction.Next
+        override fun sanitizeOnChange(input: String): String {
+            val normalized = input.trim().replace(',', '.')
+            val sign = normalized.firstOrNull().takeIf { it == '+' || it == '-' }?.toString().orEmpty()
+            val unsigned = if (sign.isEmpty()) normalized else normalized.drop(1)
+            val integer = unsigned.substringBefore('.').filter(Char::isDigit)
+            val hasDecimal = '.' in unsigned
+            val fraction = unsigned.substringAfter('.', "").filter(Char::isDigit).take(scale)
+            return buildString {
+                append(sign)
+                append(integer)
+                if (hasDecimal) {
+                    append('.')
+                    append(fraction)
+                }
+            }
+        }
+
         override fun formatOnCommit(input: String): String {
             val t = input.trim().replace(',', '.') // tolerate comma
             val n = t.toBigDecimalOrNull() ?: return t
@@ -83,7 +100,7 @@ sealed interface FieldMode {
         override val keyboardType = KeyboardType.Number
         override val defaultIme = ImeAction.Next
         override fun sanitizeOnChange(input: String): String =
-            input.filter { it.isDigit() } // keep typing simple; no +/- or dots
+            input.filter { it.isDigit() }.take(3)
 
         override fun formatOnCommit(input: String): String {
             val n = input.filter { it.isDigit() }.toIntOrNull() ?: return input.trim()
@@ -118,7 +135,10 @@ sealed interface FieldMode {
     data object Percent0to100 : FieldMode {
         override val keyboardType = KeyboardType.Number
         override val defaultIme = ImeAction.Next
-        override fun sanitizeOnChange(input: String) = input.filter { it.isDigit() }
+        override fun sanitizeOnChange(input: String): String {
+            val digits = input.filter { it.isDigit() }.take(3)
+            return digits.toIntOrNull()?.coerceIn(0, 100)?.toString().orEmpty()
+        }
         override fun formatOnCommit(input: String): String {
             val n = input.filter { it.isDigit() }.toIntOrNull() ?: 0
             return n.coerceIn(0, 100).toString()
@@ -133,7 +153,6 @@ sealed interface FieldMode {
         override val defaultIme = ImeAction.Next
 
         override fun sanitizeOnChange(input: String): String {
-            // collapse repeated spaces while typing (optional nice touch)
             return input.replace(Regex("\\s+"), " ")
         }
 

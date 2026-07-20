@@ -14,6 +14,7 @@ import com.mkumar.model.UiCustomer
 import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -61,6 +63,7 @@ class CustomerDetailsViewModel @Inject constructor(
                     // If you have an OrderItemDao, plug it here:
                     rel.toUi(pricing = pricing, invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix)
                 }
+                .flowOn(Dispatchers.Default)
                 .onEach { mapped ->
                     _ui.value = _ui.value.copy(
                         isLoading = false,

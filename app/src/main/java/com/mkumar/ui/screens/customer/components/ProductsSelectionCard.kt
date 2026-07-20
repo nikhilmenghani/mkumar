@@ -52,7 +52,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.DateFormat
@@ -72,6 +75,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.delay
 
 // -----------------------------------------------------------------------------
 // CONFIGURATION — you can tune these freely
@@ -339,13 +343,20 @@ fun AdjustTotalRow(
     onAdjustedChange: (Int) -> Unit,
     onToggle: () -> Unit
 ) {
-    var localValue by remember { mutableStateOf(adjustedAmount.toString()) }
+    var localValue by remember {
+        mutableStateOf(adjustedAmount.takeIf { it != 0 }?.toString().orEmpty())
+    }
     val rowHeight = 64.dp
+    val amountFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
 
     // When we open the row, sync local text with current adjustedAmount
     LaunchedEffect(isOpen) {
         if (isOpen) {
-            localValue = adjustedAmount.toString()
+            localValue = adjustedAmount.takeIf { it != 0 }?.toString().orEmpty()
+            delay(180)
+            amountFocus.requestFocus()
+            keyboard?.show()
         }
     }
 
@@ -410,12 +421,13 @@ fun AdjustTotalRow(
                             mode = FieldMode.Integer,
                             onValueChange = { txt ->
                                 val filtered = txt.filter { it.isDigit() || it == ',' }
-                                localValue = filtered.ifEmpty { "0" }
+                                localValue = filtered
                                 onAdjustedChange(localValue.toIntOrNull() ?: 0)
                             },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(rowHeight)
+                                .focusRequester(amountFocus)
                         )
 
                         // Close button – reset + collapse
@@ -542,6 +554,16 @@ fun AddPaymentRow(
     var amount by remember { mutableStateOf("") }
     var date by remember { mutableStateOf(LocalDate.now(ZoneId.systemDefault())) }
     var showPicker by remember { mutableStateOf(false) }
+    val amountFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(isOpen) {
+        if (isOpen) {
+            delay(180)
+            amountFocus.requestFocus()
+            keyboard?.show()
+        }
+    }
 
     val rowHeight = 44.dp
 
@@ -598,6 +620,7 @@ fun AddPaymentRow(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 56.dp)
+                            .focusRequester(amountFocus)
                     )
 
                     // LINE 2 — Date + Save + Close

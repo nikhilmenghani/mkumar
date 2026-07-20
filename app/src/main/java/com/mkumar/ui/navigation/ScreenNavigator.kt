@@ -90,7 +90,7 @@ import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.viewmodel.OrderEditorViewModel
 
 
-private const val SharedAxisDuration = 300
+private const val SharedAxisDuration = 220
 
 // Shared Axis X (horizontal depth) → used for CustomerDetails
 fun sharedAxisXEnter(forward: Boolean): EnterTransition {
@@ -98,7 +98,7 @@ fun sharedAxisXEnter(forward: Boolean): EnterTransition {
             slideInHorizontally(
                 tween(SharedAxisDuration, easing = FastOutSlowInEasing)
             ) { fullWidth ->
-                if (forward) fullWidth / 3 else -fullWidth / 3
+                if (forward) fullWidth / 8 else -fullWidth / 8
             }
 }
 
@@ -107,7 +107,7 @@ fun sharedAxisXExit(forward: Boolean): ExitTransition {
             slideOutHorizontally(
                 tween(SharedAxisDuration, easing = FastOutLinearInEasing)
             ) { fullWidth ->
-                if (forward) -fullWidth / 3 else fullWidth / 3
+                if (forward) -fullWidth / 8 else fullWidth / 8
             }
 }
 
@@ -434,7 +434,27 @@ fun NavigationHost(
     NavHost(
         navController = navController,
         startDestination = Screens.Home.name,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = {
+            fadeIn(tween(SharedAxisDuration, easing = LinearOutSlowInEasing)) +
+                scaleIn(
+                    tween(SharedAxisDuration, easing = LinearOutSlowInEasing),
+                    initialScale = 0.98f
+                )
+        },
+        exitTransition = {
+            fadeOut(tween(SharedAxisDuration, easing = FastOutLinearInEasing))
+        },
+        popEnterTransition = {
+            fadeIn(tween(SharedAxisDuration, easing = LinearOutSlowInEasing))
+        },
+        popExitTransition = {
+            fadeOut(tween(SharedAxisDuration, easing = FastOutLinearInEasing)) +
+                scaleOut(
+                    tween(SharedAxisDuration, easing = FastOutLinearInEasing),
+                    targetScale = 0.98f
+                )
+        }
     ) {
         composable(route = Screens.Home.name,
             enterTransition = {

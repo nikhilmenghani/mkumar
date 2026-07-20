@@ -197,7 +197,7 @@ fun CustomerDetailsScreen(
                         )
                 }
                 SortBar(
-                    title = "Orders (${rows.size})",
+                    title = "Orders",
                     modifier = Modifier.padding(horizontal = 16.dp),
                     sortField = orderSortField,
                     sortOrderAsc = orderSortAscending,

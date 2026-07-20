@@ -67,7 +67,7 @@ fun SortBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = 4.dp)
                 .clickable { expanded = !expanded },
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -108,12 +108,12 @@ fun SortBar(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 6.dp)
+                    .padding(top = 4.dp)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         shape = RoundedCornerShape(12.dp)
                     )
-                    .padding(16.dp)
+                    .padding(12.dp)
             ) {
 
                 // SORT BY
@@ -140,7 +140,7 @@ fun SortBar(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // ORDER
                 Text(
@@ -176,7 +176,7 @@ fun SortBar(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
                     text = "Filter",
@@ -197,7 +197,7 @@ fun SortBar(
         Divider(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp, bottom = 4.dp),
+                .padding(top = 4.dp),
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
             thickness = 1.dp
         )
