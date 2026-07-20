@@ -11,6 +11,13 @@ import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.CloudUpload
+import androidx.compose.material.icons.rounded.Devices
+import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.automirrored.rounded.ListAlt
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,6 +66,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     val backupQueue by backupViewModel.queue.collectAsState()
     var confirmRestore by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var confirmBackup by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
     var selectedBackup by remember { mutableStateOf<RestoreOption?>(null) }
     var backupToDelete by remember { mutableStateOf<RestoreOption?>(null) }
@@ -81,6 +89,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         if (!backupPrefs.enabled) {
             confirmRestore = false
             confirmDelete = false
+            confirmBackup = false
             showQueue = false
             backupViewModel.dismissBackups()
         }
@@ -91,6 +100,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     }
 
     val foundBackups = (backupState as? BackupUiState.BackupsFound)?.backups.orEmpty()
+    val backupInProgress = (backupState as? BackupUiState.Working)?.isBackup == true
     if (showQueue && backupQueue.isNotEmpty()) {
         ModalBottomSheet(onDismissRequest = { showQueue = false }) {
             Column(Modifier.padding(bottom = 24.dp)) {
@@ -185,6 +195,19 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         )
     }
 
+    if (confirmBackup) {
+        ConfirmActionDialog(
+            title = "Back up database now?",
+            message = "Create a new database backup in the configured GitHub repository?",
+            confirmLabel = "Back up",
+            onDismiss = { confirmBackup = false },
+            onConfirm = {
+                confirmBackup = false
+                backupViewModel.backupNow()
+            }
+        )
+    }
+
     Container(title = stringResource(R.string.display)) {
         PreferenceItem(
             label = stringResource(R.string.use_dynamic_color),
@@ -220,58 +243,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         }
     }
 
-    Container(title = "Authentication") {
-        PreferenceItem(
-            label = "Github Token",
-            supportingText = if (githubPrefs.token.isBlank()) "Not configured" else "Configured",
-            icon = Icons.Rounded.VpnKey,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                textDialog.show(
-                    title = "Github Token",
-                    description = "Enter your Github token",
-                    text = githubPrefs.token,
-                    onConfirm = {
-                        githubPrefs.token = it.trim()
-                        backupViewModel.reschedule()
-                    }
-                )
-            }
-        )
-
-        PreferenceItem(
-            label = "Github Owner",
-            supportingText = githubPrefs.githubOwner,
-            icon = Icons.Rounded.VpnKey,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                textDialog.show(
-                    title = "Github Owner",
-                    description = "Enter your Github Owner",
-                    text = githubPrefs.githubOwner,
-                    onConfirm = { githubPrefs.githubOwner = it }
-                )
-            }
-        )
-
-        PreferenceItem(
-            label = "Github Repository",
-            supportingText = githubPrefs.githubRepo,
-            icon = Icons.Rounded.VpnKey,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                textDialog.show(
-                    title = "Github Repository",
-                    description = "Enter your Github Repository",
-                    text = githubPrefs.githubRepo,
-                    onConfirm = { githubPrefs.githubRepo = it }
-                )
-            }
-        )
-    }
-
     Container(title = "Database Backup") {
-        val backupInProgress = (backupState as? BackupUiState.Working)?.isBackup == true
         PreferenceItem(
             label = "Enable database backups",
             supportingText = if (backupPrefs.enabled) "Backup functionality is enabled" else "Backups are off",
@@ -280,96 +252,9 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             onSwitchChange = backupViewModel::setBackupEnabled
         )
         PreferenceItem(
-            label = "Backup device name",
-            supportingText = backupPrefs.deviceName,
-            icon = Icons.Rounded.VpnKey,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                textDialog.show(
-                    title = "Backup device name",
-                    description = "Device name",
-                    text = backupPrefs.deviceName,
-                    onConfirm = { backupPrefs.deviceName = it.trim() }
-                )
-            }
-        )
-        PreferenceItem(
-            label = "Backup interval",
-            supportingText = backupIntervalLabel(backupPrefs.intervalHours),
-            icon = Icons.Rounded.Backup,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                val intervals = listOf(0, 6, 12, 24)
-                dialog.show(
-                    title = "Backup interval",
-                    description = "Android runs scheduled backups approximately at this interval.",
-                    choices = intervals.map(::backupIntervalLabel),
-                    selectedChoice = intervals.indexOf(backupPrefs.intervalHours).coerceAtLeast(0),
-                    onSelect = { index ->
-                        backupPrefs.intervalHours = intervals[index]
-                        backupViewModel.reschedule()
-                    }
-                )
-            }
-        )
-        PreferenceItem(
-            label = "Retained backups",
-            supportingText = "Keep the latest ${backupPrefs.retentionCount}",
-            icon = Icons.Rounded.Backup,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                val counts = listOf(3, 6, 10, 20, 30)
-                dialog.show(
-                    title = "Retained backups",
-                    description = "Older snapshots are pruned after the next successful backup.",
-                    choices = counts.map { "Latest $it" },
-                    selectedChoice = counts.indexOf(backupPrefs.retentionCount).coerceAtLeast(0),
-                    onSelect = { backupPrefs.retentionCount = counts[it] }
-                )
-            }
-        )
-        PreferenceItem(
-            label = "Backups shown",
-            supportingText = displayCountLabel(backupPrefs.displayCount),
-            icon = Icons.AutoMirrored.Rounded.ListAlt,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                val counts = listOf(3, 6, 10, 20, 0)
-                dialog.show(
-                    title = "Backups shown",
-                    description = "Choose how many retained restore points appear in the list.",
-                    choices = counts.map(::displayCountLabel),
-                    selectedChoice = counts.indexOf(backupPrefs.displayCount).coerceAtLeast(0),
-                    onSelect = { backupPrefs.displayCount = counts[it] }
-                )
-            }
-        )
-        PreferenceItem(
-            label = "Back up now",
-            supportingText = if (!backupPrefs.enabled) {
-                "Enable database backups first"
-            } else {
-                backupPrefs.lastSuccessfulBackupAt
-                    .takeIf { it.isNotBlank() }
-                    ?.let(::formatUtcAsLocal)
-                    ?: "No successful backup yet"
-            },
-            icon = Icons.Rounded.Backup,
-            enabled = backupPrefs.enabled,
-            onClick = { if (!backupInProgress) backupViewModel.backupNow() },
-            trailingContent = if (backupInProgress) {
-                {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
-            } else null
-        )
-        PreferenceItem(
-            label = "Find backup",
-            supportingText = "Show ${displayCountLabel(backupPrefs.displayCount).lowercase()}",
-            icon = Icons.Rounded.CloudSync,
+            label = "Find backups",
+            supportingText = "Browse ${displayCountLabel(backupPrefs.displayCount).lowercase()}",
+            icon = Icons.Rounded.Restore,
             enabled = backupPrefs.enabled,
             onClick = backupViewModel::findBackup
         )
@@ -416,6 +301,147 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 } else null
             )
         }
+    }
+
+    Container(title = "Manual Backup") {
+        PreferenceItem(
+            label = "Back up now",
+            supportingText = if (!backupPrefs.enabled) {
+                "Enable database backups first"
+            } else {
+                backupPrefs.lastSuccessfulBackupAt
+                    .takeIf { it.isNotBlank() }
+                    ?.let { "Last successful: ${formatUtcAsLocal(it)}" }
+                    ?: "No successful backup yet"
+            },
+            icon = Icons.Rounded.CloudUpload,
+            enabled = backupPrefs.enabled && !backupInProgress,
+            onClick = { confirmBackup = true },
+            trailingContent = if (backupInProgress) {
+                {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            } else null
+        )
+    }
+
+    Container(title = "Backup Preferences") {
+        PreferenceItem(
+            label = "Device name",
+            supportingText = backupPrefs.deviceName,
+            icon = Icons.Rounded.Devices,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                textDialog.show(
+                    title = "Backup device name",
+                    description = "Device name",
+                    text = backupPrefs.deviceName,
+                    onConfirm = { backupPrefs.deviceName = it.trim() }
+                )
+            }
+        )
+        PreferenceItem(
+            label = "Scheduled backup interval",
+            supportingText = backupIntervalLabel(backupPrefs.intervalHours),
+            icon = Icons.Rounded.Schedule,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                val intervals = listOf(0, 6, 12, 24)
+                dialog.show(
+                    title = "Backup interval",
+                    description = "Android runs scheduled backups approximately at this interval.",
+                    choices = intervals.map(::backupIntervalLabel),
+                    selectedChoice = intervals.indexOf(backupPrefs.intervalHours).coerceAtLeast(0),
+                    onSelect = { index ->
+                        backupPrefs.intervalHours = intervals[index]
+                        backupViewModel.reschedule()
+                    }
+                )
+            }
+        )
+        PreferenceItem(
+            label = "Retained backups",
+            supportingText = "Keep the latest ${backupPrefs.retentionCount}",
+            icon = Icons.Rounded.History,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                val counts = listOf(3, 6, 10, 20, 30)
+                dialog.show(
+                    title = "Retained backups",
+                    description = "Older snapshots are pruned after the next successful backup.",
+                    choices = counts.map { "Latest $it" },
+                    selectedChoice = counts.indexOf(backupPrefs.retentionCount).coerceAtLeast(0),
+                    onSelect = { backupPrefs.retentionCount = counts[it] }
+                )
+            }
+        )
+        PreferenceItem(
+            label = "Backups shown",
+            supportingText = displayCountLabel(backupPrefs.displayCount),
+            icon = Icons.Rounded.Visibility,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                val counts = listOf(3, 6, 10, 20, 0)
+                dialog.show(
+                    title = "Backups shown",
+                    description = "Choose how many retained restore points appear in the list.",
+                    choices = counts.map(::displayCountLabel),
+                    selectedChoice = counts.indexOf(backupPrefs.displayCount).coerceAtLeast(0),
+                    onSelect = { backupPrefs.displayCount = counts[it] }
+                )
+            }
+        )
+    }
+
+    Container(title = "GitHub Storage") {
+        PreferenceItem(
+            label = "GitHub token",
+            supportingText = if (githubPrefs.token.isBlank()) "Not configured" else "Configured",
+            icon = Icons.Rounded.VpnKey,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                textDialog.show(
+                    title = "GitHub token",
+                    description = "Enter your GitHub token",
+                    text = githubPrefs.token,
+                    onConfirm = {
+                        githubPrefs.token = it.trim()
+                        backupViewModel.reschedule()
+                    }
+                )
+            }
+        )
+        PreferenceItem(
+            label = "Repository owner",
+            supportingText = githubPrefs.githubOwner,
+            icon = Icons.Rounded.AccountCircle,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                textDialog.show(
+                    title = "GitHub owner",
+                    description = "Enter the GitHub repository owner",
+                    text = githubPrefs.githubOwner,
+                    onConfirm = { githubPrefs.githubOwner = it.trim() }
+                )
+            }
+        )
+        PreferenceItem(
+            label = "Repository name",
+            supportingText = githubPrefs.githubRepo,
+            icon = Icons.Rounded.Folder,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                textDialog.show(
+                    title = "GitHub repository",
+                    description = "Enter the GitHub repository name",
+                    text = githubPrefs.githubRepo,
+                    onConfirm = { githubPrefs.githubRepo = it.trim() }
+                )
+            }
+        )
     }
 
     Container(title = "Invoice") {
