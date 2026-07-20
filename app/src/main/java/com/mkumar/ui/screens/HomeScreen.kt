@@ -180,7 +180,8 @@ fun HomeScreen(
                                                     DownloadWorker.DOWNLOAD_URL_KEY to downloadUrl,
                                                     DownloadWorker.DEST_FILE_PATH_KEY to destPath,
                                                     DownloadWorker.DOWNLOAD_TYPE_KEY to
-                                                            DownloadWorker.DOWNLOAD_TYPE_APK
+                                                            DownloadWorker.DOWNLOAD_TYPE_APK,
+                                                    DownloadWorker.VERSION_KEY to homeUi.latestVersion
                                                 )
                                             )
                                             .setConstraints(

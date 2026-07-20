@@ -8,6 +8,7 @@ import androidx.work.WorkManager
 import com.mkumar.data.SingleChoice
 import com.mkumar.data.SingleSlider
 import com.mkumar.data.SingleText
+import com.mkumar.update.AppUpdateManager
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -39,6 +40,7 @@ class App : Application(), Configuration.Provider {
             cancelAllWorkByTag("com.mkumar.sync.worker.PullFromCloudWorker")
             cancelAllWorkByTag("com.mkumar.sync.worker.SyncOutboxWorker")
         }
+        AppUpdateManager.scheduleChecks(this)
     }
 
     // ✅ REQUIRED for WorkManager + Hilt (property-based API)

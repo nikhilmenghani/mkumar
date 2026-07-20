@@ -811,6 +811,7 @@ private fun SearchCustomerResultsSection(
             } else {
                 RecentCustomersList(
                     customers = recent,
+                    modifier = Modifier.fillMaxSize(),
                     onCustomerClick = { customer ->
                         openCustomer(customer.id)
                     },

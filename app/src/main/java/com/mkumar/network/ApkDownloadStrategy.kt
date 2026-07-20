@@ -36,7 +36,9 @@ class ApkDownloadStrategy : DownloadStrategy {
                                 downloadedBytes += bytesRead
 
                                 // Notify progress if required
-                                onProgressUpdate?.invoke(downloadedBytes.toFloat() / totalBytes)
+                                if (totalBytes > 0) {
+                                    onProgressUpdate?.invoke(downloadedBytes.toFloat() / totalBytes)
+                                }
                             }
                         }
                     }
