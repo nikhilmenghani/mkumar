@@ -20,6 +20,7 @@ class PreferencesManager @Inject constructor() {
     val invoicePrefs = InvoicePrefs
     val dashboardPrefs = DashboardPrefs
     val backupPrefs = BackupPrefs
+    val updatePrefs = UpdatePrefs
 }
 
 enum class ThemePreference {
@@ -158,5 +159,13 @@ object BackupPrefs {
         keyName = "lastBackupError",
         defaultValue = "",
         getPreferencesKey = { stringPreferencesKey(it) }
+    )
+}
+
+object UpdatePrefs {
+    var intervalHours by dataStoreMutableState(
+        keyName = "updateCheckIntervalHours",
+        defaultValue = 0,
+        getPreferencesKey = { intPreferencesKey(it) }
     )
 }

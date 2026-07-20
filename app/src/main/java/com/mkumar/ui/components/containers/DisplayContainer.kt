@@ -53,6 +53,7 @@ import com.mkumar.viewmodel.BackupViewModel
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.backup.RestoreOption
 import com.mkumar.backup.defaultBackupDeviceName
+import com.mkumar.update.AppUpdateManager
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -78,6 +79,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     val githubPrefs = prefs.githubPrefs
     val invoicePrefs = prefs.invoicePrefs
     val backupPrefs = prefs.backupPrefs
+    val updatePrefs = prefs.updatePrefs
 
     LaunchedEffect(backupPrefs.deviceName) {
         if (backupPrefs.deviceName.isBlank()) {
@@ -491,6 +493,27 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         )
     }
 
+    Container(title = "App Updates") {
+        PreferenceItem(
+            label = "Background update checks",
+            supportingText = updateCheckIntervalLabel(updatePrefs.intervalHours),
+            icon = Icons.Rounded.Schedule,
+            onClick = {
+                val intervals = listOf(0, 1, 3, 6, 12, 24)
+                dialog.show(
+                    title = "Update check interval",
+                    description = "The app always checks once when opened. Choose an additional background interval.",
+                    choices = intervals.map(::updateCheckIntervalLabel),
+                    selectedChoice = intervals.indexOf(updatePrefs.intervalHours).coerceAtLeast(0),
+                    onSelect = { index ->
+                        updatePrefs.intervalHours = intervals[index]
+                        AppUpdateManager.scheduleChecks(context, intervals[index])
+                    }
+                )
+            }
+        )
+    }
+
 }
 
 private fun backupIntervalLabel(hours: Int): String = when (hours) {
@@ -498,6 +521,12 @@ private fun backupIntervalLabel(hours: Int): String = when (hours) {
     6 -> "Every 6 hours"
     12 -> "Every 12 hours"
     24 -> "Every 24 hours"
+    else -> "Every $hours hours"
+}
+
+private fun updateCheckIntervalLabel(hours: Int): String = when (hours) {
+    0 -> "Off (check when app opens only)"
+    1 -> "Every hour"
     else -> "Every $hours hours"
 }
 

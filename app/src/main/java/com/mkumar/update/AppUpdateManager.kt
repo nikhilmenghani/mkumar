@@ -17,15 +17,34 @@ import java.util.concurrent.TimeUnit
 
 object AppUpdateManager {
     private const val PERIODIC_CHECK_WORK = "mkumar_periodic_update_check"
+    private const val STARTUP_CHECK_WORK = "mkumar_startup_update_check"
     private const val UPDATE_DOWNLOAD_WORK = "mkumar_apk_update_download"
 
-    fun scheduleChecks(context: Context) {
-        val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(6, TimeUnit.HOURS)
+    fun scheduleChecks(context: Context, intervalHours: Int) {
+        if (intervalHours <= 0) {
+            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_CHECK_WORK)
+            return
+        }
+        val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(
+            intervalHours.toLong(),
+            TimeUnit.HOURS
+        )
             .setConstraints(networkConstraints())
             .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             PERIODIC_CHECK_WORK,
             ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+    }
+
+    fun checkOnAppStart(context: Context) {
+        val request = OneTimeWorkRequestBuilder<UpdateCheckWorker>()
+            .setConstraints(networkConstraints())
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            STARTUP_CHECK_WORK,
+            ExistingWorkPolicy.REPLACE,
             request
         )
     }
