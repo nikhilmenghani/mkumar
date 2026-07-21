@@ -532,7 +532,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun BackupRestoreCard(
+internal fun BackupRestoreCard(
     option: RestoreOption,
     onRestore: () -> Unit,
     onDelete: () -> Unit

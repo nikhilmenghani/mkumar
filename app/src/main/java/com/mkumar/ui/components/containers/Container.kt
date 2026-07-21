@@ -29,9 +29,10 @@ import com.mkumar.common.extension.block
 @Composable
 fun Container(
     title: String,
+    initiallyExpanded: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(initiallyExpanded) }
 
     Column(
         modifier = Modifier
