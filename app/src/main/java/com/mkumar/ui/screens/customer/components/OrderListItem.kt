@@ -31,8 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -68,8 +69,11 @@ fun OrderListItem(
     val density = LocalDensity.current
     val invoiceNumber = row.invoiceNumber//.padStart(5, '0')
 
-    val isPaid = row.remainingBalance == 0
-    val containerColor = ledgerContainerColor(isPaid)
+    val statusAccent = if (row.remainingBalance > 0) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.tertiary
+    }
 
     val totalToShow = if ((row.adjustedTotal ?: 0) != 0) row.adjustedTotal!! else row.amount
 
@@ -77,9 +81,15 @@ fun OrderListItem(
         modifier = modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth()
-            .border(width = 1.dp, color = MaterialTheme.colorScheme.outline, shape = CardDefaults.elevatedShape),
-        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f),
+                shape = CardDefaults.elevatedShape
+            ),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
         ProOverflowMenuIcons(
             expanded = menuExpanded,
@@ -117,7 +127,14 @@ fun OrderListItem(
             anchor = {
                 Column(
                     modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .fillMaxWidth()
+                        .drawBehind {
+                            drawRect(
+                                color = statusAccent,
+                                size = Size(width = 4.dp.toPx(), height = size.height)
+                            )
+                        }
+                        .padding(start = 20.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
                         .clickable(interactionSource = interaction, role = Role.Button) {
                             if (menuExpanded) menuExpanded = false else onAction(OrderRowAction.Open(row.id))
                         }
@@ -207,19 +224,6 @@ private fun LedgerRowCompact(
             color = valueColor
         )
     }
-}
-
-@Composable
-private fun ledgerContainerColor(isPaid: Boolean): Color {
-    val surface = MaterialTheme.colorScheme.surface
-    val tint = if (isPaid) {
-        MaterialTheme.colorScheme.tertiaryContainer // greenish
-    } else {
-        MaterialTheme.colorScheme.errorContainer    // reddish
-    }
-    // Strong enough to clearly read status, but not screaming
-    val alpha = if (isPaid) 0.26f else 0.28f
-    return tint.copy(alpha = alpha).compositeOver(surface)
 }
 
 @Composable
