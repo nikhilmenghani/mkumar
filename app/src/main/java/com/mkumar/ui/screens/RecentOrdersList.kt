@@ -47,6 +47,7 @@ import com.mkumar.R
 import com.mkumar.ui.components.LongPressMenuAnchor
 import com.mkumar.ui.components.ProMenuItem
 import com.mkumar.ui.components.ProOverflowMenuIcons
+import com.mkumar.ui.theme.LocalPreferencesManager
 
 @Composable
 fun RecentOrdersList(
@@ -107,6 +108,10 @@ fun RecentOrderCard(
     onWhatsAppShare: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val developerPrefs = LocalPreferencesManager.current.developerPrefs
+    val showWhatsAppShare = developerPrefs.developerOptionsEnabled &&
+        developerPrefs.experimentalFeaturesEnabled &&
+        developerPrefs.whatsappSharingEnabled
     LongPressMenuAnchor(
         onClick = onOpen,
         menuItems = listOf(
@@ -138,7 +143,7 @@ fun RecentOrderCard(
                 startNewGroup = true,
                 onClick = { onDelete() }
             )
-        )
+        ).filterNot { it.title == "Share on WhatsApp" && !showWhatsAppShare }
     ) {
         Surface(
             tonalElevation = 2.dp,
@@ -192,6 +197,10 @@ fun RecentOrderCardCompact(
     onOpenCustomer : () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    val developerPrefs = LocalPreferencesManager.current.developerPrefs
+    val showWhatsAppShare = developerPrefs.developerOptionsEnabled &&
+        developerPrefs.experimentalFeaturesEnabled &&
+        developerPrefs.whatsappSharingEnabled
     val haptics = LocalHapticFeedback.current
 
     Box(
@@ -254,7 +263,7 @@ fun RecentOrderCardCompact(
                         startNewGroup = true,
                         onClick = { onDelete() }
                     )
-                ),
+                ).filterNot { it.title == "Share on WhatsApp" && !showWhatsAppShare },
                 anchor = { /* invisible anchor */ }
             )
         }

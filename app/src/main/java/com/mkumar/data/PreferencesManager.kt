@@ -21,6 +21,7 @@ class PreferencesManager @Inject constructor() {
     val dashboardPrefs = DashboardPrefs
     val backupPrefs = BackupPrefs
     val updatePrefs = UpdatePrefs
+    val developerPrefs = DeveloperPrefs
 }
 
 enum class ThemePreference {
@@ -167,5 +168,25 @@ object UpdatePrefs {
         keyName = "updateCheckIntervalHours",
         defaultValue = 0,
         getPreferencesKey = { intPreferencesKey(it) }
+    )
+}
+
+object DeveloperPrefs {
+    var developerOptionsEnabled by dataStoreMutableState(
+        keyName = "developerOptionsEnabled",
+        defaultValue = false,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+
+    var experimentalFeaturesEnabled by dataStoreMutableState(
+        keyName = "experimentalFeaturesEnabled",
+        defaultValue = false,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+
+    var whatsappSharingEnabled by dataStoreMutableState(
+        keyName = "whatsappSharingEnabled",
+        defaultValue = false,
+        getPreferencesKey = { booleanPreferencesKey(it) }
     )
 }

@@ -55,6 +55,7 @@ import com.mkumar.model.OrderRowAction
 import com.mkumar.model.OrderRowUi
 import com.mkumar.ui.components.ProMenuItem
 import com.mkumar.ui.components.ProOverflowMenuIcons
+import com.mkumar.ui.theme.LocalPreferencesManager
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -70,6 +71,10 @@ fun OrderListItem(
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
     val invoiceNumber = row.invoiceNumber//.padStart(5, '0')
+    val developerPrefs = LocalPreferencesManager.current.developerPrefs
+    val showWhatsAppShare = developerPrefs.developerOptionsEnabled &&
+        developerPrefs.experimentalFeaturesEnabled &&
+        developerPrefs.whatsappSharingEnabled
 
     val statusAccent = if (row.remainingBalance > 0) {
         MaterialTheme.colorScheme.error
@@ -115,15 +120,17 @@ fun OrderListItem(
                         onClick = { onAction(OrderRowAction.Share(row.id, row.invoiceNumber)) }
                     )
                 )
-                add(
-                    ProMenuItem(
-                        title = "Share on WhatsApp",
-                        supportingText = "Send PDF to this customer",
-                        iconPainter = painterResource(R.drawable.ic_whatsapp),
-                        startNewGroup = true,
-                        onClick = { onAction(OrderRowAction.ShareOnWhatsApp(row.id, row.invoiceNumber)) }
+                if (showWhatsAppShare) {
+                    add(
+                        ProMenuItem(
+                            title = "Share on WhatsApp",
+                            supportingText = "Send PDF to this customer",
+                            iconPainter = painterResource(R.drawable.ic_whatsapp),
+                            startNewGroup = true,
+                            onClick = { onAction(OrderRowAction.ShareOnWhatsApp(row.id, row.invoiceNumber)) }
+                        )
                     )
-                )
+                }
                 add(
                     ProMenuItem(
                         title = "Delete",

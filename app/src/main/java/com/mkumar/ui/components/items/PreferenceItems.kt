@@ -329,6 +329,7 @@ fun PreferenceItem(
     label: String,
     supportingText: String? = null,
     icon: ImageVector,
+    enabled: Boolean = true,
     switchState: Boolean,
     onSwitchChange: (switched: Boolean) -> Unit
 ) {
@@ -339,9 +340,11 @@ fun PreferenceItem(
         supportingText = supportingText ?: "",
         icon = icon,
         modifier = modifier,
+        enabled = enabled,
         trailingContent = {
             Switch(
                 checked = switch,
+                enabled = enabled,
                 onCheckedChange = {
                     switch = it
                     onSwitchChange(it)

@@ -18,6 +18,10 @@ import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Science
+import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.automirrored.rounded.ListAlt
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,6 +50,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +61,7 @@ import com.mkumar.common.extension.DateFormat
 import com.mkumar.data.ThemePreference
 import com.mkumar.data.emptyString
 import com.mkumar.ui.components.items.PreferenceItem
+import com.mkumar.ui.components.items.PreferenceSubtitle
 import com.mkumar.ui.theme.LocalPreferencesManager
 import com.mkumar.MainActivity
 import com.mkumar.viewmodel.BackupUiState
@@ -64,6 +70,7 @@ import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.backup.RestoreOption
 import com.mkumar.backup.defaultBackupDeviceName
 import com.mkumar.update.AppUpdateManager
+import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import java.time.Instant
 import java.time.Duration
 import java.time.ZoneId
@@ -82,6 +89,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     var showQueue by remember { mutableStateOf(false) }
     var selectedBackup by remember { mutableStateOf<RestoreOption?>(null) }
     var backupToDelete by remember { mutableStateOf<RestoreOption?>(null) }
+    var developerTapCount by remember { mutableStateOf(0) }
 
     val dialog = globalClass.singleChoiceDialog
     val textDialog = globalClass.singleTextDialog
@@ -91,6 +99,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     val invoicePrefs = prefs.invoicePrefs
     val backupPrefs = prefs.backupPrefs
     val updatePrefs = prefs.updatePrefs
+    val developerPrefs = prefs.developerPrefs
 
     LaunchedEffect(backupPrefs.deviceName) {
         if (backupPrefs.deviceName.isBlank()) {
@@ -258,7 +267,146 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         }
     }
 
+    val developerOptionsContent: @Composable () -> Unit = {
+        Container(title = "Developer Options") {
+            PreferenceSubtitle(text = "Experimental features")
+            PreferenceItem(
+                label = "Experimental features",
+                supportingText = if (developerPrefs.experimentalFeaturesEnabled) "Experimental features are available" else "Experimental features are hidden",
+                icon = Icons.Rounded.Science,
+                switchState = developerPrefs.experimentalFeaturesEnabled,
+                onSwitchChange = { developerPrefs.experimentalFeaturesEnabled = it }
+            )
+            if (developerPrefs.experimentalFeaturesEnabled) {
+                PreferenceItem(
+                    label = "Invoice sharing",
+                    supportingText = if (developerPrefs.whatsappSharingEnabled) "Direct invoice sharing is enabled" else "Direct invoice sharing is disabled",
+                    icon = Icons.AutoMirrored.Rounded.Message,
+                    switchState = developerPrefs.whatsappSharingEnabled,
+                    onSwitchChange = { developerPrefs.whatsappSharingEnabled = it }
+                )
+            }
+            PreferenceSubtitle(text = "Backup preferences")
+            PreferenceItem(
+                label = "Device name",
+                supportingText = backupPrefs.deviceName,
+                icon = Icons.Rounded.Devices,
+                enabled = backupPrefs.enabled,
+                onClick = {
+                    textDialog.show(
+                        title = "Backup device name",
+                        description = "Device name",
+                        text = backupPrefs.deviceName,
+                        onConfirm = { backupPrefs.deviceName = it.trim() }
+                    )
+                }
+            )
+            PreferenceItem(
+                label = "Scheduled backup interval",
+                supportingText = backupIntervalLabel(backupPrefs.intervalHours),
+                icon = Icons.Rounded.Schedule,
+                enabled = backupPrefs.enabled,
+                onClick = {
+                    val intervals = listOf(0, 6, 12, 24)
+                    dialog.show(
+                        title = "Backup interval",
+                        description = "Android runs scheduled backups approximately at this interval.",
+                        choices = intervals.map(::backupIntervalLabel),
+                        selectedChoice = intervals.indexOf(backupPrefs.intervalHours).coerceAtLeast(0),
+                        onSelect = { index ->
+                            backupPrefs.intervalHours = intervals[index]
+                            backupViewModel.reschedule()
+                        }
+                    )
+                }
+            )
+            PreferenceItem(
+                label = "Retained backups",
+                supportingText = "Keep the latest ${backupPrefs.retentionCount}",
+                icon = Icons.Rounded.History,
+                enabled = backupPrefs.enabled,
+                onClick = {
+                    val counts = listOf(3, 6, 10, 20, 30)
+                    dialog.show(
+                        title = "Retained backups",
+                        description = "Older snapshots are pruned after the next successful backup.",
+                        choices = counts.map { "Latest $it" },
+                        selectedChoice = counts.indexOf(backupPrefs.retentionCount).coerceAtLeast(0),
+                        onSelect = { backupPrefs.retentionCount = counts[it] }
+                    )
+                }
+            )
+            PreferenceItem(
+                label = "Backups shown",
+                supportingText = displayCountLabel(backupPrefs.displayCount),
+                icon = Icons.Rounded.Visibility,
+                enabled = backupPrefs.enabled,
+                onClick = {
+                    val counts = listOf(3, 6, 10, 20, 0)
+                    dialog.show(
+                        title = "Backups shown",
+                        description = "Choose how many retained restore points appear in the list.",
+                        choices = counts.map(::displayCountLabel),
+                        selectedChoice = counts.indexOf(backupPrefs.displayCount).coerceAtLeast(0),
+                        onSelect = { backupPrefs.displayCount = counts[it] }
+                    )
+                }
+            )
+            PreferenceSubtitle(text = "Invoice")
+            PreferenceItem(
+                label = "Product Highlight Intensity",
+                supportingText = invoicePrefs.productHighlightIntensity.toString(),
+                icon = Icons.Rounded.Tune,
+                onClick = {
+                    sliderDialog.show(
+                        title = "Product Highlight Intensity",
+                        sliderTitle = "Intensity",
+                        description = "Controls the product highlights intensity in invoice",
+                        value = invoicePrefs.productHighlightIntensity,
+                        onConfirm = { invoicePrefs.productHighlightIntensity = it },
+                        onDismiss = sliderDialog::dismiss
+                    )
+                }
+            )
+            PreferenceItem(
+                label = "Invoice Prefix",
+                supportingText = invoicePrefs.invoicePrefix,
+                icon = Icons.Rounded.LocalOffer,
+                onClick = {
+                    textDialog.show(
+                        title = "Invoice Prefix",
+                        description = "Enter your invoice prefix",
+                        text = invoicePrefs.invoicePrefix,
+                        onConfirm = { invoicePrefs.invoicePrefix = it }
+                    )
+                }
+            )
+            PreferenceItem(
+                label = "Invoice Date Format",
+                supportingText = DateFormat.entries[invoicePrefs.invoiceDateFormat].pattern,
+                icon = Icons.Rounded.Event,
+                onClick = {
+                    dialog.show(
+                        title = "Invoice Date Format",
+                        description = "Select your preferred date format for invoices",
+                        choices = DateFormat.entries.map { it.pattern },
+                        selectedChoice = invoicePrefs.invoiceDateFormat,
+                        onSelect = { invoicePrefs.invoiceDateFormat = it }
+                    )
+                }
+            )
+            PreferenceSubtitle(text = "Developer access")
+            PreferenceItem(
+                label = "Hide developer options",
+                supportingText = "Tap the developer name seven times to show them again",
+                icon = Icons.Rounded.VisibilityOff,
+                onClick = { developerPrefs.developerOptionsEnabled = false }
+            )
+        }
+    }
+
     Container(title = "Database Backup") {
+        PreferenceSubtitle(text = "Backup controls")
         PreferenceItem(
             label = "Enable database backups",
             supportingText = if (backupPrefs.enabled) "Backup functionality is enabled" else "Backups are off",
@@ -316,9 +464,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 } else null
             )
         }
-    }
-
-    Container(title = "Manual Backup") {
+        PreferenceSubtitle(text = "Manual backup")
         PreferenceItem(
             label = "Back up now",
             supportingText = if (!backupPrefs.enabled) {
@@ -343,77 +489,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 }
             } else null
         )
-    }
-
-    Container(title = "Backup Preferences") {
-        PreferenceItem(
-            label = "Device name",
-            supportingText = backupPrefs.deviceName,
-            icon = Icons.Rounded.Devices,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                textDialog.show(
-                    title = "Backup device name",
-                    description = "Device name",
-                    text = backupPrefs.deviceName,
-                    onConfirm = { backupPrefs.deviceName = it.trim() }
-                )
-            }
-        )
-        PreferenceItem(
-            label = "Scheduled backup interval",
-            supportingText = backupIntervalLabel(backupPrefs.intervalHours),
-            icon = Icons.Rounded.Schedule,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                val intervals = listOf(0, 6, 12, 24)
-                dialog.show(
-                    title = "Backup interval",
-                    description = "Android runs scheduled backups approximately at this interval.",
-                    choices = intervals.map(::backupIntervalLabel),
-                    selectedChoice = intervals.indexOf(backupPrefs.intervalHours).coerceAtLeast(0),
-                    onSelect = { index ->
-                        backupPrefs.intervalHours = intervals[index]
-                        backupViewModel.reschedule()
-                    }
-                )
-            }
-        )
-        PreferenceItem(
-            label = "Retained backups",
-            supportingText = "Keep the latest ${backupPrefs.retentionCount}",
-            icon = Icons.Rounded.History,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                val counts = listOf(3, 6, 10, 20, 30)
-                dialog.show(
-                    title = "Retained backups",
-                    description = "Older snapshots are pruned after the next successful backup.",
-                    choices = counts.map { "Latest $it" },
-                    selectedChoice = counts.indexOf(backupPrefs.retentionCount).coerceAtLeast(0),
-                    onSelect = { backupPrefs.retentionCount = counts[it] }
-                )
-            }
-        )
-        PreferenceItem(
-            label = "Backups shown",
-            supportingText = displayCountLabel(backupPrefs.displayCount),
-            icon = Icons.Rounded.Visibility,
-            enabled = backupPrefs.enabled,
-            onClick = {
-                val counts = listOf(3, 6, 10, 20, 0)
-                dialog.show(
-                    title = "Backups shown",
-                    description = "Choose how many retained restore points appear in the list.",
-                    choices = counts.map(::displayCountLabel),
-                    selectedChoice = counts.indexOf(backupPrefs.displayCount).coerceAtLeast(0),
-                    onSelect = { backupPrefs.displayCount = counts[it] }
-                )
-            }
-        )
-    }
-
-    Container(title = "GitHub Storage") {
+        PreferenceSubtitle(text = "GitHub storage")
         PreferenceItem(
             label = "GitHub token",
             supportingText = if (githubPrefs.token.isBlank()) "Not configured" else "Configured",
@@ -461,54 +537,8 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         )
     }
 
-    Container(title = "Invoice") {
-        PreferenceItem(
-            label = "Product Highlight Intensity",
-            supportingText = invoicePrefs.productHighlightIntensity.toString(),
-            icon = Icons.Rounded.Tune,
-            onClick = {
-                sliderDialog.show(
-                    title = "Product Highlight Intensity",
-                    sliderTitle = "Intensity",
-                    description = "Controls the product highlights intensity in invoice",
-                    value = invoicePrefs.productHighlightIntensity,
-                    onConfirm = { invoicePrefs.productHighlightIntensity = it },
-                    onDismiss = sliderDialog::dismiss
-                )
-            }
-        )
-
-        PreferenceItem(
-            label = "Invoice Prefix",
-            supportingText = invoicePrefs.invoicePrefix,
-            icon = Icons.Rounded.LocalOffer,
-            onClick = {
-                textDialog.show(
-                    title = "Invoice Prefix",
-                    description = "Enter your invoice prefix",
-                    text = invoicePrefs.invoicePrefix,
-                    onConfirm = { invoicePrefs.invoicePrefix = it }
-                )
-            }
-        )
-
-        PreferenceItem(
-            label = "Invoice Date Format",
-            supportingText = DateFormat.entries[invoicePrefs.invoiceDateFormat].pattern,
-            icon = Icons.Rounded.Event,
-            onClick = {
-                dialog.show(
-                    title = "Invoice Date Format",
-                    description = "Select your preferred date format for invoices",
-                    choices = DateFormat.entries.map { it.pattern },
-                    selectedChoice = invoicePrefs.invoiceDateFormat,
-                    onSelect = { invoicePrefs.invoiceDateFormat = it }
-                )
-            }
-        )
-    }
-
-    Container(title = "App Updates") {
+    Container(title = "About App") {
+        PreferenceSubtitle(text = "App updates")
         PreferenceItem(
             label = "Background update checks",
             supportingText = updateCheckIntervalLabel(updatePrefs.intervalHours),
@@ -527,6 +557,41 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 )
             }
         )
+        PreferenceSubtitle(text = "Application information")
+        PreferenceItem(
+            label = "MKumar",
+            supportingText = "Version ${getCurrentVersion(context)}",
+            icon = Icons.Rounded.Info
+        )
+        PreferenceItem(
+            label = "Nikhil Menghani",
+            supportingText = "Developer",
+            icon = Icons.Rounded.AccountCircle,
+            onClick = {
+                if (developerPrefs.developerOptionsEnabled) {
+                    Toast.makeText(
+                        context,
+                        "Developer options are already enabled",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    developerTapCount++
+                    if (developerTapCount >= 7) {
+                        developerPrefs.developerOptionsEnabled = true
+                        developerTapCount = 0
+                        Toast.makeText(
+                            context,
+                            "Developer options enabled",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        )
+    }
+
+    if (developerPrefs.developerOptionsEnabled) {
+        developerOptionsContent()
     }
 
 }
