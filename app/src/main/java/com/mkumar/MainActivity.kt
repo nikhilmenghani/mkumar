@@ -13,6 +13,7 @@ import androidx.activity.viewModels
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Observer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -85,17 +86,25 @@ class MainActivity : ComponentActivity() {
                     .orEmpty()
                 if (version.isNotBlank() && url.isNotBlank()) {
                     val workId = AppUpdateManager.enqueueDownload(this, version, url)
-                    var installerLaunched = false
-                    WorkManager.getInstance(this)
+                    val workInfo = WorkManager.getInstance(this)
                         .getWorkInfoByIdLiveData(workId)
-                        .observe(this) { info ->
-                            if (!installerLaunched && info?.state == WorkInfo.State.SUCCEEDED) {
-                                installerLaunched = true
+                    lateinit var observer: Observer<WorkInfo>
+                    observer = Observer { info ->
+                        if (info?.state?.isFinished == true) {
+                            workInfo.removeObserver(observer)
+                            if (
+                                info.state == WorkInfo.State.SUCCEEDED &&
+                                !isFinishing &&
+                                !isDestroyed
+                            ) {
                                 info.outputData
                                     .getString(DownloadWorker.OUTPUT_APK_PATH_KEY)
+                                    ?.takeIf(String::isNotBlank)
                                     ?.let(::launchUpdateInstaller)
                             }
                         }
+                    }
+                    workInfo.observeForever(observer)
                 }
             }
             UpdateActionReceiver.ACTION_INSTALL_UPDATE -> {
