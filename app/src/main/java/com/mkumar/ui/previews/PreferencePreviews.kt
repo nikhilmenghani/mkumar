@@ -66,3 +66,15 @@ private fun PreferencesLightPreview() = NikThemePreview { PreferencesPreviewCont
 @Preview(name = "Preferences · Dark", showBackground = true, widthDp = 420, heightDp = 1100, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun PreferencesDarkPreview() = NikThemePreview { PreferencesPreviewContent() }
+
+@Preview(name = "Preferences · Dynamic Light", showBackground = true, widthDp = 420, heightDp = 1100)
+@Composable
+private fun PreferencesDynamicLightPreview() = NikThemePreview(useDynamicColor = true) {
+    PreferencesPreviewContent()
+}
+
+@Preview(name = "Preferences · Dynamic Dark", showBackground = true, widthDp = 420, heightDp = 1100, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreferencesDynamicDarkPreview() = NikThemePreview(useDynamicColor = true) {
+    PreferencesPreviewContent()
+}
