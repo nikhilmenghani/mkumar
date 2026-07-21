@@ -64,7 +64,7 @@ fun RecentOrdersList(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(top = 0.dp, bottom = 12.dp) // FIX
+            contentPadding = PaddingValues(top = 8.dp, bottom = 12.dp)
         ) {
             items(orders) { order ->
                 RecentOrderCardCompact(
