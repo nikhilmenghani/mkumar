@@ -62,7 +62,11 @@ fun ProOverflowMenuIcons(
                 }
 
                 DropdownMenuItem(
-                    text = {}, leadingIcon = item.icon?.let { ic -> { Icon(ic, contentDescription = null) } }, trailingIcon = item.trailing?.let { tr -> { tr() } }, onClick = {
+                    text = {}, leadingIcon = item.icon?.let { ic ->
+                        { Icon(ic, contentDescription = null) }
+                    } ?: item.iconPainter?.let { painter ->
+                        { Icon(painter = painter, contentDescription = null) }
+                    }, trailingIcon = item.trailing?.let { tr -> { tr() } }, onClick = {
                         onExpandedChange(false)
                         item.onClick()
                     }, colors = colors, modifier = Modifier.heightIn(min = 48.dp)

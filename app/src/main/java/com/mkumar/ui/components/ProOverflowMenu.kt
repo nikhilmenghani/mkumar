@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
@@ -87,7 +88,11 @@ fun ProOverflowMenu(
                             }
                         }
                     },
-                    leadingIcon = item.icon?.let { ic -> { Icon(ic, contentDescription = null) } },
+                    leadingIcon = item.icon?.let { ic ->
+                        { Icon(ic, contentDescription = null) }
+                    } ?: item.iconPainter?.let { painter ->
+                        { Icon(painter = painter, contentDescription = null) }
+                    },
                     trailingIcon = item.trailing?.let { tr -> { tr() } },
                     onClick = {
                         onExpandedChange(false)
@@ -105,6 +110,7 @@ data class ProMenuItem(
     val title: String,
     val supportingText: String? = null,
     val icon: ImageVector? = null,
+    val iconPainter: Painter? = null,
     val destructive: Boolean = false,
     val startNewGroup: Boolean = false,
     val trailing: (@Composable () -> Unit)? = null,

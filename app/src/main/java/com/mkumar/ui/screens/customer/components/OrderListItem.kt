@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -40,6 +39,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.DateFormat
+import com.mkumar.R
 import com.mkumar.common.extension.formatAsDate
 import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.common.extension.nowUtcMillis
@@ -118,7 +119,8 @@ fun OrderListItem(
                     ProMenuItem(
                         title = "Share on WhatsApp",
                         supportingText = "Send PDF to this customer",
-                        icon = Icons.AutoMirrored.Outlined.Send,
+                        iconPainter = painterResource(R.drawable.ic_whatsapp),
+                        startNewGroup = true,
                         onClick = { onAction(OrderRowAction.ShareOnWhatsApp(row.id, row.invoiceNumber)) }
                     )
                 )

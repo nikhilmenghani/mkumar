@@ -23,7 +23,6 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -38,11 +37,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.model.OrderWithCustomerInfo
+import com.mkumar.R
 import com.mkumar.ui.components.LongPressMenuAnchor
 import com.mkumar.ui.components.ProMenuItem
 import com.mkumar.ui.components.ProOverflowMenuIcons
@@ -125,7 +126,8 @@ fun RecentOrderCard(
             ProMenuItem(
                 title = "Share on WhatsApp",
                 supportingText = "Send PDF to this customer",
-                icon = Icons.AutoMirrored.Outlined.Send,
+                iconPainter = painterResource(R.drawable.ic_whatsapp),
+                startNewGroup = true,
                 onClick = { onWhatsAppShare() }
             ),
             ProMenuItem(
@@ -233,7 +235,8 @@ fun RecentOrderCardCompact(
                     ProMenuItem(
                         title = "Share on WhatsApp",
                         supportingText = "Send PDF to this customer",
-                        icon = Icons.AutoMirrored.Outlined.Send,
+                        iconPainter = painterResource(R.drawable.ic_whatsapp),
+                        startNewGroup = true,
                         onClick = { onWhatsAppShare() }
                     ),
                     ProMenuItem(
