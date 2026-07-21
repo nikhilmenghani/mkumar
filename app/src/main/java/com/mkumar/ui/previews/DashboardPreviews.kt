@@ -55,3 +55,15 @@ private fun DashboardRecentOrdersLightPreview() = NikThemePreview {
 private fun DashboardRecentOrdersDarkPreview() = NikThemePreview {
     DashboardRecentOrdersPreviewContent()
 }
+
+@Preview(name = "Dashboard · Dynamic Light", showBackground = true, widthDp = 420, heightDp = 900)
+@Composable
+private fun DashboardRecentOrdersDynamicLightPreview() = NikThemePreview(useDynamicColor = true) {
+    DashboardRecentOrdersPreviewContent()
+}
+
+@Preview(name = "Dashboard · Dynamic Dark", showBackground = true, widthDp = 420, heightDp = 900, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun DashboardRecentOrdersDynamicDarkPreview() = NikThemePreview(useDynamicColor = true) {
+    DashboardRecentOrdersPreviewContent()
+}

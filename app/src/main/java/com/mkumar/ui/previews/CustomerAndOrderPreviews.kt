@@ -40,3 +40,15 @@ private fun CustomerListsLightPreview() = NikThemePreview { CustomerListsPreview
 @Preview(name = "Customer and order lists · Dark", showBackground = true, widthDp = 420, heightDp = 900, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun CustomerListsDarkPreview() = NikThemePreview { CustomerListsPreviewContent() }
+
+@Preview(name = "Customer lists · Dynamic Light", showBackground = true, widthDp = 420, heightDp = 900)
+@Composable
+private fun CustomerListsDynamicLightPreview() = NikThemePreview(useDynamicColor = true) {
+    CustomerListsPreviewContent()
+}
+
+@Preview(name = "Customer lists · Dynamic Dark", showBackground = true, widthDp = 420, heightDp = 900, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun CustomerListsDynamicDarkPreview() = NikThemePreview(useDynamicColor = true) {
+    CustomerListsPreviewContent()
+}
