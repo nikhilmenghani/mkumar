@@ -11,16 +11,21 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.mkumar.App.Companion.globalClass
 import com.mkumar.data.SingleText
 import com.mkumar.ui.components.bottomsheets.ShortBottomSheet
 import com.mkumar.ui.components.buttons.ClearButton
+import kotlinx.coroutines.delay
 
 @Composable
 fun SingleTextDialog() {
@@ -37,6 +42,16 @@ fun SingleTextDialog() {
 @Composable
 fun SingleText(dialog: SingleText) {
     var textState by remember { mutableStateOf(dialog.text) }
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        // Let the bottom sheet attach before requesting input focus.
+        delay(150)
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -47,7 +62,9 @@ fun SingleText(dialog: SingleText) {
             value = textState,
             onValueChange = { textState = it },
             label = { Text(dialog.description) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester),
             maxLines = 3,
             trailingIcon = {
                 if (textState.isNotEmpty()) {
