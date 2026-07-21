@@ -10,6 +10,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.mkumar.App
+import com.mkumar.MainActivity
 import com.mkumar.R
 import com.mkumar.update.UpdateActionReceiver
 import kotlinx.coroutines.CoroutineScope
@@ -135,12 +136,13 @@ object NotificationUtility {
     @SuppressLint("MissingPermission")
     fun showUpdateAvailable(context: Context, version: String, downloadUrl: String) {
         createUpdateChannel(context)
-        val intent = Intent(context, UpdateActionReceiver::class.java).apply {
+        val intent = Intent(context, MainActivity::class.java).apply {
             action = UpdateActionReceiver.ACTION_DOWNLOAD_UPDATE
             putExtra(UpdateActionReceiver.EXTRA_VERSION, version)
             putExtra(UpdateActionReceiver.EXTRA_DOWNLOAD_URL, downloadUrl)
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
-        val pendingIntent = PendingIntent.getBroadcast(
+        val pendingIntent = PendingIntent.getActivity(
             context,
             version.hashCode(),
             intent,
@@ -163,11 +165,12 @@ object NotificationUtility {
     @SuppressLint("MissingPermission")
     fun showUpdateReady(context: Context, version: String, apkPath: String) {
         createUpdateChannel(context)
-        val intent = Intent(context, UpdateActionReceiver::class.java).apply {
+        val intent = Intent(context, MainActivity::class.java).apply {
             action = UpdateActionReceiver.ACTION_INSTALL_UPDATE
             putExtra(UpdateActionReceiver.EXTRA_APK_PATH, apkPath)
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
-        val pendingIntent = PendingIntent.getBroadcast(
+        val pendingIntent = PendingIntent.getActivity(
             context,
             apkPath.hashCode(),
             intent,

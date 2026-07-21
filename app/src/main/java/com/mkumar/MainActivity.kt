@@ -10,6 +10,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.core.app.NotificationManagerCompat
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -24,6 +27,11 @@ import com.mkumar.ui.theme.LocalPreferencesManager
 import com.mkumar.ui.theme.MKumarTheme
 import com.mkumar.ui.theme.NikTheme
 import com.mkumar.viewmodel.CustomerViewModel
+import com.mkumar.common.manager.PackageManager.installApk
+import com.mkumar.update.AppUpdateManager
+import com.mkumar.update.UpdateActionReceiver
+import com.mkumar.worker.DownloadWorker
+import com.mkumar.notification.NotificationUtility
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -57,6 +65,56 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        handleUpdateIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleUpdateIntent(intent)
+    }
+
+    private fun handleUpdateIntent(updateIntent: Intent) {
+        when (updateIntent.action) {
+            UpdateActionReceiver.ACTION_DOWNLOAD_UPDATE -> {
+                val version = updateIntent
+                    .getStringExtra(UpdateActionReceiver.EXTRA_VERSION)
+                    .orEmpty()
+                val url = updateIntent
+                    .getStringExtra(UpdateActionReceiver.EXTRA_DOWNLOAD_URL)
+                    .orEmpty()
+                if (version.isNotBlank() && url.isNotBlank()) {
+                    val workId = AppUpdateManager.enqueueDownload(this, version, url)
+                    var installerLaunched = false
+                    WorkManager.getInstance(this)
+                        .getWorkInfoByIdLiveData(workId)
+                        .observe(this) { info ->
+                            if (!installerLaunched && info?.state == WorkInfo.State.SUCCEEDED) {
+                                installerLaunched = true
+                                info.outputData
+                                    .getString(DownloadWorker.OUTPUT_APK_PATH_KEY)
+                                    ?.let(::launchUpdateInstaller)
+                            }
+                        }
+                }
+            }
+            UpdateActionReceiver.ACTION_INSTALL_UPDATE -> {
+                updateIntent.getStringExtra(UpdateActionReceiver.EXTRA_APK_PATH)
+                    ?.takeIf(String::isNotBlank)
+                    ?.let(::launchUpdateInstaller)
+            }
+        }
+        // Prevent configuration changes from replaying the update action.
+        updateIntent.action = null
+    }
+
+    private fun launchUpdateInstaller(apkPath: String) {
+        NotificationManagerCompat.from(this).apply {
+            cancel(NotificationUtility.UPDATE_AVAILABLE_NOTIFICATION_ID)
+            cancel(NotificationUtility.UPDATE_DOWNLOAD_NOTIFICATION_ID)
+            cancel(NotificationUtility.UPDATE_READY_NOTIFICATION_ID)
+        }
+        installApk(this, apkPath)
     }
 
     private fun onAllPermissionsGranted() {

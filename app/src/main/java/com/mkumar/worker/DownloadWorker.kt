@@ -27,6 +27,7 @@ class DownloadWorker(
         const val DOWNLOAD_TYPE_FILE = "file"
         const val VERSION_KEY = "VERSION"
         const val PROGRESS_KEY = "DOWNLOAD_PROGRESS"
+        const val OUTPUT_APK_PATH_KEY = "OUTPUT_APK_PATH"
     }
 
     override suspend fun doWork(): Result {
@@ -79,7 +80,7 @@ class DownloadWorker(
                             destFilePath
                         )
                     }
-                    Result.success()
+                    Result.success(workDataOf(OUTPUT_APK_PATH_KEY to destFilePath))
                 } else {
                     Log.e("MKumar-DownloadWorker", "Download failed.")
                     Result.retry()
