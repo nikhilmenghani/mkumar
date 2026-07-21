@@ -6,5 +6,6 @@ sealed interface CustomerDetailsEffect {
     data class ShowMessage(val message: String) : CustomerDetailsEffect
     data class ViewInvoice(val orderId: String, val invoiceNumber: String, val uri: Uri) : CustomerDetailsEffect
     data class ShareInvoice(val orderId: String, val uri: Uri) : CustomerDetailsEffect
+    data class ShareInvoiceOnWhatsApp(val orderId: String, val uri: Uri, val phone: String) : CustomerDetailsEffect
     data class OrderCreated(val orderId: String) : CustomerDetailsEffect
 }

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +54,7 @@ fun RecentOrdersList(
     onOrderClick: (orderId: String, customerId: String) -> Unit,
     onInvoiceClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onShareClick: (orderId: String, invoiceNumber: Long) -> Unit,
+    onWhatsAppShareClick: (orderId: String, invoiceNumber: Long, phone: String) -> Unit,
     onDeleteClick: (orderId: String) -> Unit,
     onOpenCustomer: (customerId: String) -> Unit
 ) {
@@ -79,6 +81,9 @@ fun RecentOrdersList(
                     onShare = {
                         onShareClick(order.id, order.invoiceNumber)
                     },
+                    onWhatsAppShare = {
+                        onWhatsAppShareClick(order.id, order.invoiceNumber, order.customerPhone)
+                    },
                     onDelete = {
                         onDeleteClick(order.id)
                     },
@@ -98,6 +103,7 @@ fun RecentOrderCard(
     onOpen: () -> Unit,
     onInvoice: () -> Unit,
     onShare: () -> Unit,
+    onWhatsAppShare: () -> Unit,
     onDelete: () -> Unit
 ) {
     LongPressMenuAnchor(
@@ -115,6 +121,12 @@ fun RecentOrderCard(
                 icon = Icons.Outlined.Share,
                 startNewGroup = true,
                 onClick = { onShare() }
+            ),
+            ProMenuItem(
+                title = "Share on WhatsApp",
+                supportingText = "Send PDF to this customer",
+                icon = Icons.AutoMirrored.Outlined.Send,
+                onClick = { onWhatsAppShare() }
             ),
             ProMenuItem(
                 title = "Delete",
@@ -173,6 +185,7 @@ fun RecentOrderCardCompact(
     onOpen: () -> Unit,
     onInvoice: () -> Unit,
     onShare: () -> Unit,
+    onWhatsAppShare: () -> Unit,
     onDelete: () -> Unit,
     onOpenCustomer : () -> Unit
 ) {
@@ -216,6 +229,12 @@ fun RecentOrderCardCompact(
                         icon = Icons.Outlined.Share,
                         startNewGroup = true,
                         onClick = { onShare() }
+                    ),
+                    ProMenuItem(
+                        title = "Share on WhatsApp",
+                        supportingText = "Send PDF to this customer",
+                        icon = Icons.AutoMirrored.Outlined.Send,
+                        onClick = { onWhatsAppShare() }
                     ),
                     ProMenuItem(
                         title = "Open Customer",

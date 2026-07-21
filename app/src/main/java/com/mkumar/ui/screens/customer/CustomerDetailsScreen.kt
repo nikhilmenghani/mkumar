@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.mkumar.common.share.WhatsAppInvoiceShare
 import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.CustomerDetailsIntent
 import com.mkumar.model.CustomerHeaderUi
@@ -105,6 +106,14 @@ fun CustomerDetailsScreen(
                                 "No app to share PDF. File is in Files > Downloads > Documents > MKumar > Invoices"
                             )
                         }
+                }
+                is CustomerDetailsEffect.ShareInvoiceOnWhatsApp -> {
+                    when (WhatsAppInvoiceShare.share(context, effect.uri, effect.phone)) {
+                        WhatsAppInvoiceShare.Result.Started -> Unit
+                        WhatsAppInvoiceShare.Result.InvalidPhone -> snackbarHostState.showSnackbar("Customer phone number is not a valid Indian number")
+                        WhatsAppInvoiceShare.Result.NotInstalled -> snackbarHostState.showSnackbar("WhatsApp is not installed")
+                        is WhatsAppInvoiceShare.Result.Failed -> snackbarHostState.showSnackbar("Could not share invoice on WhatsApp")
+                    }
                 }
             }
         }
@@ -230,6 +239,13 @@ fun CustomerDetailsScreen(
                                     setPendingDeleteOrderId(action.orderId)
                                 }
                                 is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId, action.invoiceNumber))
+                                is OrderRowAction.ShareOnWhatsApp -> viewModel.onIntent(
+                                    CustomerDetailsIntent.ShareOrderOnWhatsApp(
+                                        action.orderId,
+                                        action.invoiceNumber,
+                                        ui.customer?.phone.orEmpty()
+                                    )
+                                )
                                 is OrderRowAction.ViewInvoice -> viewModel.onIntent(CustomerDetailsIntent.ViewInvoice(action.orderId, action.invoiceNumber))
                             }
                         },

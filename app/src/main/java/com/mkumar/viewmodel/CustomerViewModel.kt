@@ -178,6 +178,20 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
         }
     }
 
+    fun shareInvoiceOnWhatsApp(orderId: String, invoiceNumber: String, phone: String) {
+        viewModelScope.launch {
+            _effects.emit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
+            when (val r = invoiceManager.createInvoice(orderId, invoiceNumber)) {
+                is InvoiceManager.InvoiceResult.Success ->
+                    _effects.emit(CustomerDetailsEffect.ShareInvoiceOnWhatsApp(orderId, r.uri, phone))
+                is InvoiceManager.InvoiceResult.NotFound ->
+                    _effects.emit(CustomerDetailsEffect.ShowMessage(r.message))
+                is InvoiceManager.InvoiceResult.Error ->
+                    _effects.emit(CustomerDetailsEffect.ShowMessage("Failed: ${r.throwable.message}"))
+            }
+        }
+    }
+
     fun viewInvoice(orderId: String, invoiceNumber: String) {
         viewModelScope.launch {
             _effects.emit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))

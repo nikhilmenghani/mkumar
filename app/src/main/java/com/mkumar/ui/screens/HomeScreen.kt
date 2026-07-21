@@ -58,6 +58,7 @@ import com.mkumar.common.constant.AppConstants.getExternalStorageDir
 import com.mkumar.common.extension.navigateWithState
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.common.manager.PackageManager.installApk
+import com.mkumar.common.share.WhatsAppInvoiceShare
 import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.UiCustomerMini
 import com.mkumar.ui.components.cards.CustomerListCard2
@@ -128,6 +129,15 @@ fun HomeScreen(
                         context.startActivity(Intent.createChooser(send, "Share invoice"))
                     }.onFailure {
                         snackbarHostState.showSnackbar("No app available to share PDF")
+                    }
+                }
+
+                is CustomerDetailsEffect.ShareInvoiceOnWhatsApp -> {
+                    when (WhatsAppInvoiceShare.share(context, effect.uri, effect.phone)) {
+                        WhatsAppInvoiceShare.Result.Started -> Unit
+                        WhatsAppInvoiceShare.Result.InvalidPhone -> snackbarHostState.showSnackbar("Customer phone number is not a valid Indian number")
+                        WhatsAppInvoiceShare.Result.NotInstalled -> snackbarHostState.showSnackbar("WhatsApp is not installed")
+                        is WhatsAppInvoiceShare.Result.Failed -> snackbarHostState.showSnackbar("Could not share invoice on WhatsApp")
                     }
                 }
 
@@ -303,6 +313,9 @@ fun HomeScreen(
                     },
                     onShareClick = { orderId, invoice ->
                         vm.shareInvoice(orderId, invoice.toString())
+                    },
+                    onWhatsAppShareClick = { orderId, invoice, phone ->
+                        vm.shareInvoiceOnWhatsApp(orderId, invoice.toString(), phone)
                     },
                     onDeleteClick = { pendingDeleteOrderId = it },
                     onOpenCustomer = {

@@ -112,6 +112,8 @@ class CustomerDetailsViewModel @Inject constructor(
             is CustomerDetailsIntent.CreateOrder -> createOrder(intent.customerId)
             is CustomerDetailsIntent.DeleteOrder -> deleteOrder(intent.orderId)
             is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId, intent.invoiceNumber)
+            is CustomerDetailsIntent.ShareOrderOnWhatsApp ->
+                shareOrderOnWhatsApp(intent.orderId, intent.invoiceNumber, intent.phone)
             is CustomerDetailsIntent.ViewInvoice -> viewInvoice(intent.orderId, intent.invoiceNumber)
         }
     }
@@ -154,6 +156,20 @@ class CustomerDetailsViewModel @Inject constructor(
             when (val r = invoiceManager.createInvoice(orderId, invoiceNumber)) {
                 is InvoiceManager.InvoiceResult.Success ->
                     _effects.emit(CustomerDetailsEffect.ShareInvoice(orderId, r.uri))
+                is InvoiceManager.InvoiceResult.NotFound ->
+                    _effects.emit(CustomerDetailsEffect.ShowMessage(r.message))
+                is InvoiceManager.InvoiceResult.Error ->
+                    _effects.emit(CustomerDetailsEffect.ShowMessage("Failed: ${r.throwable.message}"))
+            }
+        }
+    }
+
+    private fun shareOrderOnWhatsApp(orderId: String, invoiceNumber: String, phone: String) {
+        viewModelScope.launch {
+            _effects.emit(CustomerDetailsEffect.ShowMessage("Creating invoice…"))
+            when (val r = invoiceManager.createInvoice(orderId, invoiceNumber)) {
+                is InvoiceManager.InvoiceResult.Success ->
+                    _effects.emit(CustomerDetailsEffect.ShareInvoiceOnWhatsApp(orderId, r.uri, phone))
                 is InvoiceManager.InvoiceResult.NotFound ->
                     _effects.emit(CustomerDetailsEffect.ShowMessage(r.message))
                 is InvoiceManager.InvoiceResult.Error ->

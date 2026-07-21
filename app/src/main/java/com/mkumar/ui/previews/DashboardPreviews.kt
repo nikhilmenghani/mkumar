@@ -36,6 +36,7 @@ private fun DashboardRecentOrdersPreviewContent() {
                     onOrderClick = { _, _ -> },
                     onInvoiceClick = { _, _ -> },
                     onShareClick = { _, _ -> },
+                    onWhatsAppShareClick = { _, _, _ -> },
                     onDeleteClick = {},
                     onOpenCustomer = {}
                 )

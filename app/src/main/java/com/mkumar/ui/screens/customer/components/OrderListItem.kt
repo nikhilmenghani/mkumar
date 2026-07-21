@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -111,6 +112,14 @@ fun OrderListItem(
                         icon = Icons.Outlined.Share,
                         startNewGroup = true,
                         onClick = { onAction(OrderRowAction.Share(row.id, row.invoiceNumber)) }
+                    )
+                )
+                add(
+                    ProMenuItem(
+                        title = "Share on WhatsApp",
+                        supportingText = "Send PDF to this customer",
+                        icon = Icons.AutoMirrored.Outlined.Send,
+                        onClick = { onAction(OrderRowAction.ShareOnWhatsApp(row.id, row.invoiceNumber)) }
                     )
                 )
                 add(

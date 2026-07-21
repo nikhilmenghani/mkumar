@@ -71,6 +71,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.mkumar.MainActivity
+import com.mkumar.common.share.WhatsAppInvoiceShare
 import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.model.CustomerSheetMode
 import com.mkumar.model.OrderWithCustomerInfo
@@ -172,6 +173,15 @@ fun SearchScreen(
                         }
                 }
 
+                is CustomerDetailsEffect.ShareInvoiceOnWhatsApp -> {
+                    when (WhatsAppInvoiceShare.share(context, effect.uri, effect.phone)) {
+                        WhatsAppInvoiceShare.Result.Started -> Unit
+                        WhatsAppInvoiceShare.Result.InvalidPhone -> snackbarHostState.showSnackbar("Customer phone number is not a valid Indian number")
+                        WhatsAppInvoiceShare.Result.NotInstalled -> snackbarHostState.showSnackbar("WhatsApp is not installed")
+                        is WhatsAppInvoiceShare.Result.Failed -> snackbarHostState.showSnackbar("Could not share invoice on WhatsApp")
+                    }
+                }
+
                 else -> {}
             }
         }
@@ -250,6 +260,9 @@ fun SearchScreen(
                 },
                 onShareClick = { orderId, invoiceNumber ->
                     vm.shareInvoice(orderId, invoiceNumber.toString())
+                },
+                onWhatsAppShareClick = { orderId, invoiceNumber, phone ->
+                    vm.shareInvoiceOnWhatsApp(orderId, invoiceNumber.toString(), phone)
                 },
                 onDeleteClick = { orderId ->
                     setPendingDeleteOrderId(orderId)
@@ -693,6 +706,7 @@ fun SearchOrderResultsSection(
     onOrderClick: (orderId: String, customerId: String) -> Unit,
     onInvoiceClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onShareClick: (orderId: String, invoiceNumber: Long) -> Unit,
+    onWhatsAppShareClick: (orderId: String, invoiceNumber: Long, phone: String) -> Unit,
     onDeleteClick: (orderId: String) -> Unit,
     onOpenCustomer: (customerId: String) -> Unit,
     sortField: String,
@@ -743,6 +757,7 @@ fun SearchOrderResultsSection(
                 onOrderClick = onOrderClick,
                 onInvoiceClick = onInvoiceClick,
                 onShareClick = onShareClick,
+                onWhatsAppShareClick = onWhatsAppShareClick,
                 onDeleteClick = onDeleteClick,
                 onOpenCustomer = onOpenCustomer
             )
