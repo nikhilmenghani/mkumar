@@ -25,10 +25,20 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,6 +65,7 @@ import com.mkumar.backup.RestoreOption
 import com.mkumar.backup.defaultBackupDeviceName
 import com.mkumar.update.AppUpdateManager
 import java.time.Instant
+import java.time.Duration
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -134,30 +145,32 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
         }
     } else if (foundBackups.isNotEmpty()) {
         ModalBottomSheet(onDismissRequest = backupViewModel::dismissBackups) {
-            Column(Modifier.padding(bottom = 24.dp)) {
-                Text(
-                    text = "Choose a backup",
-                    style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
-                )
-                foundBackups.forEach { option ->
-                    PreferenceItem(
-                        label = formatUtcAsLocal(option.entry.createdAtUtc),
-                        supportingText = "${option.entry.deviceDisplayName()} • ${option.entry.trigger.toDisplayTrigger()} • ${formatFileSize(option.entry.sizeBytes)}",
-                        icon = Icons.Rounded.Restore,
-                        trailingContent = {
-                            IconButton(onClick = {
-                                backupToDelete = option
-                                backupViewModel.dismissBackups()
-                                confirmDelete = true
-                            }) {
-                                Icon(Icons.Rounded.Delete, contentDescription = "Delete backup")
-                            }
-                        },
-                        onClick = {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(bottom = 24.dp)
+            ) {
+                item {
+                    Text(
+                        text = "Choose a backup",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                    )
+                }
+                items(
+                    items = foundBackups,
+                    key = { it.entry.backupPath }
+                ) { option ->
+                    BackupRestoreCard(
+                        option = option,
+                        onRestore = {
                             selectedBackup = option
                             backupViewModel.dismissBackups()
                             confirmRestore = true
+                        },
+                        onDelete = {
+                            backupToDelete = option
+                            backupViewModel.dismissBackups()
+                            confirmDelete = true
                         }
                     )
                 }
@@ -313,7 +326,9 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             } else {
                 backupPrefs.lastSuccessfulBackupAt
                     .takeIf { it.isNotBlank() }
-                    ?.let { "Last successful: ${formatUtcAsLocal(it)}" }
+                    ?.let {
+                        "Last successful: ${formatUtcAsLocal(it)} • ${formatElapsedSince(it)}"
+                    }
                     ?: "No successful backup yet"
             },
             icon = Icons.Rounded.CloudUpload,
@@ -516,6 +531,84 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
 
 }
 
+@Composable
+private fun BackupRestoreCard(
+    option: RestoreOption,
+    onRestore: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val entry = option.entry
+    Card(
+        onClick = onRestore,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Restore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp)
+                ) {
+                    Text(
+                        text = formatUtcAsLocal(entry.createdAtUtc),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = formatElapsedSince(entry.createdAtUtc),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Rounded.Delete,
+                        contentDescription = "Delete backup",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            Text(
+                text = entry.deviceName.ifBlank { "Unknown device" },
+                style = MaterialTheme.typography.bodyLarge
+            )
+            val shortDeviceId = entry.deviceId.take(8)
+            if (shortDeviceId.isNotBlank()) {
+                Text(
+                    text = "Device ID: $shortDeviceId",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = "${entry.trigger.toDisplayTrigger()} • ${formatFileSize(entry.sizeBytes)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Tap to restore",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+        }
+    }
+}
+
 private fun backupIntervalLabel(hours: Int): String = when (hours) {
     0 -> "Off"
     6 -> "Every 6 hours"
@@ -537,15 +630,29 @@ private fun formatUtcAsLocal(timestamp: String): String = runCatching {
     LOCAL_BACKUP_TIME_FORMAT.format(Instant.parse(timestamp).atZone(ZoneId.systemDefault()))
 }.getOrDefault(timestamp)
 
+private fun formatElapsedSince(timestamp: String, now: Instant = Instant.now()): String = runCatching {
+    val elapsedMinutes = Duration.between(Instant.parse(timestamp), now)
+        .toMinutes()
+        .coerceAtLeast(0)
+    val days = elapsedMinutes / (24 * 60)
+    val hours = (elapsedMinutes % (24 * 60)) / 60
+    val minutes = elapsedMinutes % 60
+    when {
+        days > 0 -> buildString {
+            append(days).append(if (days == 1L) " day" else " days")
+            if (hours > 0) append(" ").append(hours)
+                .append(if (hours == 1L) " hour" else " hours")
+            append(" ago")
+        }
+        hours > 0 -> "$hours ${if (hours == 1L) "hour" else "hours"} ago"
+        minutes > 0 -> "$minutes ${if (minutes == 1L) "minute" else "minutes"} ago"
+        else -> "Just now"
+    }
+}.getOrDefault("Time unavailable")
+
 private fun String.toDisplayTrigger(): String = lowercase()
     .replace('_', ' ')
     .replaceFirstChar { it.uppercase() }
-
-private fun com.mkumar.backup.BackupEntry.deviceDisplayName(): String {
-    val name = deviceName.ifBlank { "Unknown device" }
-    val shortId = deviceId.take(8)
-    return if (shortId.isBlank()) name else "$name • $shortId"
-}
 
 private fun formatFileSize(bytes: Long): String = when {
     bytes >= 1024 * 1024 -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
