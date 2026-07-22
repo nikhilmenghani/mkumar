@@ -44,7 +44,7 @@ object AppUpdateManager {
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
             STARTUP_CHECK_WORK,
-            ExistingWorkPolicy.REPLACE,
+            ExistingWorkPolicy.KEEP,
             request
         )
     }

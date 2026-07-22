@@ -80,6 +80,14 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
         checkVersion()
     }
 
+    fun refreshVersionOnForeground(currentVersion: String) {
+        if (_homeUi.value.hasBootstrapped) {
+            checkVersion()
+        } else {
+            bootstrap(currentVersion)
+        }
+    }
+
     fun checkVersion() {
         viewModelScope.launch {
             _homeUi.update { it.copy(isChecking = true) }

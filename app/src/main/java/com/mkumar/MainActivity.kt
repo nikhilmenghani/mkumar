@@ -29,6 +29,7 @@ import com.mkumar.ui.theme.MKumarTheme
 import com.mkumar.ui.theme.NikTheme
 import com.mkumar.viewmodel.CustomerViewModel
 import com.mkumar.common.manager.PackageManager.installApk
+import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import com.mkumar.update.AppUpdateManager
 import com.mkumar.update.UpdateActionReceiver
 import com.mkumar.worker.DownloadWorker
@@ -73,6 +74,12 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleUpdateIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        AppUpdateManager.checkOnAppStart(this)
+        customerViewModel.refreshVersionOnForeground(getCurrentVersion(this))
     }
 
     private fun handleUpdateIntent(updateIntent: Intent) {
