@@ -18,8 +18,30 @@ import com.mkumar.data.ProductFormData
 import com.mkumar.ui.components.headers.FractionedSectionHeader
 import com.mkumar.ui.components.inputs.FieldMode
 import com.mkumar.ui.components.inputs.ItemPriceEditor
-import com.mkumar.ui.components.inputs.OLTextField
 import kotlinx.coroutines.flow.distinctUntilChanged
+
+/** Product-only field wrapper: entering via IME Next starts at the end. */
+@Composable
+private fun OLTextField(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    onValueChange: (String) -> Unit,
+    onCommit: (() -> Unit)? = null,
+    mode: FieldMode = FieldMode.PlainText,
+    placeholder: String? = null
+) {
+    com.mkumar.ui.components.inputs.OLTextField(
+        value = value,
+        label = label,
+        modifier = modifier,
+        onValueChange = onValueChange,
+        onCommit = onCommit,
+        mode = mode,
+        placeholder = placeholder,
+        cursorAtEndOnFocus = true
+    )
+}
 
 @Composable
 fun FrameForm(

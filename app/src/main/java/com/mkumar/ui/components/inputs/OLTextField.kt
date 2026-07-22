@@ -9,6 +9,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,8 +39,39 @@ fun OLTextField(
     onDone: (() -> Unit)? = null,
     imeActionOverride: ImeAction? = null,
     singleLine: Boolean = true,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    cursorAtEndOnFocus: Boolean = false
 ) {
+    if (cursorAtEndOnFocus) {
+        var selectionValue by remember {
+            mutableStateOf(TextFieldValue(value, selection = TextRange(value.length)))
+        }
+        LaunchedEffect(value) {
+            if (value != selectionValue.text) {
+                selectionValue = TextFieldValue(value, selection = TextRange(value.length))
+            }
+        }
+        OLTextField(
+            value = selectionValue,
+            label = label,
+            modifier = modifier,
+            onValueChange = { updated ->
+                selectionValue = updated
+                onValueChange(updated.text)
+            },
+            onCommit = onCommit,
+            mode = mode,
+            placeholder = placeholder,
+            onNext = onNext,
+            onDone = onDone,
+            imeActionOverride = imeActionOverride,
+            singleLine = singleLine,
+            enabled = enabled,
+            cursorAtEndOnFocus = true
+        )
+        return
+    }
+
     val focusManager = LocalFocusManager.current
     var hadFocus by remember { mutableStateOf(false) }
 
@@ -132,11 +164,19 @@ fun OLTextField(
     label: String,
     modifier: Modifier = Modifier,
     onValueChange: (TextFieldValue) -> Unit,
+    onCommit: (() -> Unit)? = null,
     mode: FieldMode = FieldMode.PlainText,
     placeholder: String? = null,
+    onNext: (() -> Unit)? = null,
+    onDone: (() -> Unit)? = null,
+    imeActionOverride: ImeAction? = null,
     singleLine: Boolean = true,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    cursorAtEndOnFocus: Boolean = false
 ) {
+    val focusManager = LocalFocusManager.current
+    var hadFocus by remember { mutableStateOf(false) }
+    val ime = imeActionOverride ?: mode.defaultIme
     val textStyle = TextStyle(
         fontSize = 14.sp,
         color = MaterialTheme.colorScheme.onSurface
@@ -171,12 +211,42 @@ fun OLTextField(
         singleLine = singleLine,
         keyboardOptions = KeyboardOptions(
             keyboardType = mode.keyboardType,
-            imeAction = mode.defaultIme
+            imeAction = ime
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = {
+                val formatted = mode.formatOnCommit(value.text)
+                if (formatted != value.text) {
+                    onValueChange(TextFieldValue(formatted, TextRange(formatted.length)))
+                }
+                onCommit?.invoke()
+                if (onNext != null) onNext() else focusManager.moveFocus(FocusDirection.Next)
+            },
+            onDone = {
+                val formatted = mode.formatOnCommit(value.text)
+                if (formatted != value.text) {
+                    onValueChange(TextFieldValue(formatted, TextRange(formatted.length)))
+                }
+                onCommit?.invoke()
+                if (onDone != null) onDone() else focusManager.clearFocus()
+            }
         ),
         enabled = enabled,
         modifier = modifier
             .heightIn(min = 42.dp)
-            .padding(bottom = 4.dp),
+            .padding(bottom = 4.dp)
+            .onFocusChanged { state ->
+                if (state.isFocused && !hadFocus && cursorAtEndOnFocus) {
+                    onValueChange(value.copy(selection = TextRange(value.text.length)))
+                } else if (!state.isFocused && hadFocus) {
+                    val formatted = mode.formatOnCommit(value.text)
+                    if (formatted != value.text) {
+                        onValueChange(TextFieldValue(formatted, TextRange(formatted.length)))
+                    }
+                    onCommit?.invoke()
+                }
+                hadFocus = state.isFocused
+            },
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outline,

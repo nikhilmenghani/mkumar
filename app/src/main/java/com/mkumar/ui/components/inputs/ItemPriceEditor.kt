@@ -67,6 +67,7 @@ fun ItemPriceEditor(
                 label = "Unit Price (₹)",
                 placeholder = "e.g. 1,200",
                 mode = FieldMode.Integer,
+                cursorAtEndOnFocus = true,
                 modifier = Modifier.weight(1f),
                 onValueChange = { txt ->
                     val filtered = txt.filter { it.isDigit() || it == ',' }
@@ -80,6 +81,7 @@ fun ItemPriceEditor(
                 label = "Discount %",
                 placeholder = "e.g. 10",
                 mode = FieldMode.Percent0to100,
+                cursorAtEndOnFocus = true,
                 modifier = Modifier
                     .weight(1f)
                     .onFocusChanged { focusState ->
