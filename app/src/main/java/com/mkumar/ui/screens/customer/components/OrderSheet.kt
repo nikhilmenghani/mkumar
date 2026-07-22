@@ -122,8 +122,10 @@ fun OrderSheet(
                     viewModel.onIntent(OrderEditorIntent.DeletePayment(paymentId))
                 },
                 payments = state.draft.payments,
-                onAdjustedTotalChange = {
-                    viewModel.onIntent(OrderEditorIntent.UpdateAdjustedAmount(it))
+                isSavingAdjustment = state.isSavingAdjustment,
+                adjustmentSaveVersion = state.adjustmentSaveVersion,
+                onSaveAdjustedTotal = {
+                    viewModel.onIntent(OrderEditorIntent.SaveAdjustedAmount(it))
                 },
             )
         }

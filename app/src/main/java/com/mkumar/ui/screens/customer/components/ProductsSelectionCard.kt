@@ -26,11 +26,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
@@ -38,6 +37,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -104,7 +104,9 @@ fun ProductsSectionCard(
     onAddPayment: (amount: Int, paymentAt: Long) -> Unit,
     onDeletePayment: (paymentId: String) -> Unit,
     payments: List<UiPaymentItem>,
-    onAdjustedTotalChange: (Int) -> Unit,
+    isSavingAdjustment: Boolean,
+    adjustmentSaveVersion: Long,
+    onSaveAdjustedTotal: (Int) -> Unit,
     initiallyExpandedId: String? = null,
     modifier: Modifier = Modifier
 ) {
@@ -112,7 +114,6 @@ fun ProductsSectionCard(
 
     var expanded by remember { mutableStateOf(false) }
     var addPaymentOpen by remember { mutableStateOf(false) }
-    var adjustOpen by remember { mutableStateOf(false) }
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
 
     val hasAdjusted = adjustedAmount != 0
@@ -124,6 +125,10 @@ fun ProductsSectionCard(
         targetValue = if (hasAdjusted) adjustedAmount else totalAmount,
         label = ""
     )
+    val animatedCalculated by animateIntAsState(
+        targetValue = totalAmount,
+        label = "calculatedTotal"
+    )
     val animatedPaid by animateIntAsState(
         targetValue = paidTotal,
         label = ""
@@ -134,9 +139,7 @@ fun ProductsSectionCard(
     )
     // ---------------------------------------------------------------
 
-    // Sync adjust panel when expanding/collapsing
     LaunchedEffect(expanded) {
-        if (adjustedAmount != 0 && !adjustOpen) adjustOpen = true
         if (!expanded) addPaymentOpen = false
     }
 
@@ -162,6 +165,8 @@ fun ProductsSectionCard(
             ProductsHeader(
                 products = products,
                 animatedTotal = animatedTotal,
+                calculatedTotal = animatedCalculated,
+                hasAdjustedTotal = hasAdjusted,
                 animatedPaid = animatedPaid,
                 animatedDue = animatedDue,
                 chevronRotation = rotation,
@@ -206,10 +211,11 @@ fun ProductsSectionCard(
                     }
 
                     AdjustTotalRow(
-                        isOpen = adjustOpen,
+                        calculatedTotal = totalAmount,
                         adjustedAmount = adjustedAmount,
-                        onAdjustedChange = onAdjustedTotalChange,
-                        onToggle = { adjustOpen = !adjustOpen }
+                        isSaving = isSavingAdjustment,
+                        saveVersion = adjustmentSaveVersion,
+                        onSave = onSaveAdjustedTotal
                     )
                 }
             }
@@ -255,6 +261,8 @@ fun ProductsSectionCard(
 fun ProductsHeader(
     products: List<UiOrderItem>,
     animatedTotal: Int,
+    calculatedTotal: Int,
+    hasAdjustedTotal: Boolean,
     animatedPaid: Int,
     animatedDue: Int,
     chevronRotation: Float,
@@ -291,12 +299,22 @@ fun ProductsHeader(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    AmountBadge(
-                        label = "Total",
-                        amount = animatedTotal,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (hasAdjustedTotal) {
+                            AmountBadge(
+                                label = "Total",
+                                amount = calculatedTotal,
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        AmountBadge(
+                            label = if (hasAdjustedTotal) "Adj." else "Total",
+                            amount = animatedTotal,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         AmountBadge(
                             label = "Paid",
@@ -337,30 +355,108 @@ fun ProductsHeader(
 // -----------------------------------------------------------------------------
 // ADJUST TOTAL ROW — smooth animation, stable, no crashes
 // -----------------------------------------------------------------------------
+@Composable
+private fun AdjustmentBreakdown(calculatedAmount: Int, adjustedAmount: Int) {
+    val difference = adjustedAmount - calculatedAmount
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Total Adjustment",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AdjustmentValue("Calculated", "\u20B9$calculatedAmount", Modifier.weight(1f))
+                AdjustmentValue(
+                    "Adjusted",
+                    if (adjustedAmount > 0) "\u20B9$adjustedAmount" else "—",
+                    Modifier.weight(1f)
+                )
+                AdjustmentValue(
+                    label = "Difference",
+                    value = when {
+                        adjustedAmount <= 0 -> "—"
+                        difference > 0 -> "+\u20B9$difference"
+                        difference < 0 -> "−\u20B9${-difference}"
+                        else -> "\u20B90"
+                    },
+                    modifier = Modifier.weight(1f),
+                    valueColor = when {
+                        difference > 0 -> MaterialTheme.colorScheme.error
+                        difference < 0 -> MaterialTheme.colorScheme.tertiary
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdjustmentValue(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = valueColor,
+            maxLines = 1
+        )
+    }
+}
+
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AdjustTotalRow(
-    isOpen: Boolean,
+    calculatedTotal: Int,
     adjustedAmount: Int,
-    onAdjustedChange: (Int) -> Unit,
-    onToggle: () -> Unit
+    isSaving: Boolean,
+    saveVersion: Long,
+    onSave: (Int) -> Unit
 ) {
+    var editing by remember { mutableStateOf(false) }
+    var submitted by remember { mutableStateOf(false) }
     var localValue by remember {
-        val initial = adjustedAmount.takeIf { it != 0 }?.toString().orEmpty()
+        val initial = (adjustedAmount.takeIf { it > 0 } ?: calculatedTotal).toString()
         mutableStateOf(TextFieldValue(initial, selection = TextRange(initial.length)))
     }
-    val rowHeight = 64.dp
     val amountFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
 
     // When we open the row, sync local text with current adjustedAmount
-    LaunchedEffect(isOpen) {
-        if (isOpen) {
-            val current = adjustedAmount.takeIf { it != 0 }?.toString().orEmpty()
+    LaunchedEffect(editing) {
+        if (editing) {
+            val current = (adjustedAmount.takeIf { it > 0 } ?: calculatedTotal).toString()
             localValue = TextFieldValue(current, selection = TextRange(current.length))
-            delay(180)
+            delay(120)
             amountFocus.requestFocus()
             keyboard?.show()
+        }
+    }
+
+    LaunchedEffect(saveVersion) {
+        if (submitted) {
+            submitted = false
+            editing = false
+            keyboard?.hide()
         }
     }
 
@@ -370,7 +466,7 @@ fun AdjustTotalRow(
     ) {
 
         AnimatedContent(
-            targetState = isOpen,
+            targetState = editing,
             transitionSpec = {
                 slideInHorizontally(
                     initialOffsetX = { full -> -full / 2 }
@@ -382,15 +478,51 @@ fun AdjustTotalRow(
         ) { open ->
 
             if (!open) {
-
-                // COLLAPSED BUTTON (same pattern as Add Payment)
-                FilledTonalButton(
-                    onClick = { onToggle() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Outlined.Edit, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Adjust Total")
+                if (adjustedAmount > 0) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AdjustmentBreakdown(calculatedTotal, adjustedAmount)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Spacer(Modifier.weight(1.2f))
+                            FilledTonalButton(
+                                onClick = { editing = true },
+                                enabled = !isSaving,
+                                modifier = Modifier.weight(0.9f).height(44.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp)
+                            ) {
+                                Icon(Icons.Outlined.Edit, null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("Edit", style = MaterialTheme.typography.labelSmall)
+                            }
+                            FilledTonalButton(
+                                onClick = {
+                                    submitted = true
+                                    onSave(0)
+                                },
+                                enabled = !isSaving,
+                                modifier = Modifier.weight(0.9f).height(44.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp)
+                            ) {
+                                Icon(Icons.Outlined.Delete, null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("Remove", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                } else {
+                    FilledTonalButton(
+                        onClick = { editing = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.Edit, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Adjust total")
+                    }
                 }
 
             } else {
@@ -402,19 +534,9 @@ fun AdjustTotalRow(
                 ) {
 
                     // Header
-                    Text(
-                        text = "Adjusted Total",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(rowHeight),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
 
                         // Adjusted Total field
@@ -425,31 +547,65 @@ fun AdjustTotalRow(
                             mode = FieldMode.Integer,
                             onValueChange = { updated ->
                                 localValue = updated
-                                onAdjustedChange(updated.text.replace(",", "").toIntOrNull() ?: 0)
                             },
                             modifier = Modifier
-                                .weight(1f)
-                                .height(rowHeight)
+                                .fillMaxWidth()
+                                .heightIn(min = 56.dp)
                                 .focusRequester(amountFocus)
                         )
+
+                        val entered = localValue.text.toIntOrNull()
+                        AdjustmentBreakdown(
+                            calculatedAmount = calculatedTotal,
+                            adjustedAmount = entered ?: 0
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Spacer(Modifier.weight(1.2f))
 
                         // Close button – reset + collapse
                         FilledTonalButton(
                             onClick = {
-                                // Always reset back to 0 on close
-                                localValue = TextFieldValue("0", selection = TextRange(1))
-                                onAdjustedChange(0)
-                                onToggle()
+                                submitted = true
+                                onSave(entered ?: 0)
                             },
+                            enabled = entered != null && entered > 0 &&
+                                entered != adjustedAmount && !isSaving,
                             modifier = Modifier
-                                .height(rowHeight)
-                                .widthIn(min = 92.dp),
+                                .weight(0.9f)
+                                .height(44.dp),
                             contentPadding = PaddingValues(horizontal = 12.dp)
                         ) {
-                            Icon(Icons.Outlined.Close, null)
+                            if (isSaving) {
+                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Outlined.Check, null)
+                            }
+                            Spacer(Modifier.width(6.dp))
+                            Text("Save", style = MaterialTheme.typography.labelSmall)
+                        }
+
+                        FilledTonalButton(
+                            onClick = {
+                                editing = false
+                                submitted = false
+                                keyboard?.hide()
+                            },
+                            enabled = !isSaving,
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .height(44.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            Icon(Icons.Outlined.Delete, null)
                             Spacer(Modifier.width(6.dp))
                             Text("Close", style = MaterialTheme.typography.labelSmall)
                         }
+                    }
                     }
                 }
             }

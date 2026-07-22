@@ -108,6 +108,35 @@ class OrderRepositoryImpl @Inject constructor(
         orderDao.updateReceivedAt(orderId, receivedAt, nowUtcMillis())
     }
 
+    override suspend fun updateAdjustedTotal(orderId: String, adjustedAmount: Int) {
+        require(adjustedAmount >= 0) { "Adjusted total cannot be negative" }
+        var completedNow = false
+        db.withTransaction {
+            val order = orderDao.getById(orderId) ?: error("Order not found")
+            val effectiveTotal = adjustedAmount.takeIf { it > 0 } ?: order.totalAmount
+            val remaining = effectiveTotal - order.paidTotal
+            val status = if (order.orderStatus == OrderStatus.DRAFT.value) {
+                OrderStatus.DRAFT.value
+            } else if (remaining > 0) {
+                OrderStatus.ACTIVE.value
+            } else {
+                OrderStatus.COMPLETED.value
+            }
+            val updated = order.copy(
+                adjustedAmount = adjustedAmount,
+                remainingBalance = remaining,
+                orderStatus = status,
+                updatedAt = nowUtcMillis()
+            )
+            orderDao.upsert(updated)
+            reindexOrderFts(updated)
+            updateCustomerSummary(updated.customerId)
+            completedNow = order.orderStatus != OrderStatus.COMPLETED.value &&
+                status == OrderStatus.COMPLETED.value
+        }
+        if (completedNow) backupScheduler.enqueueOrderCompleted()
+    }
+
     // ---------------------------------------------------------------------
     // CREATE ORDER
     // ---------------------------------------------------------------------

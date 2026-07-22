@@ -12,6 +12,7 @@ interface OrderRepository {
     fun observeOrder(orderId: String): Flow<OrderEntity?>
     suspend fun getOrder(orderId: String): OrderEntity?
     suspend fun updateReceivedAt(orderId: String, receivedAt: Long)
+    suspend fun updateAdjustedTotal(orderId: String, adjustedAmount: Int)
     suspend fun createOrderWithItems(order: OrderEntity): OrderEntity
     // NEW: search within customer detail page
     suspend fun searchOrders(

@@ -10,6 +10,8 @@ data class OrderEditorUi(
     val customer: UiCustomer? = null,
     val orders: List<UiOrder> = emptyList(),
     val isLoading: Boolean = true,
+    val isSavingAdjustment: Boolean = false,
+    val adjustmentSaveVersion: Long = 0,
     val draft: Draft = Draft()
 ) {
     data class Draft(

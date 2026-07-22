@@ -71,8 +71,8 @@ class OrderEditorViewModel @Inject constructor(
             is OrderEditorIntent.DeleteItem ->
                 deleteItem(intent.itemId)
 
-            is OrderEditorIntent.UpdateAdjustedAmount ->
-                updateAdjusted(intent.value)
+            is OrderEditorIntent.SaveAdjustedAmount ->
+                saveAdjusted(intent.value)
 
             is OrderEditorIntent.SaveOrder ->
                 activateOrder()
@@ -276,11 +276,6 @@ class OrderEditorViewModel @Inject constructor(
     // PRICING
     // --------------------------------------------------------------
 
-    private fun updateAdjusted(value: Int) {
-        val d = _ui.value.draft
-        recalc(d.copy(adjustedAmount = value))
-    }
-
     private fun updateOccurredAt(long: Long) {
         val d = _ui.value.draft
         recalc(d.copy(receivedAt = long))
@@ -288,6 +283,36 @@ class OrderEditorViewModel @Inject constructor(
             runCatching { orderRepo.updateReceivedAt(d.orderId, long) }
                 .onFailure {
                     _effects.emit(OrderEditorEffect.ShowMessage("Could not update received date."))
+                }
+        }
+    }
+
+    private fun saveAdjusted(value: Int) {
+        if (_ui.value.isSavingAdjustment) return
+        val normalized = value.coerceAtLeast(0)
+        val orderId = _ui.value.draft.orderId
+        viewModelScope.launch {
+            _ui.update { it.copy(isSavingAdjustment = true) }
+            runCatching { orderRepo.updateAdjustedTotal(orderId, normalized) }
+                .onSuccess {
+                    val current = _ui.value
+                    recalc(current.draft.copy(adjustedAmount = normalized))
+                    _ui.update {
+                        it.copy(
+                            isSavingAdjustment = false,
+                            adjustmentSaveVersion = it.adjustmentSaveVersion + 1
+                        )
+                    }
+                    _effects.emit(
+                        OrderEditorEffect.ShowMessage(
+                            if (normalized == 0) "Adjusted total removed."
+                            else "Adjusted total saved."
+                        )
+                    )
+                }
+                .onFailure {
+                    _ui.update { it.copy(isSavingAdjustment = false) }
+                    _effects.emit(OrderEditorEffect.ShowMessage("Could not save adjusted total."))
                 }
         }
     }

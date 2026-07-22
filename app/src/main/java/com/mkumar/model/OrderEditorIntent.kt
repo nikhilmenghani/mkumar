@@ -10,7 +10,7 @@ sealed class OrderEditorIntent {
     data class AddItem(val type: ProductType) : OrderEditorIntent()
     data class UpdateItem(val itemId: String, val newData: UiOrderItem) : OrderEditorIntent()
     data class DeleteItem(val itemId: String) : OrderEditorIntent()
-    data class UpdateAdjustedAmount(val value: Int) : OrderEditorIntent()
+    data class SaveAdjustedAmount(val value: Int) : OrderEditorIntent()
     data class UpdateAdvanceTotal(val value: Int) : OrderEditorIntent()
     object SaveOrder : OrderEditorIntent()
     data class UpdateOccurredAt(val occurredAt: Long) : OrderEditorIntent()
