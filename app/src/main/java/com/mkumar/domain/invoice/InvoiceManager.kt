@@ -61,12 +61,17 @@ class InvoiceManager @Inject constructor(
         val invoiceItems: List<InvoiceItemRow> = itemEntities.map { e ->
             val p = pricedById[e.id]
             val lineTotal = p?.lineTotal ?: e.finalTotal
-            val description = UiOrderItem.deserializeFormData(e.formDataJson)?.productDescription ?: ""
-            val productType = if (e.productTypeLabel == "GeneralProduct") {
-                (UiOrderItem.deserializeFormData(e.formDataJson) as? ProductFormData.GeneralProductData)?.productType
-                    ?: productTypeLabelDisplayNames[e.productTypeLabel] ?: "Unknown"
-            } else {
-                productTypeLabelDisplayNames[e.productTypeLabel] ?: "Unknown"
+            val formData = UiOrderItem.deserializeFormData(e.formDataJson)
+            val description = formData?.productDescription.orEmpty()
+            val productType = when (formData) {
+                is ProductFormData.GeneralProductData ->
+                    formData.productType.ifBlank {
+                        e.productTypeLabel.takeUnless { it == "GeneralProduct" }.orEmpty()
+                    }.ifBlank { "General Product" }
+
+                else -> productTypeLabelDisplayNames[e.productTypeLabel]
+                    ?: e.productTypeLabel.takeIf { it.isNotBlank() }
+                    ?: "Unknown"
             }
             InvoiceItemRow(
                 name = customer.name,
