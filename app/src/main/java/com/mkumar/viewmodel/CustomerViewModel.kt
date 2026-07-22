@@ -118,7 +118,7 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
         Triple(sortBy, asc, dueOnly)
     }.flatMapLatest { (sortBy, asc, dueOnly) ->
         repository.getRecentOrders(
-            limit = 10,
+            limit = 30,
             sortBy = sortBy,
             ascending = asc,
             paymentDueOnly = dueOnly

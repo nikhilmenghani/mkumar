@@ -100,6 +100,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     val backupPrefs = prefs.backupPrefs
     val updatePrefs = prefs.updatePrefs
     val developerPrefs = prefs.developerPrefs
+    val dashboardPrefs = prefs.dashboardPrefs
 
     LaunchedEffect(backupPrefs.deviceName) {
         if (backupPrefs.deviceName.isBlank()) {
@@ -233,6 +234,7 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     }
 
     Container(title = stringResource(R.string.display)) {
+        PreferenceSubtitle(text = "Appearance")
         PreferenceItem(
             label = stringResource(R.string.use_dynamic_color),
             supportingText = emptyString,
@@ -265,27 +267,32 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 }
             )
         }
+        PreferenceSubtitle(text = "Dashboard")
+        PreferenceItem(
+            label = "Recent orders shown",
+            supportingText = "Show the latest ${dashboardPrefs.recentOrderCount} orders",
+            icon = Icons.Rounded.History,
+            onClick = {
+                val counts = listOf(5, 10, 15, 20, 30)
+                dialog.show(
+                    title = "Recent orders shown",
+                    description = "Choose how many recent orders appear on the dashboard.",
+                    choices = counts.map { "$it orders" },
+                    selectedChoice = counts.indexOf(dashboardPrefs.recentOrderCount).coerceAtLeast(0),
+                    onSelect = { dashboardPrefs.recentOrderCount = counts[it] }
+                )
+            }
+        )
     }
 
     val developerOptionsContent: @Composable () -> Unit = {
         Container(title = "Developer Options") {
-            PreferenceSubtitle(text = "Experimental features")
             PreferenceItem(
-                label = "Experimental features",
-                supportingText = if (developerPrefs.experimentalFeaturesEnabled) "Experimental features are available" else "Experimental features are hidden",
-                icon = Icons.Rounded.Science,
-                switchState = developerPrefs.experimentalFeaturesEnabled,
-                onSwitchChange = { developerPrefs.experimentalFeaturesEnabled = it }
+                label = "Hide developer options",
+                supportingText = "Tap the developer name seven times to show them again",
+                icon = Icons.Rounded.VisibilityOff,
+                onClick = { developerPrefs.developerOptionsEnabled = false }
             )
-            if (developerPrefs.experimentalFeaturesEnabled) {
-                PreferenceItem(
-                    label = "Invoice sharing",
-                    supportingText = if (developerPrefs.whatsappSharingEnabled) "Direct invoice sharing is enabled" else "Direct invoice sharing is disabled",
-                    icon = Icons.AutoMirrored.Rounded.Message,
-                    switchState = developerPrefs.whatsappSharingEnabled,
-                    onSwitchChange = { developerPrefs.whatsappSharingEnabled = it }
-                )
-            }
             PreferenceSubtitle(text = "Backup preferences")
             PreferenceItem(
                 label = "Device name",
@@ -298,25 +305,6 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                         description = "Device name",
                         text = backupPrefs.deviceName,
                         onConfirm = { backupPrefs.deviceName = it.trim() }
-                    )
-                }
-            )
-            PreferenceItem(
-                label = "Scheduled backup interval",
-                supportingText = backupIntervalLabel(backupPrefs.intervalHours),
-                icon = Icons.Rounded.Schedule,
-                enabled = backupPrefs.enabled,
-                onClick = {
-                    val intervals = listOf(0, 6, 12, 24)
-                    dialog.show(
-                        title = "Backup interval",
-                        description = "Android runs scheduled backups approximately at this interval.",
-                        choices = intervals.map(::backupIntervalLabel),
-                        selectedChoice = intervals.indexOf(backupPrefs.intervalHours).coerceAtLeast(0),
-                        onSelect = { index ->
-                            backupPrefs.intervalHours = intervals[index]
-                            backupViewModel.reschedule()
-                        }
                     )
                 }
             )
@@ -395,12 +383,22 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                     )
                 }
             )
-            PreferenceSubtitle(text = "Developer access")
+            if (developerPrefs.experimentalFeaturesEnabled) {
+                PreferenceItem(
+                    label = "Invoice sharing",
+                    supportingText = if (developerPrefs.whatsappSharingEnabled) "Direct invoice sharing is enabled" else "Direct invoice sharing is disabled",
+                    icon = Icons.AutoMirrored.Rounded.Message,
+                    switchState = developerPrefs.whatsappSharingEnabled,
+                    onSwitchChange = { developerPrefs.whatsappSharingEnabled = it }
+                )
+            }
+            PreferenceSubtitle(text = "Experimental features")
             PreferenceItem(
-                label = "Hide developer options",
-                supportingText = "Tap the developer name seven times to show them again",
-                icon = Icons.Rounded.VisibilityOff,
-                onClick = { developerPrefs.developerOptionsEnabled = false }
+                label = "Experimental features",
+                supportingText = if (developerPrefs.experimentalFeaturesEnabled) "Experimental features are available" else "Experimental features are hidden",
+                icon = Icons.Rounded.Science,
+                switchState = developerPrefs.experimentalFeaturesEnabled,
+                onSwitchChange = { developerPrefs.experimentalFeaturesEnabled = it }
             )
         }
     }
@@ -415,11 +413,65 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
             onSwitchChange = backupViewModel::setBackupEnabled
         )
         PreferenceItem(
+            label = "Back up now",
+            supportingText = if (!backupPrefs.enabled) {
+                "Enable database backups first"
+            } else {
+                backupPrefs.lastSuccessfulBackupAt
+                    .takeIf { it.isNotBlank() }
+                    ?.let { "Last successful: ${formatUtcAsLocal(it)} • ${formatElapsedSince(it)}" }
+                    ?: "No successful backup yet"
+            },
+            icon = Icons.Rounded.CloudUpload,
+            enabled = backupPrefs.enabled && !backupInProgress,
+            onClick = { confirmBackup = true },
+            trailingContent = if (backupInProgress) {
+                { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) }
+            } else null
+        )
+        PreferenceItem(
+            label = "Scheduled backup interval",
+            supportingText = backupIntervalLabel(backupPrefs.intervalHours),
+            icon = Icons.Rounded.Schedule,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                val intervals = listOf(0, 6, 12, 24)
+                dialog.show(
+                    title = "Backup interval",
+                    description = "Android runs scheduled backups approximately at this interval.",
+                    choices = intervals.map(::backupIntervalLabel),
+                    selectedChoice = intervals.indexOf(backupPrefs.intervalHours).coerceAtLeast(0),
+                    onSelect = { index ->
+                        backupPrefs.intervalHours = intervals[index]
+                        backupViewModel.reschedule()
+                    }
+                )
+            }
+        )
+        PreferenceItem(
             label = "Find backups",
             supportingText = "Browse ${displayCountLabel(backupPrefs.displayCount).lowercase()}",
             icon = Icons.Rounded.Restore,
             enabled = backupPrefs.enabled,
             onClick = backupViewModel::findBackup
+        )
+        PreferenceItem(
+            label = "Backup source",
+            supportingText = if (backupPrefs.showBackupsFromAllDevices) "All devices" else "Current device",
+            icon = Icons.Rounded.Devices,
+            enabled = backupPrefs.enabled,
+            onClick = {
+                dialog.show(
+                    title = "Backup source",
+                    description = "Choose which devices are included when finding restore points.",
+                    choices = listOf("Current device", "All devices"),
+                    selectedChoice = if (backupPrefs.showBackupsFromAllDevices) 1 else 0,
+                    onSelect = { index ->
+                        backupPrefs.showBackupsFromAllDevices = index == 1
+                        backupViewModel.dismissBackups()
+                    }
+                )
+            }
         )
         if (backupQueue.isNotEmpty()) {
             PreferenceItem(
@@ -464,31 +516,6 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 } else null
             )
         }
-        PreferenceSubtitle(text = "Manual backup")
-        PreferenceItem(
-            label = "Back up now",
-            supportingText = if (!backupPrefs.enabled) {
-                "Enable database backups first"
-            } else {
-                backupPrefs.lastSuccessfulBackupAt
-                    .takeIf { it.isNotBlank() }
-                    ?.let {
-                        "Last successful: ${formatUtcAsLocal(it)} • ${formatElapsedSince(it)}"
-                    }
-                    ?: "No successful backup yet"
-            },
-            icon = Icons.Rounded.CloudUpload,
-            enabled = backupPrefs.enabled && !backupInProgress,
-            onClick = { confirmBackup = true },
-            trailingContent = if (backupInProgress) {
-                {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
-            } else null
-        )
         PreferenceSubtitle(text = "GitHub storage")
         PreferenceItem(
             label = "GitHub token",

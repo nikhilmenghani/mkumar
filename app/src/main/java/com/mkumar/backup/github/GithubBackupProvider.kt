@@ -75,9 +75,11 @@ class GithubBackupProvider @Inject constructor(
             ?: error("Backup manifest does not contain a snapshot")
         val previous = readRemoteBackup(repository.owner, repository.name, repository.defaultBranch)
         val previousEntries = previous?.manifest?.availableBackups().orEmpty()
-        val retained = (listOf(newEntry) + previousEntries.filter { it.backupPath != newEntry.backupPath })
-            .sortedByDescending { it.createdAtUtc }
-            .take(preferences.backupPrefs.retentionCount.coerceIn(3, MAX_BACKUPS))
+        val retained = retainBackupsPerDevice(
+            previousEntries = previousEntries,
+            newEntry = newEntry,
+            retentionCount = preferences.backupPrefs.retentionCount.coerceIn(3, MAX_BACKUPS)
+        )
         val updatedManifest = BackupManifest(applicationId = applicationId, backups = retained)
 
         putFile(
@@ -285,4 +287,18 @@ class GithubBackupProvider @Inject constructor(
         val defaultBranch: String
     )
 
+}
+
+internal fun retainBackupsPerDevice(
+    previousEntries: List<BackupEntry>,
+    newEntry: BackupEntry,
+    retentionCount: Int
+): List<BackupEntry> {
+    val candidates = (listOf(newEntry) + previousEntries.filter { it.backupPath != newEntry.backupPath })
+        .sortedByDescending { it.createdAtUtc }
+    val uploadingDeviceEntries = candidates
+        .filter { it.deviceId == newEntry.deviceId }
+        .take(retentionCount)
+    val otherDeviceEntries = candidates.filter { it.deviceId != newEntry.deviceId }
+    return (uploadingDeviceEntries + otherDeviceEntries).sortedByDescending { it.createdAtUtc }
 }

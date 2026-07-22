@@ -301,7 +301,10 @@ fun HomeScreen(
                 onPaymentDueOnlyChange = vm::setPaymentDueOnly
             ) {
                 RecentOrdersList(
-                    orders = recentOrders,
+                    orders = recentOrders.take(
+                        com.mkumar.ui.theme.LocalPreferencesManager.current
+                            .dashboardPrefs.recentOrderCount
+                    ),
                     invoicePrefix = vm.getInvoicePrefix(),
                     onOrderClick = { orderId, customerId ->
                         navController.navigate(

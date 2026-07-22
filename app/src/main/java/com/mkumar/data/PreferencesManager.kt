@@ -88,6 +88,12 @@ object InvoicePrefs {
 }
 
 object DashboardPrefs {
+    var recentOrderCount by dataStoreMutableState(
+        keyName = "dashboardRecentOrderCount",
+        defaultValue = 10,
+        getPreferencesKey = { intPreferencesKey(it) }
+    )
+
     var showCustomerCount by dataStoreMutableState(
         keyName = "showCustomerCount",
         defaultValue = true,
@@ -128,7 +134,7 @@ object BackupPrefs {
     )
     var intervalHours by dataStoreMutableState(
         keyName = "backupIntervalHoursV2",
-        defaultValue = 0,
+        defaultValue = 24,
         getPreferencesKey = { intPreferencesKey(it) }
     )
     var retentionCount by dataStoreMutableState(
@@ -140,6 +146,11 @@ object BackupPrefs {
         keyName = "backupDisplayCount",
         defaultValue = 6,
         getPreferencesKey = { intPreferencesKey(it) }
+    )
+    var showBackupsFromAllDevices by dataStoreMutableState(
+        keyName = "showBackupsFromAllDevices",
+        defaultValue = false,
+        getPreferencesKey = { booleanPreferencesKey(it) }
     )
     var deviceId by dataStoreMutableState(
         keyName = "backupDeviceId",

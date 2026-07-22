@@ -128,7 +128,11 @@ class BackupViewModel @Inject constructor(
                         val visible = backups.visibleBackups()
                         if (visible.isEmpty()) {
                             BackupUiState.Message(
-                                "No backup found for this app. Use Back up now to create the first backup."
+                                if (preferences.backupPrefs.showBackupsFromAllDevices) {
+                                    "No backup found for this app. Use Back up now to create the first backup."
+                                } else {
+                                    "No backup found for this device. Take a backup first or change Backup source to All devices."
+                                }
                             )
                         }
                         else BackupUiState.BackupsFound(visible)
@@ -154,8 +158,14 @@ class BackupViewModel @Inject constructor(
     }
 
     private fun List<RestoreOption>.visibleBackups(): List<RestoreOption> {
+        val scoped = if (preferences.backupPrefs.showBackupsFromAllDevices) {
+            this
+        } else {
+            val currentDeviceId = preferences.backupPrefs.deviceId
+            filter { it.entry.deviceId == currentDeviceId }
+        }
         val count = preferences.backupPrefs.displayCount
-        return if (count <= 0) this else take(count)
+        return if (count <= 0) scoped else scoped.take(count)
     }
 
     private fun updateQueue(work: List<WorkInfo>) {
