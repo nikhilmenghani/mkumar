@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.mkumar.App.Companion.globalClass
 import com.mkumar.data.SingleText
@@ -41,7 +43,11 @@ fun SingleTextDialog() {
 
 @Composable
 fun SingleText(dialog: SingleText) {
-    var textState by remember { mutableStateOf(dialog.text) }
+    var textState by remember {
+        mutableStateOf(
+            TextFieldValue(dialog.text, selection = TextRange(dialog.text.length))
+        )
+    }
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
 
@@ -67,15 +73,15 @@ fun SingleText(dialog: SingleText) {
                 .focusRequester(focusRequester),
             maxLines = 3,
             trailingIcon = {
-                if (textState.isNotEmpty()) {
-                    ClearButton { textState = "" }
+                if (textState.text.isNotEmpty()) {
+                    ClearButton { textState = TextFieldValue("") }
                 }
             },
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
-                dialog.onConfirm(textState)
+                dialog.onConfirm(textState.text)
                 dialog.dismiss()
             },
             modifier = Modifier.fillMaxWidth()

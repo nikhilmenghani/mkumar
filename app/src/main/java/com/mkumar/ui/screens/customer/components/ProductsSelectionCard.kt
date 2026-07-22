@@ -56,6 +56,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.DateFormat
@@ -344,7 +346,8 @@ fun AdjustTotalRow(
     onToggle: () -> Unit
 ) {
     var localValue by remember {
-        mutableStateOf(adjustedAmount.takeIf { it != 0 }?.toString().orEmpty())
+        val initial = adjustedAmount.takeIf { it != 0 }?.toString().orEmpty()
+        mutableStateOf(TextFieldValue(initial, selection = TextRange(initial.length)))
     }
     val rowHeight = 64.dp
     val amountFocus = remember { FocusRequester() }
@@ -353,7 +356,8 @@ fun AdjustTotalRow(
     // When we open the row, sync local text with current adjustedAmount
     LaunchedEffect(isOpen) {
         if (isOpen) {
-            localValue = adjustedAmount.takeIf { it != 0 }?.toString().orEmpty()
+            val current = adjustedAmount.takeIf { it != 0 }?.toString().orEmpty()
+            localValue = TextFieldValue(current, selection = TextRange(current.length))
             delay(180)
             amountFocus.requestFocus()
             keyboard?.show()
@@ -419,10 +423,9 @@ fun AdjustTotalRow(
                             label = "Adjusted Total (₹)",
                             placeholder = "e.g. 1,200",
                             mode = FieldMode.Integer,
-                            onValueChange = { txt ->
-                                val filtered = txt.filter { it.isDigit() || it == ',' }
-                                localValue = filtered
-                                onAdjustedChange(localValue.toIntOrNull() ?: 0)
+                            onValueChange = { updated ->
+                                localValue = updated
+                                onAdjustedChange(updated.text.replace(",", "").toIntOrNull() ?: 0)
                             },
                             modifier = Modifier
                                 .weight(1f)
@@ -434,7 +437,7 @@ fun AdjustTotalRow(
                         FilledTonalButton(
                             onClick = {
                                 // Always reset back to 0 on close
-                                localValue = "0"
+                                localValue = TextFieldValue("0", selection = TextRange(1))
                                 onAdjustedChange(0)
                                 onToggle()
                             },
@@ -551,7 +554,7 @@ fun AddPaymentRow(
     onToggle: () -> Unit,
     onAdd: (amount: Int, atUtcMillis: Long) -> Unit
 ) {
-    var amount by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf(TextFieldValue("")) }
     var date by remember { mutableStateOf(LocalDate.now(ZoneId.systemDefault())) }
     var showPicker by remember { mutableStateOf(false) }
     val amountFocus = remember { FocusRequester() }
@@ -559,6 +562,7 @@ fun AddPaymentRow(
 
     LaunchedEffect(isOpen) {
         if (isOpen) {
+            amount = amount.copy(selection = TextRange(amount.text.length))
             delay(180)
             amountFocus.requestFocus()
             keyboard?.show()
@@ -659,11 +663,11 @@ fun AddPaymentRow(
                         // Save
                         FilledTonalButton(
                             onClick = {
-                                if (amount.isNotBlank()) {
+                                if (amount.text.isNotBlank()) {
                                     val utcMillis = date.toUtcMillisForLocalDay()
-                                    onAdd(amount.toInt(), utcMillis)
+                                    onAdd(amount.text.toInt(), utcMillis)
 
-                                    amount = ""
+                                    amount = TextFieldValue("")
                                     date = LocalDate.now(ZoneId.systemDefault())
                                     onToggle()
                                 }

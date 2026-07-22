@@ -18,7 +18,9 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -107,6 +109,74 @@ fun OLTextField(
                 }
                 hadFocus = fs.isFocused
             },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            cursorColor = MaterialTheme.colorScheme.primary
+        )
+    )
+}
+
+/**
+ * Selection-aware variant for fields whose focus is requested programmatically.
+ *
+ * Keep the [TextFieldValue] at the call site so selection is changed only for the
+ * explicit open/focus event. It must not be recreated from a String on every
+ * keystroke, otherwise cursor jumps can cause fast input to be lost.
+ */
+@Composable
+fun OLTextField(
+    value: TextFieldValue,
+    label: String,
+    modifier: Modifier = Modifier,
+    onValueChange: (TextFieldValue) -> Unit,
+    mode: FieldMode = FieldMode.PlainText,
+    placeholder: String? = null,
+    singleLine: Boolean = true,
+    enabled: Boolean = true
+) {
+    val textStyle = TextStyle(
+        fontSize = 14.sp,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+    val labelStyle = TextStyle(
+        fontSize = 11.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    val placeholderStyle = TextStyle(
+        fontSize = 13.sp,
+        color = MaterialTheme.colorScheme.outline
+    )
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = { updated ->
+            val sanitized = mode.sanitizeOnChange(updated.text)
+            if (sanitized == updated.text) {
+                onValueChange(updated)
+            } else {
+                val cursor = updated.selection.end.coerceAtMost(sanitized.length)
+                onValueChange(TextFieldValue(sanitized, TextRange(cursor)))
+            }
+        },
+        textStyle = textStyle,
+        label = { Text(label, style = labelStyle, maxLines = 1) },
+        placeholder = {
+            if (placeholder != null) {
+                Text(placeholder, style = placeholderStyle, maxLines = 1)
+            }
+        },
+        singleLine = singleLine,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = mode.keyboardType,
+            imeAction = mode.defaultIme
+        ),
+        enabled = enabled,
+        modifier = modifier
+            .heightIn(min = 42.dp)
+            .padding(bottom = 4.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
