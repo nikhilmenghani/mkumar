@@ -15,11 +15,16 @@ inline fun <reified A> dataStoreMutableState(
     getPreferencesKey: (keyName: String) -> Preferences.Key<A>,
 ): MutableState<A> {
     val key: Preferences.Key<A> = getPreferencesKey(keyName)
-    val snapshotMutableState: MutableState<A> = mutableStateOf(
+    // Compose Preview's layoutlib does not run App.onCreate(), so the application
+    // context is unavailable while preview-only preference objects are initialized.
+    // Use the preference's declared default in that environment; the real app still
+    // reads DataStore normally after App.onCreate has installed the context.
+    val initialValue = runCatching {
         runBlocking {
             App.globalClass.dataStore.data.first()[key] ?: defaultValue
         }
-    )
+    }.getOrDefault(defaultValue)
+    val snapshotMutableState: MutableState<A> = mutableStateOf(initialValue)
 
     return object : MutableState<A> {
         override var value: A

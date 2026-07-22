@@ -8,10 +8,13 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import com.mkumar.data.PreferencesManager
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.mkumar.data.ThemePreference
@@ -248,6 +251,7 @@ fun NikTheme(content: @Composable () -> Unit) {
 fun NikThemePreview(useDynamicColor: Boolean = false, content: @Composable () -> Unit) {
     val context = LocalContext.current
     val darkTheme = isSystemInDarkTheme()
+    val previewPreferences = remember { PreferencesManager() }
 
     val colorScheme = when {
         useDynamicColor -> {
@@ -257,9 +261,11 @@ fun NikThemePreview(useDynamicColor: Boolean = false, content: @Composable () ->
         else -> StaticLightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalPreferencesManager provides previewPreferences) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

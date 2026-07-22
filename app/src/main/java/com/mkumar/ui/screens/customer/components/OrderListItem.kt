@@ -56,6 +56,7 @@ import com.mkumar.model.OrderRowUi
 import com.mkumar.ui.components.ProMenuItem
 import com.mkumar.ui.components.ProOverflowMenuIcons
 import com.mkumar.ui.theme.LocalPreferencesManager
+import com.mkumar.ui.theme.NikThemePreview
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -299,8 +300,9 @@ private fun TimeBadges(row: OrderRowUi) {
 @Preview(showBackground = true)
 @Composable
 private fun OrderListItem4Preview() {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OrderListItem(
+    NikThemePreview {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OrderListItem(
             row = OrderRowUi(
                 id = "1",
                 receivedAt = nowUtcMillis(),
@@ -313,7 +315,7 @@ private fun OrderListItem4Preview() {
 //            productTypeCounts = listOf("Lens" to 2, "Frame" to 1),
             onAction = {}
         )
-        OrderListItem(
+            OrderListItem(
             row = OrderRowUi(
                 id = "2",
                 receivedAt = nowUtcMillis(),
@@ -325,6 +327,7 @@ private fun OrderListItem4Preview() {
             ),
 //            productTypeCounts = listOf("Lens" to 1, "Frame" to 1, "Accessories" to 2),
             onAction = {}
-        )
+            )
+        }
     }
 }
