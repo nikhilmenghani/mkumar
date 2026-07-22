@@ -39,10 +39,14 @@ class DatabaseBackupWorker @AssistedInject constructor(
             is BackupResult.Success -> Result.success(
                 workDataOf(PROGRESS_STAGE_KEY to "Backup completed", PROGRESS_PERCENT_KEY to 100)
             )
-            is BackupResult.Failure -> if (runAttemptCount < 3) {
-                Result.retry()
-            } else {
-                Result.failure(workDataOf(ERROR_MESSAGE_KEY to result.message))
+            is BackupResult.Failure -> when {
+                // A periodic request must remain healthy for its next interval. Treat this
+                // attempt as complete instead of retrying it several times within minutes.
+                trigger == BackupTrigger.SCHEDULED -> Result.success(
+                    workDataOf(ERROR_MESSAGE_KEY to result.message)
+                )
+                runAttemptCount < 3 -> Result.retry()
+                else -> Result.failure(workDataOf(ERROR_MESSAGE_KEY to result.message))
             }
         }
     }

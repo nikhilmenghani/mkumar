@@ -92,12 +92,12 @@ class BackupViewModel @Inject constructor(
         liveData.observeForever(observer)
     }
 
-    fun reschedule() = scheduler.schedulePeriodic()
+    fun reschedule() = scheduler.schedulePeriodic(updateExisting = true)
 
     fun setBackupEnabled(enabled: Boolean) {
         preferences.backupPrefs.enabled = enabled
         if (enabled) {
-            scheduler.schedulePeriodic()
+            scheduler.schedulePeriodic(updateExisting = true)
         } else {
             scheduler.cancelAllBackupWork()
             _state.value = BackupUiState.Idle

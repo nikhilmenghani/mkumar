@@ -34,7 +34,7 @@ class BackupScheduler @Inject constructor(
         const val EVENT_WORK_TAG = "mkumar_database_backup_event_tag"
     }
 
-    fun schedulePeriodic() {
+    fun schedulePeriodic(updateExisting: Boolean = false) {
         clearObsoleteFtsValidationError()
         val intervalHours = preferences.backupPrefs.intervalHours
         if (!preferences.backupPrefs.enabled || intervalHours <= 0 || preferences.githubPrefs.token.isBlank()) {
@@ -50,7 +50,7 @@ class BackupScheduler @Inject constructor(
             .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             PERIODIC_WORK,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            if (updateExisting) ExistingPeriodicWorkPolicy.UPDATE else ExistingPeriodicWorkPolicy.KEEP,
             request
         )
     }
