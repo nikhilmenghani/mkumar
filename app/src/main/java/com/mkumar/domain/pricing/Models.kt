@@ -4,7 +4,7 @@ package com.mkumar.domain.pricing
 data class PricingInput(
     val orderId: String,
     val items: List<ItemInput>,
-    val adjustedAmount: Int,   // >= 0 rupees, flat reduction
+    val adjustedAmount: Int,   // final payable-total override; 0 means use calculated total
     val paidTotal: Int      // >= 0 rupees
 ) {
     data class ItemInput(
@@ -29,8 +29,8 @@ data class PricingResult(
     val orderId: String,
     val items: List<PricedItem>,
     val subtotalBeforeAdjust: Int, // sum(lineTotal)
-    val adjustedAmount: Int,       // clamped to [0..subtotal]
-    val totalAmount: Int,          // subtotal - adjustedAmount
+    val adjustedAmount: Int,       // final payable-total override; 0 means none
+    val totalAmount: Int,          // calculated item total before the override
     val paidTotal: Int,         // clamped >= 0
-    val remainingBalance: Int      // max(0, totalAmount - advanceTotal)
+    val remainingBalance: Int      // effective total (adjusted or calculated) - paid total
 )

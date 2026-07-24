@@ -31,15 +31,17 @@ class PricingServiceImpl @Inject constructor() : PricingService {
         }
 
         val subtotal = priced.sumOf { it.lineTotal }
+        val adjustedTotal = input.adjustedAmount.coerceAtLeast(0)
+        val effectiveTotal = adjustedTotal.takeIf { it > 0 } ?: subtotal
 
         return PricingResult(
             orderId = input.orderId,
             items = priced,
             subtotalBeforeAdjust = subtotal,
-            adjustedAmount = input.adjustedAmount,   // no clamping
+            adjustedAmount = adjustedTotal,
             totalAmount = subtotal,                  // ALWAYS actual total
             paidTotal = input.paidTotal,
-            remainingBalance = subtotal - input.paidTotal
+            remainingBalance = effectiveTotal - input.paidTotal
         )
     }
 
