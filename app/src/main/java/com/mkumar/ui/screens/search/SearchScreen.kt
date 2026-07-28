@@ -478,23 +478,23 @@ private fun SearchAdvancedOptions(
                     )
                 )
             )
-            .padding(20.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
         // ------------------------------------------------------------
         // Header
         // ------------------------------------------------------------
         Text(
             "Advanced Options",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = 8.dp)
         )
 
         // ------------------------------------------------------------
         // Mode Section
         // ------------------------------------------------------------
         SectionHeader("Search speed")
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
 
         Row {
             OptionChip(
@@ -510,13 +510,13 @@ private fun SearchAdvancedOptions(
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(12.dp))
 
         // ------------------------------------------------------------
         // Search By Section
         // ------------------------------------------------------------
         SectionHeader("Search by")
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
 
         Row {
             SearchByChip("Name", SearchBy.NAME, searchBy) {
@@ -543,13 +543,13 @@ private fun SearchAdvancedOptions(
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(12.dp))
 
         // ------------------------------------------------------------
         // Return results Section (Customers / Orders)
         // ------------------------------------------------------------
         SectionHeader("Return results")
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
 
         val isForcedOrder = searchBy == SearchBy.INVOICE
 
@@ -605,7 +605,7 @@ private fun OptionChip(label: String, selected: Boolean, onClick: () -> Unit) {
     ) {
         Text(
             text = label,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
             color = if (selected)
                 MaterialTheme.colorScheme.onPrimaryContainer
             else MaterialTheme.colorScheme.onSurfaceVariant
@@ -622,7 +622,7 @@ private fun SearchByChip(
 ) {
     Surface(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() },
         color = if (selected == value)
             MaterialTheme.colorScheme.primaryContainer
@@ -630,7 +630,7 @@ private fun SearchByChip(
     ) {
         Text(
             text = label,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
             color = if (selected == value)
                 MaterialTheme.colorScheme.onPrimaryContainer
             else MaterialTheme.colorScheme.onSurfaceVariant
@@ -659,13 +659,13 @@ private fun ReturnTypeChip(
 
     Surface(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(enabled = enabled) { onClick() },
         color = bg
     ) {
         Text(
             text = label,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
             color = fg
         )
     }
@@ -722,6 +722,7 @@ fun SearchOrderResultsSection(
         // Header ----------------------------------------------
         SortBar(
             title = "Orders (${orderResults.size})",
+            modifier = Modifier.padding(horizontal = 14.dp),
             sortField = sortField,
             sortOrderAsc = sortOrderAsc,
             onSortFieldChange = onSortFieldChange,

@@ -87,7 +87,7 @@ fun OrderListItem(
 
     ElevatedCard(
         modifier = modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 5.dp)
             .fillMaxWidth()
             .border(
                 width = 1.dp,
@@ -153,7 +153,7 @@ fun OrderListItem(
                                 size = Size(width = 4.dp.toPx(), height = size.height)
                             )
                         }
-                        .padding(start = 20.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
+                        .padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
                         .clickable(interactionSource = interaction, role = Role.Button) {
                             if (menuExpanded) menuExpanded = false else onAction(OrderRowAction.Open(row.id))
                         }
@@ -182,14 +182,15 @@ fun OrderListItem(
                             if (invoiceNumber.isNotBlank()) {
                                 Text(
                                     text = "#$invoiceNumber",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
                             Text(
                                 text = row.lastUpdatedAt.formatAsDateTime(),
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -211,7 +212,6 @@ fun OrderListItem(
                         }
                     }
 
-                    Spacer(Modifier.height(10.dp))
 //                    TimeBadges(row)
                 }
             }
@@ -229,16 +229,16 @@ private fun LedgerRowCompact(
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.size(12.dp))
+        Spacer(Modifier.size(8.dp))
         Text(
             text = value,
             style = if (emphasize) {
-                MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
             } else {
-                MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium)
+                MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium)
             },
             color = valueColor
         )

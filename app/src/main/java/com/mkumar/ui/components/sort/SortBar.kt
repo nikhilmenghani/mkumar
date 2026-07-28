@@ -86,12 +86,19 @@ fun SortBar(
                 )
             }
             Row(
-                modifier = Modifier
-                    .weight(1f)
+                modifier = (if (action == null) {
+                    Modifier
+                } else {
+                    Modifier.weight(1f)
+                })
                     .clickable { expanded = !expanded }
                     .padding(horizontal = 4.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = if (action == null) {
+                    Arrangement.End
+                } else {
+                    Arrangement.Center
+                }
             ) {
                 Text(
                     text = summary,
@@ -109,11 +116,13 @@ fun SortBar(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                action?.invoke()
+            if (action != null) {
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    action()
+                }
             }
         }
 
