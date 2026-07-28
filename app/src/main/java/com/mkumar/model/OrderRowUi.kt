@@ -11,4 +11,5 @@ data class OrderRowUi(
     val amount: Int,
     val remainingBalance: Int,
     val adjustedTotal: Int? = null,               // if != 0 -> use as Total
+    val invoiceSequence: Long = 0,
 )

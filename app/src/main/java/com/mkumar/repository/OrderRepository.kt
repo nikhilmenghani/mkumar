@@ -25,4 +25,5 @@ interface OrderRepository {
 
     suspend fun getCustomerMiniForOrder(customerId: String): UiCustomerMini
     suspend fun createDraftOrder(customerId: String): String
+    suspend fun getNextInvoiceNumber(): Long
 }

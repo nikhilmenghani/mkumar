@@ -5,15 +5,13 @@ package com.mkumar.ui.components.sort
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,11 +19,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.ArrowUpward
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,8 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-
 
 @Composable
 fun SortBar(
@@ -49,158 +48,132 @@ fun SortBar(
     paymentDueOnly: Boolean = false,
     onPaymentDueOnlyChange: (Boolean) -> Unit = {},
     sortFields: List<String> = listOf("Invoice", "UpdatedAt", "Name"),
+    action: (@Composable () -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
-
     val arrowRotation by animateFloatAsState(
-        if (expanded) 180f else 0f,
-        label = "arrowRotate"
+        targetValue = if (expanded) 180f else 0f,
+        label = "sortExpansion"
     )
+    val fieldLabel = when (sortField) {
+        "UpdatedAt" -> "Updated"
+        else -> sortField
+    }
+    val summary = buildString {
+        append(fieldLabel)
+        append(if (sortOrderAsc) " · Asc" else " · Desc")
+        if (paymentDueOnly) append(" · Due")
+    }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize()
     ) {
-
-        // TOP ROW: TITLE + SORT SUMMARY
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-                .clickable { expanded = !expanded },
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
-            // Larger Title
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,     // UPGRADED
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            // Larger Sort Summary
-            Row(verticalAlignment = Alignment.CenterVertically) {
-
-                val orderSymbol = if (sortOrderAsc) "↑" else "↓"
-
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterStart
+            ) {
                 Text(
-                    text = "Sort: $sortField $orderSymbol${if (paymentDueOnly) " • Due" else ""}",
-                    style = MaterialTheme.typography.titleMedium,   // UPGRADED
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-
+            }
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { expanded = !expanded }
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Icon(
                     imageVector = Icons.Rounded.ArrowDropDown,
-                    contentDescription = null,
+                    contentDescription = if (expanded) "Hide sorting controls" else "Show sorting controls",
                     modifier = Modifier
-                        .size(28.dp)                                 // UPGRADED
+                        .size(22.dp)
                         .rotate(arrowRotation),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        }
-
-
-        // EXPANDED PANEL
-        AnimatedVisibility(visible = expanded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .padding(12.dp)
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterEnd
             ) {
-
-                // SORT BY
-                Text(
-                    text = "Sort by",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 10.dp)
-                )
-
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    sortFields.forEach { field ->
-                        FilterChip(
-                            selected = sortField == field,
-                            onClick = {
-                                onSortFieldChange(field)
-                                expanded = false
-                            },
-                            label = { Text(field) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // ORDER
-                Text(
-                    text = "Order",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 10.dp)
-                )
-
-                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    FilterChip(
-                        selected = sortOrderAsc,
-                        onClick = {
-                            onSortOrderChange(true)
-                            expanded = false
-                        },
-                        label = { Text("Asc") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Rounded.ArrowUpward, contentDescription = null)
-                        }
-                    )
-
-                    FilterChip(
-                        selected = !sortOrderAsc,
-                        onClick = {
-                            onSortOrderChange(false)
-                            expanded = false
-                        },
-                        label = { Text("Desc") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Rounded.ArrowDownward, contentDescription = null)
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Filter",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 10.dp)
-                )
-
-                FilterChip(
-                    selected = paymentDueOnly,
-                    onClick = { onPaymentDueOnlyChange(!paymentDueOnly) },
-                    label = { Text("Payment due only") }
-                )
+                action?.invoke()
             }
         }
 
-        // HORIZONTAL DIVIDER BEFORE CONTENT
-        Divider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-            thickness = 1.dp
-        )
+        AnimatedVisibility(visible = expanded) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Sort and filter",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        sortFields.forEach { field ->
+                            FilterChip(
+                                selected = sortField == field,
+                                onClick = { onSortFieldChange(field) },
+                                label = {
+                                    Text(if (field == "UpdatedAt") "Updated" else field)
+                                }
+                            )
+                        }
+                        FilterChip(
+                            selected = sortOrderAsc,
+                            onClick = { onSortOrderChange(true) },
+                            label = { Text("Asc") },
+                            leadingIcon = {
+                                Icon(Icons.Rounded.ArrowUpward, contentDescription = null)
+                            }
+                        )
+                        FilterChip(
+                            selected = !sortOrderAsc,
+                            onClick = { onSortOrderChange(false) },
+                            label = { Text("Desc") },
+                            leadingIcon = {
+                                Icon(Icons.Rounded.ArrowDownward, contentDescription = null)
+                            }
+                        )
+                        FilterChip(
+                            selected = paymentDueOnly,
+                            onClick = { onPaymentDueOnlyChange(!paymentDueOnly) },
+                            label = { Text("Payment due") }
+                        )
+                    }
+                }
+            }
+        }
 
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 4.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        )
     }
 }

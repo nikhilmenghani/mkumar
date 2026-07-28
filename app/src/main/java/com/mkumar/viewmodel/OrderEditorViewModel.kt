@@ -124,6 +124,9 @@ class OrderEditorViewModel @Inject constructor(
         viewModelScope.launch {
 
             val order = orderRepo.getOrder(orderId) ?: return@launch
+            val invoiceIsProvisional = order.invoiceSeq == null || order.invoiceSeq <= 0
+            val displayedInvoiceNumber =
+                order.invoiceSeq?.takeIf { it > 0 } ?: orderRepo.getNextInvoiceNumber()
 
             val customerWithOrders = customerRepo.getWithOrders(order.customerId)
             val uiCustomer = customerWithOrders?.toUi(pricing, preferencesManager.invoicePrefs.invoicePrefix)?.customer
@@ -134,7 +137,12 @@ class OrderEditorViewModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     customer = uiCustomer,
-                    orders = customerWithOrders?.orders?.map { o -> o.toUiOrder(invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix) }.orEmpty(),
+                    orders = customerWithOrders?.orders?.map { o ->
+                        o.toUiOrder(
+                            invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix,
+                            provisionalInvoiceNumber = displayedInvoiceNumber
+                        )
+                    }.orEmpty(),
                     draft = OrderEditorUi.Draft(
                         orderId = order.id,
                         editingOrderId = order.id,
@@ -146,7 +154,8 @@ class OrderEditorViewModel @Inject constructor(
                         paidTotal = order.paidTotal,
                         totalAmount = order.totalAmount,
                         remainingBalance = order.remainingBalance,
-                        invoiceNumber = order.invoiceSeq ?: -1,
+                        invoiceNumber = displayedInvoiceNumber,
+                        invoiceNumberIsProvisional = invoiceIsProvisional,
                         receivedAt = order.receivedAt,
                         payments = emptyList() // will be updated by collector
                     )
@@ -378,7 +387,9 @@ class OrderEditorViewModel @Inject constructor(
             val entity = OrderEntity(
                 id = draft.orderId,
                 customerId = draft.customerId,
-                invoiceSeq = draft.invoiceNumber,
+                invoiceSeq = draft.invoiceNumber.takeUnless {
+                    draft.invoiceNumberIsProvisional
+                },
                 adjustedAmount = draft.adjustedAmount,
                 createdAt = draft.createdAt,
                 totalAmount = draft.totalAmount,

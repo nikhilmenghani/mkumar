@@ -60,8 +60,11 @@ class CustomerDetailsViewModel @Inject constructor(
             customerRepo.observeWithOrders(customerId)
                 .filterNotNull()
                 .map { rel ->
-                    // If you have an OrderItemDao, plug it here:
-                    rel.toUi(pricing = pricing, invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix)
+                    rel.toUi(
+                        pricing = pricing,
+                        invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix,
+                        provisionalInvoiceNumber = orderRepo.getNextInvoiceNumber()
+                    )
                 }
                 .flowOn(Dispatchers.Default)
                 .onEach { mapped ->
@@ -89,8 +92,12 @@ class CustomerDetailsViewModel @Inject constructor(
 
             val ordersFlow = orderRepo.observeOrdersForCustomer(customerId)
                 .map { orders ->
+                    val provisionalInvoiceNumber = orderRepo.getNextInvoiceNumber()
                     orders.map { order ->
-                        order.toUiOrder(invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix)
+                        order.toUiOrder(
+                            invoicePrefix = preferencesManager.invoicePrefs.invoicePrefix,
+                            provisionalInvoiceNumber = provisionalInvoiceNumber
+                        )
                     }.sortedByDescending { it.receivedAt }
                 }
 

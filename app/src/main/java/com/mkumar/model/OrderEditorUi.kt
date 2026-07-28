@@ -21,6 +21,7 @@ data class OrderEditorUi(
         val createdAt: Long = nowUtcMillis(),
         val updatedAt: Long = nowUtcMillis(),
         val invoiceNumber: Long = 0,
+        val invoiceNumberIsProvisional: Boolean = false,
         val items: List<UiOrderItem> = emptyList(),
         val adjustedAmount: Int = 0,
         val totalAmount: Int = 0,

@@ -8,11 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddShoppingCart
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -136,21 +137,6 @@ fun CustomerDetailsScreen(
                 }
             )
         },
-        floatingActionButton = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        val cid = ui.customer?.id.orEmpty()
-                        viewModel.onIntent(CustomerDetailsIntent.CreateOrder(cid))
-                    },
-                    icon = { Icon(Icons.Outlined.AddShoppingCart, contentDescription = null) },
-                    text = { Text("New Sale") }
-                )
-            }
-
-        },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
         Column(
@@ -165,7 +151,9 @@ fun CustomerDetailsScreen(
                 header = CustomerHeaderUi(
                     customer = ui.customer,
                     totalOrders = ui.orders.size,
-                    totalSpent = ui.orders.sumOf { it.totalAmount },
+                    totalSpent = ui.orders.sumOf {
+                        it.adjustedAmount.takeIf { amount -> amount > 0 } ?: it.totalAmount
+                    },
                     totalRemaining = ui.orders.sumOf { it.remainingBalance }
                 ),
                 modifier = Modifier
@@ -174,6 +162,61 @@ fun CustomerDetailsScreen(
             )
 
             HorizontalDivider()
+
+            val rows = remember(
+                ui.orders,
+                orderSortField,
+                orderSortAscending,
+                paymentDueOnly
+            ) {
+                val comparator = when (orderSortField) {
+                    "UpdatedAt" -> compareBy<OrderRowUi> { it.lastUpdatedAt }
+                    else -> compareBy<OrderRowUi> { it.invoiceSequence }
+                        .thenBy { it.receivedAt }
+                }
+                ui.orders
+                    .map { it.toOrderRowUi() }
+                    .filter { !paymentDueOnly || it.remainingBalance > 0 }
+                    .sortedWith(
+                        if (orderSortAscending) comparator else comparator.reversed()
+                    )
+            }
+
+            SortBar(
+                title = "Orders",
+                modifier = Modifier.padding(horizontal = 16.dp),
+                sortField = orderSortField,
+                sortOrderAsc = orderSortAscending,
+                onSortFieldChange = { orderSortField = it },
+                onSortOrderChange = { orderSortAscending = it },
+                paymentDueOnly = paymentDueOnly,
+                onPaymentDueOnlyChange = { paymentDueOnly = it },
+                sortFields = listOf("Invoice", "UpdatedAt"),
+                action = {
+                    AssistChip(
+                        onClick = {
+                            val cid = ui.customer?.id.orEmpty()
+                            if (cid.isNotBlank()) {
+                                viewModel.onIntent(CustomerDetailsIntent.CreateOrder(cid))
+                            }
+                        },
+                        label = {
+                            Text(
+                                "New sale",
+                                style = MaterialTheme.typography.labelMedium,
+                                maxLines = 1
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.AddShoppingCart,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    )
+                }
+            )
 
             if (ui.orders.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -184,39 +227,6 @@ fun CustomerDetailsScreen(
                     )
                 }
             } else {
-                // Reuse existing list UI by adapting to OrderRowUi
-                val rows = remember(
-                    ui.orders,
-                    orderSortField,
-                    orderSortAscending,
-                    paymentDueOnly
-                ) {
-                    val comparator = when (orderSortField) {
-                        "UpdatedAt" -> compareBy<OrderRowUi> { it.lastUpdatedAt }
-                        else -> compareBy<OrderRowUi> {
-                            it.invoiceNumber.takeLastWhile(Char::isDigit).toLongOrNull()
-                                ?: Long.MIN_VALUE
-                        }.thenBy { it.invoiceNumber }
-                    }
-                    ui.orders
-                        .map { it.toOrderRowUi() }
-                        .filter { !paymentDueOnly || it.remainingBalance > 0 }
-                        .sortedWith(
-                            if (orderSortAscending) comparator else comparator.reversed()
-                        )
-                }
-                SortBar(
-                    title = "Orders",
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    sortField = orderSortField,
-                    sortOrderAsc = orderSortAscending,
-                    onSortFieldChange = { orderSortField = it },
-                    onSortOrderChange = { orderSortAscending = it },
-                    paymentDueOnly = paymentDueOnly,
-                    onPaymentDueOnlyChange = { paymentDueOnly = it },
-                    sortFields = listOf("Invoice", "UpdatedAt")
-                )
-
                 if (rows.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(

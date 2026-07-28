@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.mkumar.model.NewOrderIntent
 import com.mkumar.model.OrderEditorIntent
 import com.mkumar.model.OrderEditorUi
+import com.mkumar.model.provisionalInvoiceSuffix
 import com.mkumar.ui.components.cards.OrderHeaderCardPro
 import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.viewmodel.OrderEditorViewModel
@@ -56,7 +57,13 @@ fun OrderSheet(
         OrderHeaderCardPro(
             customerName = state.customer?.name ?: "",
             mobile = state.customer?.phone ?: "",
-            invoiceNumber = state.draft.invoiceNumber.toString(),
+            invoiceNumber = buildString {
+                append(state.draft.invoiceNumber)
+                if (state.draft.invoiceNumberIsProvisional) {
+                    append("-")
+                    append(provisionalInvoiceSuffix(state.draft.orderId))
+                }
+            },
             receivedAt = state.draft.receivedAt,   // <-- raw UTC millis
             isDateReadOnly = false,
             invoicePrefix = viewModel.getInvoicePrefix(),

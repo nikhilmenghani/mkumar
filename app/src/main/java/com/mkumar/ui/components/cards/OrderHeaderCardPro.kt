@@ -1,7 +1,6 @@
 package com.mkumar.ui.components.cards
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,8 +14,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +32,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mkumar.common.extension.DateFormat
 import com.mkumar.ui.components.pickers.MKDatePickerDialog
@@ -46,7 +46,7 @@ import java.time.format.DateTimeFormatter
 fun OrderHeaderCardPro(
     customerName: String,
     mobile: String,
-    receivedAt: Long?,              // raw UTC millis from DB
+    receivedAt: Long?,
     invoiceNumber: String,
     isDateReadOnly: Boolean,
     invoicePrefix: String,
@@ -54,176 +54,140 @@ fun OrderHeaderCardPro(
     modifier: Modifier = Modifier
 ) {
     val zone = ZoneId.systemDefault()
-
-    // 1) Convert receivedAt (UTC) → LocalDate
-    val currentLocalDate: LocalDate = if (receivedAt != null) {
-        Instant.ofEpochMilli(receivedAt)
-            .atZone(zone)
-            .toLocalDate()
-    } else {
-        LocalDate.now(zone)
-    }
-
-    // Display directly from editor state so the loaded or newly selected value
-    // cannot be replaced by a stale remembered date.
+    val currentLocalDate = receivedAt?.let {
+        Instant.ofEpochMilli(it).atZone(zone).toLocalDate()
+    } ?: LocalDate.now(zone)
     val displayedDate = currentLocalDate.format(
         DateTimeFormatter.ofPattern(DateFormat.DEFAULT_DATE_ONLY.pattern)
     )
-
     var showPicker by remember { mutableStateOf(false) }
-
     val rotation by animateFloatAsState(
         targetValue = if (showPicker) 180f else 0f,
         label = "rotateCalendar"
     )
 
-    // ───────────────────────────
-    // DATE PICKER
-    // ───────────────────────────
     if (showPicker) {
         MKDatePickerDialog(
             initialDate = currentLocalDate,
             onDismiss = { showPicker = false },
             onConfirm = { pickedLocalDate ->
-                // Convert local date → local midnight → UTC millis
-                val pickedUtc = pickedLocalDate
-                    .atStartOfDay(zone)
-                    .toInstant()
-                    .toEpochMilli()
-
-                onPickDateTime(pickedUtc)
+                onPickDateTime(
+                    pickedLocalDate.atStartOfDay(zone).toInstant().toEpochMilli()
+                )
                 showPicker = false
             }
         )
     }
 
     val clipboard = LocalClipboardManager.current
-
-    // ───────────────────────────
-    // UI CARD CONTENT
-    // ───────────────────────────
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(12.dp)
-            ),
-        tonalElevation = 0.dp,
+        modifier = modifier.fillMaxWidth(),
+        tonalElevation = 1.dp,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
-            // Row 1 — Name + Copy + Invoice
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = customerName,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    )
-
-                    Spacer(Modifier.width(6.dp))
-
-                    Icon(
-                        imageVector = Icons.Outlined.ContentCopy,
-                        contentDescription = "Copy name",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .clickable {
-                                clipboard.setText(AnnotatedString(customerName))
-                            }
-                    )
-                }
-
-                Text(
-                    text = "#$invoicePrefix$invoiceNumber",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            // Row 2 — Phone + Copy + Date
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.Phone,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(Modifier.width(4.dp))
-
+                InitialsAvatarCompact(name = customerName.ifBlank { "Customer" })
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = customerName,
+                            modifier = Modifier.weight(1f, fill = false),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Outlined.ContentCopy,
+                            contentDescription = "Copy customer name",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clickable {
+                                    clipboard.setText(AnnotatedString(customerName))
+                                }
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = mobile,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Outlined.ContentCopy,
+                            contentDescription = "Copy phone number",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(15.dp)
+                                .clickable {
+                                    clipboard.setText(AnnotatedString(mobile))
+                                }
+                        )
+                    }
+                }
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
                     Text(
-                        text = mobile,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(Modifier.width(6.dp))
-
-                    Icon(
-                        imageVector = Icons.Outlined.ContentCopy,
-                        contentDescription = "Copy phone",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .clickable {
-                                clipboard.setText(AnnotatedString(mobile))
-                            }
+                        text = "$invoicePrefix$invoiceNumber",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1
                     )
                 }
+            }
 
-                Spacer(Modifier.weight(1f))
+            HorizontalDivider()
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
                     Text(
-                        text = "Received: $displayedDate",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = "Received date",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
-                    if (!isDateReadOnly) {
-                        Spacer(Modifier.width(6.dp))
-
-                        IconButton(
-                            onClick = { showPicker = true },
-                            modifier = Modifier.size(22.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.CalendarMonth,
-                                contentDescription = "Change date",
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .rotate(rotation),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                    Text(
+                        text = displayedDate,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
+                if (!isDateReadOnly) {
+                    IconButton(
+                        onClick = { showPicker = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarMonth,
+                            contentDescription = "Change received date",
+                            modifier = Modifier
+                                .size(18.dp)
+                                .rotate(rotation),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
         }
     }
 }
-

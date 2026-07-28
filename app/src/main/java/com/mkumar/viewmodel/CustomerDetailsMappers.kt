@@ -10,10 +10,10 @@ import com.mkumar.domain.pricing.PricingResult
 import com.mkumar.domain.pricing.PricingService
 import com.mkumar.model.OrderRowUi
 import com.mkumar.model.ProductType
+import com.mkumar.model.provisionalInvoiceSuffix
 import com.mkumar.model.UiCustomer
 import com.mkumar.model.UiOrder
 import com.mkumar.model.UiOrderItem
-import java.util.Locale
 import java.util.UUID
 
 /** Aggregated UI payload for CustomerDetails screen. */
@@ -33,6 +33,7 @@ data class UiBundle(val customer: UiCustomer, val orders: List<UiOrder>)
 fun CustomerWithOrders.toUi(
     pricing: PricingService,
     invoicePrefix: String,
+    provisionalInvoiceNumber: Long = 0,
     itemsOf: (orderId: String) -> List<UiOrderItem> = { emptyList() },
     adjustedOf: (order: OrderEntity) -> Int = { 0 },
     advanceOf: (order: OrderEntity) -> Int = { 0 }
@@ -52,6 +53,7 @@ fun CustomerWithOrders.toUi(
         )
         order.toUiOrder(
             invoicePrefix = invoicePrefix,
+            provisionalInvoiceNumber = provisionalInvoiceNumber,
             items = uiItems,
             subtotalBeforeAdjust = priced.subtotalBeforeAdjust
         )
@@ -69,7 +71,8 @@ fun UiOrder.toOrderRowUi(): OrderRowUi =
         amount = totalAmount,
         remainingBalance = remainingBalance,
         adjustedTotal = adjustedAmount,
-        lastUpdatedAt = lastUpdatedAt
+        lastUpdatedAt = lastUpdatedAt,
+        invoiceSequence = invoiceSequence
     )
 
 fun UiOrderItem.toItemInput(): PricingInput.ItemInput =
@@ -133,6 +136,7 @@ fun OrderItemEntity.toUiItem(): UiOrderItem {
 
 fun OrderEntity.toUiOrder(
     invoicePrefix: String,
+    provisionalInvoiceNumber: Long = 0,
     items: List<UiOrderItem> = emptyList(),
     subtotalBeforeAdjust: Int = 0
 ): UiOrder =
@@ -146,7 +150,13 @@ fun OrderEntity.toUiOrder(
         paidTotal = paidTotal,
         remainingBalance = remainingBalance,
         lastUpdatedAt = updatedAt,
-        invoiceNumber = invoiceSeq?.let {
+        invoiceSequence = invoiceSeq?.takeIf { it > 0 } ?: provisionalInvoiceNumber,
+        invoiceNumber = invoiceSeq?.takeIf { it > 0 }?.let {
             invoicePrefix + "%d".format(it)
-        } ?: (invoicePrefix + id.takeLast(6).uppercase(Locale.getDefault()))
+        } ?: (
+            invoicePrefix +
+                provisionalInvoiceNumber +
+                "-" +
+                provisionalInvoiceSuffix(id)
+            )
     )

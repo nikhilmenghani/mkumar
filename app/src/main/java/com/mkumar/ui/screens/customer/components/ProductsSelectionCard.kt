@@ -488,16 +488,19 @@ fun AdjustTotalRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Spacer(Modifier.weight(1.2f))
                             FilledTonalButton(
                                 onClick = { editing = true },
                                 enabled = !isSaving,
-                                modifier = Modifier.weight(0.9f).height(44.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp)
+                                modifier = Modifier.weight(1f).height(40.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp)
                             ) {
-                                Icon(Icons.Outlined.Edit, null)
+                                Icon(Icons.Outlined.Edit, null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(6.dp))
-                                Text("Edit", style = MaterialTheme.typography.labelSmall)
+                                Text(
+                                    "Edit",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1
+                                )
                             }
                             FilledTonalButton(
                                 onClick = {
@@ -505,23 +508,52 @@ fun AdjustTotalRow(
                                     onSave(0)
                                 },
                                 enabled = !isSaving,
-                                modifier = Modifier.weight(0.9f).height(44.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp)
+                                modifier = Modifier.weight(1f).height(40.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp)
                             ) {
-                                Icon(Icons.Outlined.Delete, null)
+                                Icon(Icons.Outlined.Delete, null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(6.dp))
-                                Text("Remove", style = MaterialTheme.typography.labelSmall)
+                                Text(
+                                    "Remove",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1
+                                )
                             }
                         }
                     }
                 } else {
-                    FilledTonalButton(
-                        onClick = { editing = true },
-                        modifier = Modifier.fillMaxWidth()
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Outlined.Edit, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Adjust total")
+                        Text(
+                            text = "Total Adjustment",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            FilledTonalButton(
+                                onClick = { editing = true },
+                                modifier = Modifier.height(40.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Edit,
+                                    null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "Adjust total",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -565,8 +597,6 @@ fun AdjustTotalRow(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Spacer(Modifier.weight(1.2f))
-
                         // Close button – reset + collapse
                         FilledTonalButton(
                             onClick = {
@@ -574,19 +604,24 @@ fun AdjustTotalRow(
                                 onSave(entered ?: 0)
                             },
                             enabled = entered != null && entered > 0 &&
+                                entered != calculatedTotal &&
                                 entered != adjustedAmount && !isSaving,
                             modifier = Modifier
-                                .weight(0.9f)
-                                .height(44.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp)
+                                .weight(1f)
+                                .height(40.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp)
                         ) {
                             if (isSaving) {
                                 CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                             } else {
-                                Icon(Icons.Outlined.Check, null)
+                                Icon(Icons.Outlined.Check, null, modifier = Modifier.size(16.dp))
                             }
                             Spacer(Modifier.width(6.dp))
-                            Text("Save", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "Save",
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1
+                            )
                         }
 
                         FilledTonalButton(
@@ -597,13 +632,17 @@ fun AdjustTotalRow(
                             },
                             enabled = !isSaving,
                             modifier = Modifier
-                                .weight(0.9f)
-                                .height(44.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp)
+                                .weight(1f)
+                                .height(40.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp)
                         ) {
-                            Icon(Icons.Outlined.Delete, null)
+                            Icon(Icons.Outlined.Delete, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Close", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "Close",
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1
+                            )
                         }
                     }
                     }
@@ -701,7 +740,7 @@ fun CompactPaymentRow(
 private const val ADD_AMOUNT_WEIGHT = 0.8f
 private const val ADD_DATE_WEIGHT = 1.4f
 private const val ADD_SAVE_WEIGHT = 0.8f
-private val ADD_ROW_MIN_HEIGHT = 44.dp
+private val ADD_ROW_MIN_HEIGHT = 40.dp
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -725,7 +764,7 @@ fun AddPaymentRow(
         }
     }
 
-    val rowHeight = 44.dp
+    val rowHeight = 40.dp
 
     val pattern = DateFormat.DEFAULT_DATE_ONLY.pattern
     val formatter = DateTimeFormatter.ofPattern(pattern)
@@ -749,13 +788,27 @@ fun AddPaymentRow(
 
             if (!open) {
 
-                FilledTonalButton(
-                    onClick = onToggle,
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Icon(Icons.Outlined.Add, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add Payment")
+                    FilledTonalButton(
+                        onClick = onToggle,
+                        modifier = Modifier.height(rowHeight),
+                        contentPadding = PaddingValues(horizontal = 10.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Add,
+                            null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Add Payment",
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1
+                        )
+                    }
                 }
 
             } else {
@@ -831,11 +884,15 @@ fun AddPaymentRow(
                             modifier = Modifier
                                 .weight(0.9f)
                                 .height(rowHeight),
-                            contentPadding = PaddingValues(horizontal = 12.dp)
+                            contentPadding = PaddingValues(horizontal = 8.dp)
                         ) {
-                            Icon(Icons.Outlined.Add, null)
+                            Icon(Icons.Outlined.Add, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Save", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "Save",
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1
+                            )
                         }
 
                         // Close
@@ -844,11 +901,15 @@ fun AddPaymentRow(
                             modifier = Modifier
                                 .weight(0.9f)
                                 .height(rowHeight),
-                            contentPadding = PaddingValues(horizontal = 12.dp)
+                            contentPadding = PaddingValues(horizontal = 8.dp)
                         ) {
-                            Icon(Icons.Outlined.Delete, null)
+                            Icon(Icons.Outlined.Delete, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Close", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "Close",
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1
+                            )
                         }
                     }
                 }

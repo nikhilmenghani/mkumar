@@ -10,6 +10,8 @@ import javax.inject.Singleton
 class InvoiceNumberService @Inject constructor(
     private val db: AppDatabase
 ) {
+    suspend fun peekNextInvoiceNumber(): Long =
+        (db.invoiceCounterDao().getRow()?.lastNumber ?: 0L) + 1L
 
     suspend fun takeNextInvoiceNumberInCurrentTx(): Long = db.withTransaction {
         val dao = db.invoiceCounterDao()

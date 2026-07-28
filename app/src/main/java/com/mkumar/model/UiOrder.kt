@@ -13,6 +13,7 @@ data class UiOrder(
     val totalAmount: Int,
     val paidTotal: Int,
     val remainingBalance: Int,
-    val lastUpdatedAt: Long
+    val lastUpdatedAt: Long,
+    val invoiceSequence: Long = 0
 )
 

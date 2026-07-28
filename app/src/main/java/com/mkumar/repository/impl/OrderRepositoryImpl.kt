@@ -39,8 +39,17 @@ class OrderRepositoryImpl @Inject constructor(
         val previousStatus = orderDao.getById(order.id)?.orderStatus
         db.withTransaction {
             val now = nowUtcMillis()
+            val invoiceSeq = if (
+                order.orderStatus != OrderStatus.DRAFT.value &&
+                (order.invoiceSeq == null || order.invoiceSeq <= 0)
+            ) {
+                invoiceNumberService.takeNextInvoiceNumberInCurrentTx()
+            } else {
+                order.invoiceSeq
+            }
 
             val enriched = order.copy(
+                invoiceSeq = invoiceSeq,
                 productCategories = orderItemDao.getCategoriesForOrder(order.id),
                 owners = orderItemDao.getOwnersForOrder(order.id),
                 updatedAt = now
@@ -87,9 +96,15 @@ class OrderRepositoryImpl @Inject constructor(
             receivedAt = nowUtcMillis()
         )
 
-        createOrderWithItems(entity)
+        db.withTransaction {
+            orderDao.upsert(entity)
+            updateCustomerSummary(customerId)
+        }
         return orderId
     }
+
+    override suspend fun getNextInvoiceNumber(): Long =
+        invoiceNumberService.peekNextInvoiceNumber()
 
 
     // ---------------------------------------------------------------------
