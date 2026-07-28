@@ -58,6 +58,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -115,6 +116,7 @@ fun ProductsSectionCard(
 
     var expanded by remember { mutableStateOf(false) }
     var addPaymentOpen by remember { mutableStateOf(false) }
+    var adjustTotalOpen by remember { mutableStateOf(false) }
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
 
     val hasAdjusted = adjustedAmount != 0
@@ -141,7 +143,10 @@ fun ProductsSectionCard(
     // ---------------------------------------------------------------
 
     LaunchedEffect(expanded) {
-        if (!expanded) addPaymentOpen = false
+        if (!expanded) {
+            addPaymentOpen = false
+            adjustTotalOpen = false
+        }
     }
 
     val rotation by animateFloatAsState(
@@ -204,21 +209,56 @@ fun ProductsSectionCard(
                             }
                         }
 
+                    }
+
+                    if (!addPaymentOpen && !adjustTotalOpen && adjustedAmount <= 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                        ) {
+                            FilledTonalButton(
+                                onClick = { addPaymentOpen = true },
+                                modifier = Modifier.height(40.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp)
+                            ) {
+                                Icon(Icons.Outlined.Add, null, Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Add Payment", style = MaterialTheme.typography.labelSmall)
+                            }
+                            FilledTonalButton(
+                                onClick = { adjustTotalOpen = true },
+                                modifier = Modifier.height(40.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp)
+                            ) {
+                                Icon(Icons.Outlined.Edit, null, Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Adjust total", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+
+                    if (!adjustTotalOpen) {
                         AddPaymentRow(
                             isOpen = addPaymentOpen,
                             onToggle = { addPaymentOpen = !addPaymentOpen },
+                            showLauncher = adjustedAmount > 0,
                             paymentCount = payments.size,
                             onAdd = onAddPayment
                         )
                     }
 
-                    AdjustTotalRow(
-                        calculatedTotal = totalAmount,
-                        adjustedAmount = adjustedAmount,
-                        isSaving = isSavingAdjustment,
-                        saveVersion = adjustmentSaveVersion,
-                        onSave = onSaveAdjustedTotal
-                    )
+                    if (!addPaymentOpen) {
+                        AdjustTotalRow(
+                            calculatedTotal = totalAmount,
+                            adjustedAmount = adjustedAmount,
+                            isSaving = isSavingAdjustment,
+                            saveVersion = adjustmentSaveVersion,
+                            editing = adjustTotalOpen,
+                            onEditingChange = { adjustTotalOpen = it },
+                            showLauncher = adjustedAmount > 0,
+                            onSave = onSaveAdjustedTotal
+                        )
+                    }
                 }
             }
 
@@ -432,9 +472,11 @@ fun AdjustTotalRow(
     adjustedAmount: Int,
     isSaving: Boolean,
     saveVersion: Long,
+    editing: Boolean,
+    onEditingChange: (Boolean) -> Unit,
+    showLauncher: Boolean,
     onSave: (Int) -> Unit
 ) {
-    var editing by remember { mutableStateOf(false) }
     var submitted by remember { mutableStateOf(false) }
     var localValue by remember {
         val initial = (adjustedAmount.takeIf { it > 0 } ?: calculatedTotal).toString()
@@ -457,7 +499,7 @@ fun AdjustTotalRow(
     LaunchedEffect(saveVersion) {
         if (submitted) {
             submitted = false
-            editing = false
+            onEditingChange(false)
             keyboard?.hide()
         }
     }
@@ -491,7 +533,7 @@ fun AdjustTotalRow(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             FilledTonalButton(
-                                onClick = { editing = true },
+                                onClick = { onEditingChange(true) },
                                 enabled = !isSaving,
                                 modifier = Modifier.weight(1f).height(40.dp),
                                 contentPadding = PaddingValues(horizontal = 10.dp)
@@ -523,13 +565,13 @@ fun AdjustTotalRow(
                             }
                         }
                     }
-                } else {
+                } else if (showLauncher) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
                         FilledTonalButton(
-                            onClick = { editing = true },
+                            onClick = { onEditingChange(true) },
                             modifier = Modifier.height(40.dp),
                             contentPadding = PaddingValues(horizontal = 10.dp)
                         ) {
@@ -570,6 +612,19 @@ fun AdjustTotalRow(
                             mode = FieldMode.Integer,
                             onValueChange = { updated ->
                                 localValue = updated
+                            },
+                            imeActionOverride = ImeAction.Done,
+                            onDone = {
+                                val enteredAmount = localValue.text.toIntOrNull()
+                                val canSave = enteredAmount != null &&
+                                    enteredAmount > 0 &&
+                                    enteredAmount != calculatedTotal &&
+                                    enteredAmount != adjustedAmount &&
+                                    !isSaving
+                                if (canSave) {
+                                    submitted = true
+                                    onSave(enteredAmount!!)
+                                }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -617,7 +672,7 @@ fun AdjustTotalRow(
 
                         FilledTonalButton(
                             onClick = {
-                                editing = false
+                                onEditingChange(false)
                                 submitted = false
                                 keyboard?.hide()
                             },
@@ -738,6 +793,7 @@ private val ADD_ROW_MIN_HEIGHT = 40.dp
 fun AddPaymentRow(
     isOpen: Boolean,
     onToggle: () -> Unit,
+    showLauncher: Boolean,
     paymentCount: Int,
     onAdd: (amount: Int, atUtcMillis: Long) -> Unit
 ) {
@@ -775,6 +831,14 @@ fun AddPaymentRow(
 
     val pattern = DateFormat.DEFAULT_DATE_ONLY.pattern
     val formatter = DateTimeFormatter.ofPattern(pattern)
+    val submitPayment = {
+        val enteredAmount = amount.text.toIntOrNull()
+        if (enteredAmount != null && enteredAmount > 0 && !isSubmitting) {
+            countBeforeSubmit = paymentCount
+            isSubmitting = true
+            onAdd(enteredAmount, date.toUtcMillisForLocalDay())
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -794,30 +858,30 @@ fun AddPaymentRow(
         ) { open ->
 
             if (!open) {
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    FilledTonalButton(
-                        onClick = onToggle,
-                        modifier = Modifier.height(rowHeight),
-                        contentPadding = PaddingValues(horizontal = 10.dp)
+                if (showLauncher) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Icon(
-                            Icons.Outlined.Add,
-                            null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            "Add Payment",
-                            style = MaterialTheme.typography.labelSmall,
-                            maxLines = 1
-                        )
+                        FilledTonalButton(
+                            onClick = onToggle,
+                            modifier = Modifier.height(rowHeight),
+                            contentPadding = PaddingValues(horizontal = 10.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Add,
+                                null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "Add Payment",
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
-
             } else {
 
                 Column(
@@ -837,6 +901,8 @@ fun AddPaymentRow(
                         label = "Amount",
                         mode = FieldMode.Integer,
                         onValueChange = { amount = it },
+                        imeActionOverride = ImeAction.Done,
+                        onDone = submitPayment,
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 56.dp)
@@ -878,15 +944,7 @@ fun AddPaymentRow(
 
                         // Save
                         FilledTonalButton(
-                            onClick = {
-                                val enteredAmount = amount.text.toIntOrNull()
-                                if (enteredAmount != null && enteredAmount > 0 && !isSubmitting) {
-                                    countBeforeSubmit = paymentCount
-                                    isSubmitting = true
-                                    val utcMillis = date.toUtcMillisForLocalDay()
-                                    onAdd(enteredAmount, utcMillis)
-                                }
-                            },
+                            onClick = submitPayment,
                             enabled = amount.text.toIntOrNull()?.let { it > 0 } == true &&
                                 !isSubmitting,
                             modifier = Modifier
