@@ -47,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -206,6 +207,7 @@ fun ProductsSectionCard(
                         AddPaymentRow(
                             isOpen = addPaymentOpen,
                             onToggle = { addPaymentOpen = !addPaymentOpen },
+                            paymentCount = payments.size,
                             onAdd = onAddPayment
                         )
                     }
@@ -522,37 +524,26 @@ fun AdjustTotalRow(
                         }
                     }
                 } else {
-                    Column(
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Text(
-                            text = "Total Adjustment",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
+                        FilledTonalButton(
+                            onClick = { editing = true },
+                            modifier = Modifier.height(40.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp)
                         ) {
-                            FilledTonalButton(
-                                onClick = { editing = true },
-                                modifier = Modifier.height(40.dp),
-                                contentPadding = PaddingValues(horizontal = 10.dp)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Edit,
-                                    null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    "Adjust total",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    maxLines = 1
-                                )
-                            }
+                            Icon(
+                                Icons.Outlined.Edit,
+                                null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "Adjust total",
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1
+                            )
                         }
                     }
                 }
@@ -747,20 +738,36 @@ private val ADD_ROW_MIN_HEIGHT = 40.dp
 fun AddPaymentRow(
     isOpen: Boolean,
     onToggle: () -> Unit,
+    paymentCount: Int,
     onAdd: (amount: Int, atUtcMillis: Long) -> Unit
 ) {
     var amount by remember { mutableStateOf(TextFieldValue("")) }
     var date by remember { mutableStateOf(LocalDate.now(ZoneId.systemDefault())) }
     var showPicker by remember { mutableStateOf(false) }
+    var isSubmitting by remember { mutableStateOf(false) }
+    var countBeforeSubmit by remember { mutableIntStateOf(paymentCount) }
     val amountFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(isOpen) {
         if (isOpen) {
+            if (amount.text.toIntOrNull() == 0) {
+                amount = TextFieldValue("")
+            }
             amount = amount.copy(selection = TextRange(amount.text.length))
             delay(180)
             amountFocus.requestFocus()
             keyboard?.show()
+        }
+    }
+
+    LaunchedEffect(paymentCount) {
+        if (isSubmitting && paymentCount > countBeforeSubmit) {
+            isSubmitting = false
+            amount = TextFieldValue("")
+            date = LocalDate.now(ZoneId.systemDefault())
+            keyboard?.hide()
+            onToggle()
         }
     }
 
@@ -872,21 +879,33 @@ fun AddPaymentRow(
                         // Save
                         FilledTonalButton(
                             onClick = {
-                                if (amount.text.isNotBlank()) {
+                                val enteredAmount = amount.text.toIntOrNull()
+                                if (enteredAmount != null && enteredAmount > 0 && !isSubmitting) {
+                                    countBeforeSubmit = paymentCount
+                                    isSubmitting = true
                                     val utcMillis = date.toUtcMillisForLocalDay()
-                                    onAdd(amount.text.toInt(), utcMillis)
-
-                                    amount = TextFieldValue("")
-                                    date = LocalDate.now(ZoneId.systemDefault())
-                                    onToggle()
+                                    onAdd(enteredAmount, utcMillis)
                                 }
                             },
+                            enabled = amount.text.toIntOrNull()?.let { it > 0 } == true &&
+                                !isSubmitting,
                             modifier = Modifier
                                 .weight(0.9f)
                                 .height(rowHeight),
                             contentPadding = PaddingValues(horizontal = 8.dp)
                         ) {
-                            Icon(Icons.Outlined.Add, null, modifier = Modifier.size(16.dp))
+                            if (isSubmitting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Outlined.Add,
+                                    null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 "Save",
@@ -897,7 +916,11 @@ fun AddPaymentRow(
 
                         // Close
                         FilledTonalButton(
-                            onClick = onToggle,
+                            onClick = {
+                                isSubmitting = false
+                                onToggle()
+                            },
+                            enabled = !isSubmitting,
                             modifier = Modifier
                                 .weight(0.9f)
                                 .height(rowHeight),
