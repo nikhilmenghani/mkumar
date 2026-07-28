@@ -50,7 +50,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        backupScheduler.schedulePeriodic()
         enableEdgeToEdge()
         setContent {
             CompositionLocalProvider(
@@ -78,6 +77,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        // Reconcile periodic work whenever the app returns to the foreground and
+        // enqueue one unique catch-up if Android deferred the previous run.
+        backupScheduler.schedulePeriodic()
         AppUpdateManager.checkOnAppStart(this)
         customerViewModel.refreshVersionOnForeground(getCurrentVersion(this))
     }

@@ -10,23 +10,37 @@ import androidx.work.workDataOf
 import com.mkumar.backup.BackupCoordinator
 import com.mkumar.backup.BackupResult
 import com.mkumar.backup.BackupTrigger
+import com.mkumar.data.PreferencesManager
 import com.mkumar.notification.NotificationUtility
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 @HiltWorker
 class DatabaseBackupWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
-    private val coordinator: BackupCoordinator
+    private val coordinator: BackupCoordinator,
+    private val preferences: PreferencesManager
 ) : CoroutineWorker(appContext, params) {
 
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): Result = BACKUP_MUTEX.withLock {
         val trigger = inputData.getString(TRIGGER_KEY)
             ?.let { runCatching { BackupTrigger.valueOf(it) }.getOrNull() }
             ?: BackupTrigger.SCHEDULED
+        if (!preferences.backupPrefs.enabled) {
+            return@withLock Result.success()
+        }
+        if (trigger == BackupTrigger.SCHEDULED && !scheduledBackupIsDue()) {
+            return@withLock Result.success(
+                workDataOf(PROGRESS_STAGE_KEY to "Backup is not due yet")
+            )
+        }
         setForeground(backupForegroundInfo("Preparing database backup", 0))
-        return when (val result = coordinator.backup(trigger) { stage, percent ->
+        when (val result = coordinator.backup(trigger) { stage, percent ->
             setProgress(workDataOf(PROGRESS_STAGE_KEY to stage, PROGRESS_PERCENT_KEY to percent))
             NotificationUtility.updateProgress(
                 applicationContext,
@@ -51,6 +65,17 @@ class DatabaseBackupWorker @AssistedInject constructor(
         }
     }
 
+    private fun scheduledBackupIsDue(): Boolean {
+        val intervalHours = preferences.backupPrefs.intervalHours
+        if (intervalHours <= 0 || preferences.githubPrefs.token.isBlank()) return false
+        val lastSuccessful = preferences.backupPrefs.lastSuccessfulBackupAt
+            .takeIf(String::isNotBlank)
+            ?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() }
+            ?: return true
+        return System.currentTimeMillis() - lastSuccessful >=
+            TimeUnit.HOURS.toMillis(intervalHours.toLong())
+    }
+
     private fun backupForegroundInfo(stage: String, percent: Int): ForegroundInfo =
         ForegroundInfo(
             NotificationUtility.BACKUP_NOTIFICATION_ID,
@@ -65,6 +90,7 @@ class DatabaseBackupWorker @AssistedInject constructor(
         )
 
     companion object {
+        private val BACKUP_MUTEX = Mutex()
         const val TRIGGER_KEY = "backup_trigger"
         const val PROGRESS_STAGE_KEY = "backup_progress_stage"
         const val PROGRESS_PERCENT_KEY = "backup_progress_percent"

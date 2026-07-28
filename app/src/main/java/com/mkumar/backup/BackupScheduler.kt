@@ -15,6 +15,7 @@ import com.mkumar.data.PreferencesManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
 import java.util.UUID
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,7 +25,9 @@ class BackupScheduler @Inject constructor(
     private val preferences: PreferencesManager
 ) {
     companion object {
-        private const val PERIODIC_WORK = "mkumar_database_backup_periodic"
+        private const val PERIODIC_WORK = "mkumar_database_backup_periodic_v2"
+        private const val LEGACY_PERIODIC_WORK = "mkumar_database_backup_periodic"
+        private const val CATCH_UP_WORK = "mkumar_database_backup_catch_up"
         private const val EVENT_WORK = "mkumar_database_backup_event"
         private const val MANUAL_WORK = "mkumar_database_backup_manual"
         private const val ORDER_COMPLETED_BACKUP_ENABLED = false
@@ -39,8 +42,10 @@ class BackupScheduler @Inject constructor(
         val intervalHours = preferences.backupPrefs.intervalHours
         if (!preferences.backupPrefs.enabled || intervalHours <= 0 || preferences.githubPrefs.token.isBlank()) {
             WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK)
+            WorkManager.getInstance(context).cancelUniqueWork(CATCH_UP_WORK)
             return
         }
+        WorkManager.getInstance(context).cancelUniqueWork(LEGACY_PERIODIC_WORK)
         val request = PeriodicWorkRequestBuilder<DatabaseBackupWorker>(intervalHours.toLong(), TimeUnit.HOURS)
             .setConstraints(constraints())
             .setInputData(input(BackupTrigger.SCHEDULED))
@@ -53,6 +58,7 @@ class BackupScheduler @Inject constructor(
             if (updateExisting) ExistingPeriodicWorkPolicy.UPDATE else ExistingPeriodicWorkPolicy.KEEP,
             request
         )
+        enqueueCatchUpIfOverdue(intervalHours)
     }
 
     fun enqueueManual(): UUID {
@@ -95,6 +101,31 @@ class BackupScheduler @Inject constructor(
             request
         )
         return request.id
+    }
+
+    private fun enqueueCatchUpIfOverdue(intervalHours: Int) {
+        if (!isBackupOverdue(intervalHours)) return
+        val request = OneTimeWorkRequestBuilder<DatabaseBackupWorker>()
+            .setConstraints(constraints())
+            .setInputData(input(BackupTrigger.SCHEDULED))
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .addTag(BACKUP_WORK_TAG)
+            .addTag(SCHEDULED_WORK_TAG)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            CATCH_UP_WORK,
+            ExistingWorkPolicy.KEEP,
+            request
+        )
+    }
+
+    private fun isBackupOverdue(intervalHours: Int): Boolean {
+        val lastSuccessful = preferences.backupPrefs.lastSuccessfulBackupAt
+            .takeIf(String::isNotBlank)
+            ?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() }
+            ?: return true
+        val intervalMillis = TimeUnit.HOURS.toMillis(intervalHours.toLong())
+        return System.currentTimeMillis() - lastSuccessful >= intervalMillis
     }
 
     private fun constraints() = Constraints.Builder()
