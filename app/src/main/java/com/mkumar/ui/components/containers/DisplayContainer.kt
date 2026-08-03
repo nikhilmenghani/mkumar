@@ -1,6 +1,12 @@
 package com.mkumar.ui.components.containers
 
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BatterySaver
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.Nightlight
@@ -45,12 +51,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,6 +86,7 @@ import java.time.Duration
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+@SuppressLint("BatteryLife")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
@@ -90,6 +101,21 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
     var selectedBackup by remember { mutableStateOf<RestoreOption?>(null) }
     var backupToDelete by remember { mutableStateOf<RestoreOption?>(null) }
     var developerTapCount by remember { mutableStateOf(0) }
+    val powerManager = remember { context.getSystemService(PowerManager::class.java) }
+    var ignoresBatteryOptimizations by remember {
+        mutableStateOf(powerManager.isIgnoringBatteryOptimizations(context.packageName))
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, powerManager) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                ignoresBatteryOptimizations =
+                    powerManager.isIgnoringBatteryOptimizations(context.packageName)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val dialog = globalClass.singleChoiceDialog
     val textDialog = globalClass.singleTextDialog
@@ -559,6 +585,25 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                     description = "Enter the GitHub repository name",
                     text = githubPrefs.githubRepo,
                     onConfirm = { githubPrefs.githubRepo = it.trim() }
+                )
+            }
+        )
+    }
+
+    Container(title = stringResource(R.string.settings_background)) {
+        PreferenceItem(
+            label = stringResource(R.string.settings_battery_optimization),
+            supportingText = stringResource(
+                if (ignoresBatteryOptimizations) R.string.settings_battery_optimization_allowed
+                else R.string.settings_battery_optimization_restricted
+            ),
+            icon = Icons.Rounded.BatterySaver,
+            onClick = {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                        Uri.parse("package:${context.packageName}")
+                    )
                 )
             }
         )
