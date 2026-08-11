@@ -183,6 +183,12 @@ object UpdatePrefs {
 }
 
 object DeveloperPrefs {
+    var biometricLockEnabled by dataStoreMutableState(
+        keyName = "biometricLockEnabled",
+        defaultValue = false,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+
     var developerOptionsEnabled by dataStoreMutableState(
         keyName = "developerOptionsEnabled",
         defaultValue = false,

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.Nightlight
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material.icons.rounded.CloudSync
@@ -80,6 +81,7 @@ import com.mkumar.ui.components.dialogs.ConfirmActionDialog
 import com.mkumar.backup.RestoreOption
 import com.mkumar.backup.defaultBackupDeviceName
 import com.mkumar.update.AppUpdateManager
+import com.mkumar.security.canUseAppLock
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import java.time.Instant
 import java.time.Duration
@@ -313,6 +315,19 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
 
     val developerOptionsContent: @Composable () -> Unit = {
         Container(title = "Developer Options") {
+            PreferenceItem(
+                label = "Biometric lock",
+                supportingText = "Require biometrics or the device screen lock when opening the app",
+                icon = Icons.Rounded.Fingerprint,
+                switchState = developerPrefs.biometricLockEnabled,
+                onSwitchChange = { enabled ->
+                    if (!enabled || canUseAppLock(context)) {
+                        developerPrefs.biometricLockEnabled = enabled
+                    } else {
+                        Toast.makeText(context, "Set up a device screen lock first", Toast.LENGTH_LONG).show()
+                    }
+                }
+            )
             PreferenceItem(
                 label = "Hide developer options",
                 supportingText = "Tap the developer name seven times to show them again",

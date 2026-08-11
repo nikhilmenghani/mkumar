@@ -34,6 +34,8 @@ import com.mkumar.update.AppUpdateManager
 import com.mkumar.update.UpdateActionReceiver
 import com.mkumar.worker.DownloadWorker
 import com.mkumar.notification.NotificationUtility
+import com.mkumar.security.AppLock
+import com.mkumar.security.canUseAppLock
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -56,12 +58,15 @@ class MainActivity : ComponentActivity() {
                 LocalPreferencesManager provides preferencesManager
             ) {
                 NikTheme {
-                    if (Build.VERSION.RELEASE.toInt() <= 13 || Permissions.hasAllRequiredPermissions(this)) {
-                        ScreenNavigator(customerViewModel)
-                    } else {
-                        PermissionsScreen(
-                            onAllPermissionsGranted = ::onAllPermissionsGranted
-                        )
+                    AppLock(
+                        preferencesManager.developerPrefs.biometricLockEnabled && canUseAppLock(this@MainActivity),
+                        this@MainActivity
+                    ) {
+                        if (Build.VERSION.RELEASE.toInt() <= 13 || Permissions.hasAllRequiredPermissions(this)) {
+                            ScreenNavigator(customerViewModel)
+                        } else {
+                            PermissionsScreen(onAllPermissionsGranted = ::onAllPermissionsGranted)
+                        }
                     }
                 }
             }
