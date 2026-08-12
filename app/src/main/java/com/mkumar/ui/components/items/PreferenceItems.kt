@@ -333,8 +333,6 @@ fun PreferenceItem(
     switchState: Boolean,
     onSwitchChange: (switched: Boolean) -> Unit
 ) {
-    var switch by remember { mutableStateOf(switchState) }
-
     PreferenceItem(
         label = label,
         supportingText = supportingText ?: "",
@@ -343,17 +341,13 @@ fun PreferenceItem(
         enabled = enabled,
         trailingContent = {
             Switch(
-                checked = switch,
+                checked = switchState,
                 enabled = enabled,
-                onCheckedChange = {
-                    switch = it
-                    onSwitchChange(it)
-                }
+                onCheckedChange = onSwitchChange
             )
         },
         onClick = {
-            switch = !switch
-            onSwitchChange(switch)
+            onSwitchChange(!switchState)
         }
     )
 }

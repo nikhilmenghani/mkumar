@@ -206,4 +206,10 @@ object DeveloperPrefs {
         defaultValue = false,
         getPreferencesKey = { booleanPreferencesKey(it) }
     )
+
+    var clearDuesEnabled by dataStoreMutableState(
+        keyName = "clearDuesEnabled",
+        defaultValue = false,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
 }

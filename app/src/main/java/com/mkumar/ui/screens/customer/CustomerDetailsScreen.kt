@@ -70,6 +70,7 @@ fun CustomerDetailsScreen(
     // Snackbar + one-off effects
     val snackbarHostState = remember { SnackbarHostState() }
     val (pendingDeleteOrderId, setPendingDeleteOrderId) = remember { mutableStateOf<String?>(null) }
+    var pendingClearDues by remember { mutableStateOf<OrderRowAction.ClearDues?>(null) }
     LaunchedEffect(Unit) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
@@ -248,6 +249,7 @@ fun CustomerDetailsScreen(
                                 is OrderRowAction.Delete -> {
                                     setPendingDeleteOrderId(action.orderId)
                                 }
+                                is OrderRowAction.ClearDues -> pendingClearDues = action
                                 is OrderRowAction.Share -> viewModel.onIntent(CustomerDetailsIntent.ShareOrder(action.orderId, action.invoiceNumber))
                                 is OrderRowAction.ShareOnWhatsApp -> viewModel.onIntent(
                                     CustomerDetailsIntent.ShareOrderOnWhatsApp(
@@ -275,6 +277,20 @@ fun CustomerDetailsScreen(
                             setPendingDeleteOrderId(null)
                         },
                         onDismiss = { setPendingDeleteOrderId(null) }
+                    )
+                }
+                pendingClearDues?.let { action ->
+                    ConfirmActionDialog(
+                        title = "Clear dues",
+                        message = "Record a payment of ₹${action.amountDue} for this order?",
+                        confirmLabel = "Record payment",
+                        dismissLabel = "Cancel",
+                        highlightConfirmAsDestructive = false,
+                        onConfirm = {
+                            viewModel.onIntent(CustomerDetailsIntent.ClearDues(action.orderId))
+                            pendingClearDues = null
+                        },
+                        onDismiss = { pendingClearDues = null }
                     )
                 }
             }

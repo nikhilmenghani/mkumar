@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.common.constant.CustomerDetailsConstants
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.data.PreferencesManager
 import com.mkumar.domain.invoice.InvoiceManager
 import com.mkumar.domain.pricing.PricingService
@@ -13,6 +14,7 @@ import com.mkumar.model.CustomerDetailsUiState
 import com.mkumar.model.UiCustomer
 import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
+import com.mkumar.repository.PaymentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -34,6 +36,7 @@ import javax.inject.Inject
 class CustomerDetailsViewModel @Inject constructor(
     private val customerRepo: CustomerRepository,
     private val orderRepo: OrderRepository,
+    private val paymentRepo: PaymentRepository,
     private val pricing: PricingService,
     private val invoiceManager: InvoiceManager,
     private val preferencesManager: PreferencesManager,
@@ -118,6 +121,7 @@ class CustomerDetailsViewModel @Inject constructor(
         when (intent) {
             is CustomerDetailsIntent.CreateOrder -> createOrder(intent.customerId)
             is CustomerDetailsIntent.DeleteOrder -> deleteOrder(intent.orderId)
+            is CustomerDetailsIntent.ClearDues -> clearDues(intent.orderId)
             is CustomerDetailsIntent.ShareOrder -> shareOrder(intent.orderId, intent.invoiceNumber)
             is CustomerDetailsIntent.ShareOrderOnWhatsApp ->
                 shareOrderOnWhatsApp(intent.orderId, intent.invoiceNumber, intent.phone)
@@ -167,6 +171,20 @@ class CustomerDetailsViewModel @Inject constructor(
                     _effects.emit(CustomerDetailsEffect.ShowMessage(r.message))
                 is InvoiceManager.InvoiceResult.Error ->
                     _effects.emit(CustomerDetailsEffect.ShowMessage("Failed: ${r.throwable.message}"))
+            }
+        }
+    }
+
+    private fun clearDues(orderId: String) {
+        viewModelScope.launch {
+            try {
+                val amountPaid = paymentRepo.clearDues(orderId, nowUtcMillis())
+                emitMessage(
+                    if (amountPaid > 0) "Payment of ₹$amountPaid recorded."
+                    else "This order has no payment due."
+                )
+            } catch (t: Throwable) {
+                emitMessage("Failed to clear dues: ${t.message}")
             }
         }
     }

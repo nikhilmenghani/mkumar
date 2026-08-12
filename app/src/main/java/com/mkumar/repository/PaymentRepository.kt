@@ -9,5 +9,7 @@ interface PaymentRepository {
 
     suspend fun addPayment(orderId: String, amount: Int, paymentAt: Long)
 
+    suspend fun clearDues(orderId: String, paymentAt: Long): Int
+
     suspend fun deletePaymentById(id: String)
 }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CardDefaults
@@ -76,6 +77,9 @@ fun OrderListItem(
     val showWhatsAppShare = developerPrefs.developerOptionsEnabled &&
         developerPrefs.experimentalFeaturesEnabled &&
         developerPrefs.whatsappSharingEnabled
+    val showClearDues = developerPrefs.developerOptionsEnabled &&
+        developerPrefs.experimentalFeaturesEnabled &&
+        developerPrefs.clearDuesEnabled
 
     val statusAccent = if (row.remainingBalance > 0) {
         MaterialTheme.colorScheme.error
@@ -112,6 +116,17 @@ fun OrderListItem(
                         onClick = { onAction(OrderRowAction.ViewInvoice(row.id, row.invoiceNumber)) }
                     )
                 )
+                if (showClearDues && row.remainingBalance > 0) {
+                    add(
+                        ProMenuItem(
+                            title = "Clear dues",
+                            supportingText = "Record payment of ₹${row.remainingBalance}",
+                            icon = Icons.Outlined.Payments,
+                            startNewGroup = true,
+                            onClick = { onAction(OrderRowAction.ClearDues(row.id, row.remainingBalance)) }
+                        )
+                    )
+                }
                 add(
                     ProMenuItem(
                         title = "Share",

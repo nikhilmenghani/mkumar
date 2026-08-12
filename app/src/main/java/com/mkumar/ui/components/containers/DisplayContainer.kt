@@ -1,6 +1,7 @@
 package com.mkumar.ui.components.containers
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Science
+import androidx.compose.material.icons.rounded.Payments
 import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.automirrored.rounded.ListAlt
 import androidx.compose.material3.ModalBottomSheet
@@ -82,6 +84,8 @@ import com.mkumar.backup.RestoreOption
 import com.mkumar.backup.defaultBackupDeviceName
 import com.mkumar.update.AppUpdateManager
 import com.mkumar.security.canUseAppLock
+import com.mkumar.security.authenticateForAppLock
+import com.mkumar.security.markAppLockSessionAuthenticated
 import com.mkumar.common.manager.PackageManager.getCurrentVersion
 import java.time.Instant
 import java.time.Duration
@@ -321,10 +325,29 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 icon = Icons.Rounded.Fingerprint,
                 switchState = developerPrefs.biometricLockEnabled,
                 onSwitchChange = { enabled ->
-                    if (!enabled || canUseAppLock(context)) {
-                        developerPrefs.biometricLockEnabled = enabled
-                    } else {
+                    if (!enabled) {
+                        developerPrefs.biometricLockEnabled = false
+                    } else if (!canUseAppLock(context)) {
                         Toast.makeText(context, "Set up a device screen lock first", Toast.LENGTH_LONG).show()
+                    } else {
+                        val activity = context as? Activity
+                        if (activity == null) {
+                            Toast.makeText(context, "Unable to start authentication", Toast.LENGTH_LONG).show()
+                        } else {
+                            authenticateForAppLock(
+                                activity = activity,
+                                title = "Enable biometric lock",
+                                subtitle = "Authenticate once to verify app lock",
+                                onSuccess = {
+                                    markAppLockSessionAuthenticated()
+                                    developerPrefs.biometricLockEnabled = true
+                                },
+                                onError = { message ->
+                                    developerPrefs.biometricLockEnabled = false
+                                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                }
+                            )
+                        }
                     }
                 }
             )
@@ -425,6 +448,13 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                 }
             )
             if (developerPrefs.experimentalFeaturesEnabled) {
+                PreferenceItem(
+                    label = "Clear dues",
+                    supportingText = if (developerPrefs.clearDuesEnabled) "Quick payment recording is enabled" else "Quick payment recording is disabled",
+                    icon = Icons.Rounded.Payments,
+                    switchState = developerPrefs.clearDuesEnabled,
+                    onSwitchChange = { developerPrefs.clearDuesEnabled = it }
+                )
                 PreferenceItem(
                     label = "Invoice sharing",
                     supportingText = if (developerPrefs.whatsappSharingEnabled) "Direct invoice sharing is enabled" else "Direct invoice sharing is disabled",

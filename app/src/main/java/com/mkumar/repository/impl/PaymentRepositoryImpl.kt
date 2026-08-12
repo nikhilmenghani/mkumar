@@ -48,6 +48,26 @@ class PaymentRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun clearDues(orderId: String, paymentAt: Long): Int =
+        withContext(Dispatchers.IO) {
+            db.withTransaction {
+                val amountDue = orderDao.getById(orderId)?.remainingBalance
+                    ?.coerceAtLeast(0) ?: 0
+                if (amountDue == 0) return@withTransaction 0
+
+                dao.insertPayment(
+                    PaymentEntity(
+                        id = java.util.UUID.randomUUID().toString(),
+                        orderId = orderId,
+                        amountPaid = amountDue,
+                        paymentAt = paymentAt
+                    )
+                )
+                recomputeOrderTotals(orderId)
+                amountDue
+            }
+        }
+
     override suspend fun deletePaymentById(id: String) {
         withContext(Dispatchers.IO) {
             db.withTransaction {

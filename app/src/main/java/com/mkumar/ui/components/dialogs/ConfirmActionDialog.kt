@@ -1,20 +1,23 @@
 package com.mkumar.ui.components.dialogs
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -44,10 +47,13 @@ fun ConfirmActionDialog(
             }
         },
         title = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
         },
         text = {
             Text(
@@ -62,18 +68,25 @@ fun ConfirmActionDialog(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 FilledTonalButton(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(0.8f),
+                    shape = MaterialTheme.shapes.large,
+                    contentPadding = ButtonDefaults.ContentPadding,
                     onClick = onDismiss
                 ) {
                     Text(
-                        dismissLabel,
-                        style = MaterialTheme.typography.labelLarge
+                        text = dismissLabel,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center,
+                        overflow = TextOverflow.Clip,
+                        softWrap = false
                     )
                 }
                 Button(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1.35f),
+                    shape = MaterialTheme.shapes.large,
+                    contentPadding = ButtonDefaults.ContentPadding,
                     colors = if (highlightConfirmAsDestructive) {
                         ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error,
@@ -85,16 +98,21 @@ fun ConfirmActionDialog(
                     onClick = onConfirm
                 ) {
                     Text(
-                        confirmLabel,
-                        style = MaterialTheme.typography.labelLarge
+                        text = confirmLabel,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center,
+                        overflow = TextOverflow.Clip,
+                        softWrap = false
                     )
                 }
             }
         },
         dismissButton = {},
         shape = MaterialTheme.shapes.extraLarge,
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 8.dp
     )
 }
 

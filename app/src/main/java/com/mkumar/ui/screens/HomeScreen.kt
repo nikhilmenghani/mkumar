@@ -90,6 +90,7 @@ fun HomeScreen(
 
     var fabBlockHeight by remember { mutableStateOf(0.dp) }
     var pendingDeleteOrderId by remember { mutableStateOf<String?>(null) }
+    var pendingClearDues by remember { mutableStateOf<Pair<String, Int>?>(null) }
 
     /* ------------------------------------------------------------------ */
     /* BOOTSTRAP + EFFECTS                                                 */
@@ -320,6 +321,9 @@ fun HomeScreen(
                     onWhatsAppShareClick = { orderId, invoice, phone ->
                         vm.shareInvoiceOnWhatsApp(orderId, invoice.toString(), phone)
                     },
+                    onClearDuesClick = { orderId, amountDue ->
+                        pendingClearDues = orderId to amountDue
+                    },
                     onDeleteClick = { pendingDeleteOrderId = it },
                     onOpenCustomer = {
                         navController.navigate(Routes.customerDetail(it))
@@ -341,6 +345,19 @@ fun HomeScreen(
                 pendingDeleteOrderId = null
             },
             onDismiss = { pendingDeleteOrderId = null }
+        )
+    }
+    pendingClearDues?.let { (orderId, amountDue) ->
+        ConfirmActionDialog(
+            title = "Clear dues",
+            message = "Record a payment of ₹$amountDue for this order?",
+            confirmLabel = "Record payment",
+            dismissLabel = "Cancel",
+            onConfirm = {
+                vm.clearDues(orderId)
+                pendingClearDues = null
+            },
+            onDismiss = { pendingClearDues = null }
         )
     }
 }

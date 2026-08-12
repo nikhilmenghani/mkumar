@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -58,7 +59,8 @@ fun RecentOrdersList(
     onShareClick: (orderId: String, invoiceNumber: Long) -> Unit,
     onWhatsAppShareClick: (orderId: String, invoiceNumber: Long, phone: String) -> Unit,
     onDeleteClick: (orderId: String) -> Unit,
-    onOpenCustomer: (customerId: String) -> Unit
+    onOpenCustomer: (customerId: String) -> Unit,
+    onClearDuesClick: ((orderId: String, amountDue: Int) -> Unit)? = null
 ) {
     Box(
         modifier = Modifier
@@ -86,6 +88,10 @@ fun RecentOrdersList(
                     onWhatsAppShare = {
                         onWhatsAppShareClick(order.id, order.invoiceNumber, order.customerPhone)
                     },
+                    onClearDues = {
+                        onClearDuesClick?.invoke(order.id, order.remainingBalance)
+                    },
+                    clearDuesAvailable = onClearDuesClick != null,
                     onDelete = {
                         onDeleteClick(order.id)
                     },
@@ -193,6 +199,8 @@ fun RecentOrderCardCompact(
     onInvoice: () -> Unit,
     onShare: () -> Unit,
     onWhatsAppShare: () -> Unit,
+    onClearDues: () -> Unit,
+    clearDuesAvailable: Boolean,
     onDelete: () -> Unit,
     onOpenCustomer : () -> Unit
 ) {
@@ -201,6 +209,10 @@ fun RecentOrderCardCompact(
     val showWhatsAppShare = developerPrefs.developerOptionsEnabled &&
         developerPrefs.experimentalFeaturesEnabled &&
         developerPrefs.whatsappSharingEnabled
+    val showClearDues = clearDuesAvailable &&
+        developerPrefs.developerOptionsEnabled &&
+        developerPrefs.experimentalFeaturesEnabled &&
+        developerPrefs.clearDuesEnabled
     val haptics = LocalHapticFeedback.current
 
     Box(
@@ -227,34 +239,48 @@ fun RecentOrderCardCompact(
             ProOverflowMenuIcons(
                 expanded = menuExpanded,
                 onExpandedChange = { menuExpanded = it },
-                items = listOf(
+                items = buildList {
+                    add(
                     ProMenuItem(
                         title = "Invoice",
                         supportingText = "Generate or view PDF",
                         icon = Icons.Outlined.PictureAsPdf,
                         onClick = { onInvoice() }
-                    ),
+                    ))
+                    if (showClearDues && order.remainingBalance > 0) add(
+                        ProMenuItem(
+                            title = "Clear dues",
+                            supportingText = "Record payment of ₹${order.remainingBalance}",
+                            icon = Icons.Outlined.Payments,
+                            startNewGroup = true,
+                            onClick = onClearDues
+                        )
+                    )
+                    add(
                     ProMenuItem(
                         title = "Share",
                         supportingText = "Share order details",
                         icon = Icons.Outlined.Share,
                         startNewGroup = true,
                         onClick = { onShare() }
-                    ),
+                    ))
+                    if (showWhatsAppShare) add(
                     ProMenuItem(
                         title = "Share on WhatsApp",
                         supportingText = "Send PDF to this customer",
                         iconPainter = painterResource(R.drawable.ic_whatsapp),
                         startNewGroup = true,
                         onClick = { onWhatsAppShare() }
-                    ),
+                    ))
+                    add(
                     ProMenuItem(
                         title = "Open Customer",
                         supportingText = "Open the Customer details",
                         startNewGroup = true,
                         icon = Icons.Outlined.Person,
                         onClick = { onOpenCustomer() }
-                    ),
+                    ))
+                    add(
                     ProMenuItem(
                         title = "Delete",
                         supportingText = "Remove order",
@@ -262,8 +288,8 @@ fun RecentOrderCardCompact(
                         destructive = true,
                         startNewGroup = true,
                         onClick = { onDelete() }
-                    )
-                ).filterNot { it.title == "Share on WhatsApp" && !showWhatsAppShare },
+                    ))
+                },
                 anchor = { /* invisible anchor */ }
             )
         }

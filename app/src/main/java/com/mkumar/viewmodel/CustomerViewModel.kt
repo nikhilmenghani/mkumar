@@ -3,6 +3,7 @@ package com.mkumar.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mkumar.common.constant.CustomerDetailsConstants
+import com.mkumar.common.extension.nowUtcMillis
 import com.mkumar.common.version.isVersionNewer
 import com.mkumar.data.PreferencesManager
 import com.mkumar.domain.invoice.InvoiceManager
@@ -10,6 +11,7 @@ import com.mkumar.model.CustomerDetailsEffect
 import com.mkumar.network.VersionFetcher
 import com.mkumar.repository.CustomerRepository
 import com.mkumar.repository.OrderRepository
+import com.mkumar.repository.PaymentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +35,7 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
     private val repository: CustomerRepository,
     private val invoiceManager: InvoiceManager,
     private val orderRepo: OrderRepository,
+    private val paymentRepo: PaymentRepository,
     private val preferencesManager: PreferencesManager,
     private val versionFetcher: VersionFetcher
 ) : ViewModel() {
@@ -182,6 +185,20 @@ class CustomerViewModel @OptIn(ExperimentalTime::class)
                     _effects.emit(CustomerDetailsEffect.ShowMessage(r.message))
                 is InvoiceManager.InvoiceResult.Error ->
                     _effects.emit(CustomerDetailsEffect.ShowMessage("Failed: ${r.throwable.message}"))
+            }
+        }
+    }
+
+    fun clearDues(orderId: String) {
+        viewModelScope.launch {
+            try {
+                val amountPaid = paymentRepo.clearDues(orderId, nowUtcMillis())
+                emitMessage(
+                    if (amountPaid > 0) "Payment of ₹$amountPaid recorded."
+                    else "This order has no payment due."
+                )
+            } catch (t: Throwable) {
+                emitMessage("Failed to clear dues: ${t.message}")
             }
         }
     }
