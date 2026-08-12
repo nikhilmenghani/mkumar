@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.rounded.Payments
+import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.automirrored.rounded.ListAlt
 import androidx.compose.material3.ModalBottomSheet
@@ -312,6 +313,22 @@ fun DisplayContainer(backupViewModel: BackupViewModel = hiltViewModel()) {
                     choices = counts.map { "$it orders" },
                     selectedChoice = counts.indexOf(dashboardPrefs.recentOrderCount).coerceAtLeast(0),
                     onSelect = { dashboardPrefs.recentOrderCount = counts[it] }
+                )
+            }
+        )
+        PreferenceItem(
+            label = "Order action menu",
+            supportingText = if (
+                developerPrefs.orderMenuDisplayMode == com.mkumar.data.DeveloperPrefs.ORDER_MENU_ICONS
+            ) "Icons" else "Icons + text",
+            icon = Icons.AutoMirrored.Rounded.ViewList,
+            onClick = {
+                dialog.show(
+                    title = "Order action menu",
+                    description = "Choose how long-press order actions are displayed",
+                    choices = listOf("Icons", "Icons + text"),
+                    selectedChoice = developerPrefs.orderMenuDisplayMode,
+                    onSelect = { developerPrefs.orderMenuDisplayMode = it }
                 )
             }
         )

@@ -183,6 +183,9 @@ object UpdatePrefs {
 }
 
 object DeveloperPrefs {
+    const val ORDER_MENU_ICONS = 0
+    const val ORDER_MENU_ICONS_AND_TEXT = 1
+
     var biometricLockEnabled by dataStoreMutableState(
         keyName = "biometricLockEnabled",
         defaultValue = false,
@@ -211,5 +214,11 @@ object DeveloperPrefs {
         keyName = "clearDuesEnabled",
         defaultValue = false,
         getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+
+    var orderMenuDisplayMode by dataStoreMutableState(
+        keyName = "orderMenuDisplayMode",
+        defaultValue = ORDER_MENU_ICONS,
+        getPreferencesKey = { intPreferencesKey(it) }
     )
 }

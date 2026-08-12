@@ -34,14 +34,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpOffset
 import com.mkumar.common.extension.formatAsDateTime
 import com.mkumar.model.OrderWithCustomerInfo
 import com.mkumar.R
@@ -205,6 +208,7 @@ fun RecentOrderCardCompact(
     onOpenCustomer : () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    var menuOffsetPx by remember { mutableStateOf(Offset.Zero) }
     val developerPrefs = LocalPreferencesManager.current.developerPrefs
     val showWhatsAppShare = developerPrefs.developerOptionsEnabled &&
         developerPrefs.experimentalFeaturesEnabled &&
@@ -214,32 +218,15 @@ fun RecentOrderCardCompact(
         developerPrefs.experimentalFeaturesEnabled &&
         developerPrefs.clearDuesEnabled
     val haptics = LocalHapticFeedback.current
+    val density = LocalDensity.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 72.dp) // ultra compact
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        if (menuExpanded) menuExpanded = false else onOpen()
-                    },
-                    onLongPress = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        menuExpanded = true
-                    }
-                )
-            }
-    ) {
-        // Menu anchor at top-right
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-        ) {
-            ProOverflowMenuIcons(
-                expanded = menuExpanded,
-                onExpandedChange = { menuExpanded = it },
-                items = buildList {
+    ProOverflowMenuIcons(
+        expanded = menuExpanded,
+        onExpandedChange = { menuExpanded = it },
+        menuOffset = with(density) {
+            DpOffset(menuOffsetPx.x.toDp() + 8.dp, menuOffsetPx.y.toDp() - 64.dp)
+        },
+        items = buildList {
                     add(
                     ProMenuItem(
                         title = "Invoice",
@@ -289,13 +276,9 @@ fun RecentOrderCardCompact(
                         startNewGroup = true,
                         onClick = { onDelete() }
                     ))
-                },
-                anchor = { /* invisible anchor */ }
-            )
-        }
-
-        // Actual card UI
-        Surface(
+        },
+        anchor = {
+            Surface(
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             tonalElevation = 0.dp,
             shadowElevation = 2.dp,
@@ -304,9 +287,22 @@ fun RecentOrderCardCompact(
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
             ),
             shape = MaterialTheme.shapes.medium,
-            modifier = Modifier
-                .matchParentSize()
-        ) {
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 72.dp)
+                    .pointerInput(menuExpanded) {
+                        detectTapGestures(
+                            onTap = {
+                                if (menuExpanded) menuExpanded = false else onOpen()
+                            },
+                            onLongPress = { offset ->
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                menuOffsetPx = offset
+                                menuExpanded = true
+                            }
+                        )
+                    }
+            ) {
             Row(Modifier.fillMaxSize()) {
                 Box(
                     Modifier
@@ -413,7 +409,8 @@ fun RecentOrderCardCompact(
                     }
                 }
             }
+            }
         }
-    }
-}
+        }
+    )
 }

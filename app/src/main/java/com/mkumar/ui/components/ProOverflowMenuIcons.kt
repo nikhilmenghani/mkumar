@@ -18,6 +18,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
+import com.mkumar.data.DeveloperPrefs
+import com.mkumar.ui.theme.LocalPreferencesManager
 
 @Composable
 fun ProOverflowMenuIcons(
@@ -26,6 +28,19 @@ fun ProOverflowMenuIcons(
     // relative to this same Box (no menuAnchor needed).
     anchor: @Composable () -> Unit, menuOffset: DpOffset = DpOffset.Zero
 ) {
+    if (LocalPreferencesManager.current.developerPrefs.orderMenuDisplayMode ==
+        DeveloperPrefs.ORDER_MENU_ICONS_AND_TEXT
+    ) {
+        ProOverflowMenu(
+            expanded = expanded,
+            onExpandedChange = onExpandedChange,
+            items = items,
+            anchor = anchor,
+            menuOffset = menuOffset
+        )
+        return
+    }
+
     Box {
         // 1) Render the anchor content (your card’s inner content)
         anchor()
