@@ -2,7 +2,6 @@ package com.mkumar.ui.screens
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,11 +10,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -35,6 +32,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -217,6 +216,11 @@ fun RecentOrderCardCompact(
         developerPrefs.developerOptionsEnabled &&
         developerPrefs.experimentalFeaturesEnabled &&
         developerPrefs.clearDuesEnabled
+    val statusAccent = if (order.remainingBalance > 0) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.tertiary
+    }
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
 
@@ -303,20 +307,20 @@ fun RecentOrderCardCompact(
                         )
                     }
             ) {
-            Row(Modifier.fillMaxSize()) {
-                Box(
-                    Modifier
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .background(
-                            if (order.remainingBalance > 0) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.tertiary
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .drawBehind {
+                        drawRect(
+                            color = statusAccent,
+                            size = Size(width = 4.dp.toPx(), height = size.height)
                         )
-                )
+                    }
+            ) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                        .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)
                 ) {
 
                 /* ────────────────────────────────
